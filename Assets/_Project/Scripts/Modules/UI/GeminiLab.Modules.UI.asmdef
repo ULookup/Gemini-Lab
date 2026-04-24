@@ -1,0 +1,19 @@
+{
+  "name": "GeminiLab.Modules.UI",
+  "rootNamespace": "GeminiLab.Modules.UI",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.Gateway",
+    "GeminiLab.Modules.Pet",
+    "GeminiLab.Modules.Furniture"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
