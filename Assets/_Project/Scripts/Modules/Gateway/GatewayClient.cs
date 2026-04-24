@@ -251,6 +251,22 @@ namespace GeminiLab.Modules.Gateway
                         TimestampUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
                     });
                     break;
+                case GatewayRequestType.Travel:
+                    EventReceived?.Invoke(new GatewayEventEnvelope
+                    {
+                        TraceId = request.TraceId,
+                        EventType = GatewayEventType.TravelStarted,
+                        Message = "[Mock] travel started",
+                        TimestampUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    });
+                    EventReceived?.Invoke(new GatewayEventEnvelope
+                    {
+                        TraceId = request.TraceId,
+                        EventType = GatewayEventType.TravelCompleted,
+                        Message = "[Mock] travel completed",
+                        TimestampUnixMs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
+                    });
+                    break;
             }
 
             return new GatewaySendResult(true, GatewayChannelType.Http, response, GatewayErrorKind.None, string.Empty);

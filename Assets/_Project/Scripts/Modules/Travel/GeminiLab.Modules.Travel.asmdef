@@ -1,0 +1,18 @@
+{
+  "name": "GeminiLab.Modules.Travel",
+  "rootNamespace": "GeminiLab.Modules.Travel",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.Gateway",
+    "GeminiLab.Modules.Pet"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

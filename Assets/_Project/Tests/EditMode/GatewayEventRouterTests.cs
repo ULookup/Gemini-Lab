@@ -87,6 +87,34 @@ namespace GeminiLab.Tests.EditMode
             Assert.AreEqual(2, chunkCount);
         }
 
+        [Test]
+        public void TravelCompletedEvent_PublishesGatewayTravelCompletedEvent()
+        {
+            FakeGatewayClient client = new();
+            PetCommandLinkService commandService = new();
+            EventBus eventBus = new();
+            GatewayTravelCompletedEvent? captured = null;
+            using IDisposable _ = eventBus.Subscribe<GatewayTravelCompletedEvent>(evt => captured = evt);
+            using GatewayEventRouter router = new(client, commandService, eventBus);
+
+            client.Emit(new GatewayEventEnvelope
+            {
+                TraceId = "trace_travel",
+                EventType = GatewayEventType.TravelCompleted,
+                Message = "travel done"
+            });
+
+            router.ProcessPendingEvents();
+            if (!captured.HasValue)
+            {
+                Assert.Fail("Expected GatewayTravelCompletedEvent to be published.");
+            }
+
+            GatewayTravelCompletedEvent capturedEvent = captured.Value;
+            Assert.AreEqual("trace_travel", capturedEvent.TraceId);
+            Assert.AreEqual("travel done", capturedEvent.Summary);
+        }
+
         private sealed class FakeGatewayClient : IGatewayClient
         {
             private readonly HashSet<string> _acks = new(StringComparer.Ordinal);

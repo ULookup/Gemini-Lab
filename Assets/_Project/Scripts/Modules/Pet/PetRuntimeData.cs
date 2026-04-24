@@ -51,5 +51,15 @@ namespace GeminiLab.Modules.Pet
         public PetWorkTargetType RequiredWorkTargetType = PetWorkTargetType.Any;
 
         public bool IsAtRequiredWorkTarget;
+
+        public bool IsTraveling;
+
+        public string ActiveTravelTraceId = string.Empty;
+
+        public string ActiveTravelTopic = string.Empty;
+
+        public float TravelEndAtSeconds;
+
+        public int TravelCompletedCount;
     }
 }

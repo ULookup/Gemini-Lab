@@ -38,6 +38,13 @@ namespace GeminiLab.Modules.Gateway
             return request;
         }
 
+        public GatewayRequest BuildTravelRequest(string traceId, string playerId, string topic, PetRuntimeData runtimeData)
+        {
+            GatewayRequest request = BuildChatRequest(traceId, playerId, topic, runtimeData);
+            request.RequestType = GatewayRequestType.Travel;
+            return request;
+        }
+
         private static string BuildPersonality(PetRuntimeData runtimeData)
         {
             if (runtimeData.Mood >= 70f)

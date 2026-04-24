@@ -51,4 +51,40 @@ namespace GeminiLab.Modules.Gateway
         public string TraceId { get; }
         public string Message { get; }
     }
+
+    public readonly struct GatewayTravelStartedEvent
+    {
+        public GatewayTravelStartedEvent(string traceId, string message)
+        {
+            TraceId = traceId;
+            Message = message;
+        }
+
+        public string TraceId { get; }
+        public string Message { get; }
+    }
+
+    public readonly struct GatewayTravelCompletedEvent
+    {
+        public GatewayTravelCompletedEvent(string traceId, string summary)
+        {
+            TraceId = traceId;
+            Summary = summary;
+        }
+
+        public string TraceId { get; }
+        public string Summary { get; }
+    }
+
+    public readonly struct GatewayTravelFailedEvent
+    {
+        public GatewayTravelFailedEvent(string traceId, string reason)
+        {
+            TraceId = traceId;
+            Reason = reason;
+        }
+
+        public string TraceId { get; }
+        public string Reason { get; }
+    }
 }

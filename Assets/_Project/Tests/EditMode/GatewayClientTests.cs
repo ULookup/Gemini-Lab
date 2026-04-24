@@ -52,6 +52,39 @@ namespace GeminiLab.Tests.EditMode
             Assert.GreaterOrEqual(replayed, 0);
         }
 
+        [Test]
+        public void SendAsync_MockTravel_EmitsTravelEvents()
+        {
+            GatewayConfigSO config = ScriptableObject.CreateInstance<GatewayConfigSO>();
+            config.Environment = GatewayEnvironment.Mock;
+            GatewayClient client = new(config, new FakeStream());
+            int started = 0;
+            int completed = 0;
+            client.EventReceived += evt =>
+            {
+                if (evt.EventType == GatewayEventType.TravelStarted)
+                {
+                    started++;
+                }
+
+                if (evt.EventType == GatewayEventType.TravelCompleted)
+                {
+                    completed++;
+                }
+            };
+
+            GatewaySendResult result = client.SendAsync(new GatewayRequest
+            {
+                TraceId = "trace_travel_mock",
+                RequestType = GatewayRequestType.Travel,
+                Message = "travel"
+            }).GetAwaiter().GetResult();
+
+            Assert.IsTrue(result.Success);
+            Assert.AreEqual(1, started);
+            Assert.AreEqual(1, completed);
+        }
+
         private sealed class FakeStream : IGatewayStream
         {
             public bool IsConnected => false;

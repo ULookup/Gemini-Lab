@@ -24,14 +24,18 @@ namespace GeminiLab.Modules.Gateway
         WorkStart = 3,
         WorkDone = 4,
         WorkFailed = 5,
-        Error = 6
+        Error = 6,
+        TravelStarted = 7,
+        TravelCompleted = 8,
+        TravelFailed = 9
     }
 
     public enum GatewayRequestType
     {
         Chat = 0,
         Work = 1,
-        Ack = 2
+        Ack = 2,
+        Travel = 3
     }
 
     public enum GatewayErrorKind
@@ -109,6 +113,23 @@ namespace GeminiLab.Modules.Gateway
         public bool Success { get; }
         public GatewayChannelType Channel { get; }
         public GatewayResponse? Response { get; }
+        public GatewayErrorKind ErrorKind { get; }
+        public string ErrorMessage { get; }
+    }
+
+    [Serializable]
+    public readonly struct GatewayDispatchResult
+    {
+        public GatewayDispatchResult(string traceId, bool success, GatewayErrorKind errorKind, string errorMessage)
+        {
+            TraceId = traceId;
+            Success = success;
+            ErrorKind = errorKind;
+            ErrorMessage = errorMessage;
+        }
+
+        public string TraceId { get; }
+        public bool Success { get; }
         public GatewayErrorKind ErrorKind { get; }
         public string ErrorMessage { get; }
     }

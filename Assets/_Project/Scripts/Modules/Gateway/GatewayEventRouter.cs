@@ -135,6 +135,30 @@ namespace GeminiLab.Modules.Gateway
 
                     _eventBus.Publish(new GatewayWorkStartEvent(envelope.TraceId, envelope.Message));
                     break;
+                case GatewayEventType.TravelStarted:
+                    if (IsDuplicateTerminalEvent(envelope))
+                    {
+                        return;
+                    }
+
+                    _eventBus.Publish(new GatewayTravelStartedEvent(envelope.TraceId, envelope.Message));
+                    break;
+                case GatewayEventType.TravelCompleted:
+                    if (IsDuplicateTerminalEvent(envelope))
+                    {
+                        return;
+                    }
+
+                    _eventBus.Publish(new GatewayTravelCompletedEvent(envelope.TraceId, envelope.Message));
+                    break;
+                case GatewayEventType.TravelFailed:
+                    if (IsDuplicateTerminalEvent(envelope))
+                    {
+                        return;
+                    }
+
+                    _eventBus.Publish(new GatewayTravelFailedEvent(envelope.TraceId, envelope.Message));
+                    break;
                 default:
                     Debug.Log($"[GatewayEventRouter] Ignored event: {envelope.EventType}");
                     break;
