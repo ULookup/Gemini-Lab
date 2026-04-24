@@ -1,0 +1,21 @@
+{
+  "name": "GeminiLab.Tests.PlayMode",
+  "rootNamespace": "GeminiLab.Tests.PlayMode",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.DesktopOverlay",
+    "GeminiLab.Modules.Travel"
+  ],
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
