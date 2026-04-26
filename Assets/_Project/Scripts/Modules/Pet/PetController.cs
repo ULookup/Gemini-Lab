@@ -13,13 +13,25 @@ namespace GeminiLab.Modules.Pet
     /// </summary>
     public sealed class PetController : MonoBehaviour
     {
+        private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
+        private static readonly int MoveXHash = Animator.StringToHash("MoveX");
+        private static readonly int MoveYHash = Animator.StringToHash("MoveY");
+        private static readonly int MoveDirHash = Animator.StringToHash("MoveDir");
+        // Squared-distance threshold for movement direction updates.
+        private const float DirectionEpsilonSqr = 0.000001f;
+
         [SerializeField] private PetStateValueSO? _config;
         [SerializeField] private PersonalityMatrixSO? _personality;
+        [SerializeField] private bool _sideFramesFaceLeft = true;
 
         private PetContext? _context;
         private StateMachine<PetContext>? _stateMachine;
         private StatTickService? _tickService;
         private IPetCommandLinkService? _commandLinkService;
+        private Animator? _animator;
+        private SpriteRenderer? _spriteRenderer;
+        private Vector2 _lastAnimationPosition;
+        private Vector2 _lastMoveDirection = Vector2.down;
 
         public string CurrentState => _context?.RuntimeData.CurrentState ?? "None";
 
@@ -27,6 +39,10 @@ namespace GeminiLab.Modules.Pet
 
         private void Awake()
         {
+            _animator = GetComponent<Animator>();
+            _spriteRenderer = GetComponent<SpriteRenderer>();
+            _lastAnimationPosition = transform.position;
+
             PetStateValueSO config = _config ?? ScriptableObject.CreateInstance<PetStateValueSO>();
             _ = _personality; // Reserved for Phase 3 prompt adaptation.
 
@@ -85,6 +101,7 @@ namespace GeminiLab.Modules.Pet
             _tickService.Tick(_context, Time.deltaTime);
             _stateMachine.Tick(Time.deltaTime);
             _context.ApplyPosition?.Invoke(_context.RuntimeData.Position);
+            UpdateMovementAnimation();
         }
 
         private void FixedUpdate()
@@ -138,9 +155,7 @@ namespace GeminiLab.Modules.Pet
                                 (context.FurnitureService is null ||
                                  !context.FurnitureService.TryGetBestInteractionTarget(context.RuntimeData.Position, FurnitureInteractionQuery.WorkDeskOnly, out FurnitureInteractionTarget _)))
                             {
-                                context.RuntimeData.WorkRequested = false;
-                                context.EventBus?.Publish(new PetWorkFailedEvent(request.TraceId, "No available WorkDesk target."));
-                                ResetWorkRuntime(context);
+                                context.EventBus?.Publish(new PetCommandRejectedEvent(request.TraceId, "No available WorkDesk target."));
                                 break;
                             }
 
@@ -161,20 +176,30 @@ namespace GeminiLab.Modules.Pet
 
                         break;
                     case PetCommandType.WorkCompleted:
-                        if (string.Equals(context.RuntimeData.ActiveWorkTraceId, request.TraceId, System.StringComparison.Ordinal))
+                        if (request.Source == PetCommandSource.Gateway &&
+                            string.Equals(context.RuntimeData.ActiveWorkTraceId, request.TraceId, System.StringComparison.Ordinal))
                         {
                             context.RuntimeData.WorkRequested = false;
                             context.EventBus?.Publish(new PetWorkCompletedEvent(request.TraceId, request.Message));
                             ResetWorkRuntime(context);
                         }
+                        else
+                        {
+                            context.EventBus?.Publish(new PetCommandRejectedEvent(request.TraceId, "WorkCompleted ignored: source is not Gateway or traceId mismatch."));
+                        }
 
                         break;
                     case PetCommandType.WorkFailed:
-                        if (string.Equals(context.RuntimeData.ActiveWorkTraceId, request.TraceId, System.StringComparison.Ordinal))
+                        if (request.Source == PetCommandSource.Gateway &&
+                            string.Equals(context.RuntimeData.ActiveWorkTraceId, request.TraceId, System.StringComparison.Ordinal))
                         {
                             context.RuntimeData.WorkRequested = false;
                             context.EventBus?.Publish(new PetWorkFailedEvent(request.TraceId, request.Message));
                             ResetWorkRuntime(context);
+                        }
+                        else
+                        {
+                            context.EventBus?.Publish(new PetCommandRejectedEvent(request.TraceId, "WorkFailed ignored: source is not Gateway or traceId mismatch."));
                         }
 
                         break;
@@ -189,12 +214,12 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.W))
+            if (Input.GetKeyDown(KeyCode.F9))
             {
                 bool forceWake = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
                 string traceId = _commandLinkService.RequestWork(forceWake);
                 context.RuntimeData.LastTraceId = traceId;
-                Debug.Log($"[PetCommand] Work requested traceId={traceId}, forceWake={forceWake}");
+                Debug.Log($"[PetCommand] Debug work requested traceId={traceId}, forceWake={forceWake}");
             }
         }
 
@@ -228,8 +253,77 @@ namespace GeminiLab.Modules.Pet
             context.RuntimeData.RequiredWorkTargetType = PetWorkTargetType.Any;
             context.RuntimeData.IsAtRequiredWorkTarget = false;
             context.RuntimeData.TargetFurnitureId = string.Empty;
+            context.RuntimeData.TargetFurnitureCategory = FurnitureCategory.Unknown;
             context.RuntimeData.TargetReached = false;
             context.RuntimeData.ActivePath.Clear();
+        }
+
+        private void UpdateMovementAnimation()
+        {
+            if (_animator is null)
+            {
+                return;
+            }
+
+            Vector2 currentPosition = transform.position;
+            Vector2 delta = currentPosition - _lastAnimationPosition;
+            _lastAnimationPosition = currentPosition;
+
+            string? currentState = _context?.RuntimeData.CurrentState;
+            bool isMoving = string.Equals(currentState, MovingState.StateName, System.StringComparison.Ordinal);
+            bool hasDelta = delta.sqrMagnitude > DirectionEpsilonSqr;
+
+            if (hasDelta)
+            {
+                _lastMoveDirection = delta.normalized;
+            }
+            else if (isMoving && _context is not null)
+            {
+                // When frame-to-frame delta is tiny, keep direction aligned with
+                // current movement target so transitions still choose correct clip.
+                Vector2 targetDelta = _context.RuntimeData.TargetPosition - currentPosition;
+                if (targetDelta.sqrMagnitude > DirectionEpsilonSqr)
+                {
+                    _lastMoveDirection = targetDelta.normalized;
+                }
+            }
+
+            _animator.SetBool(IsMovingHash, isMoving);
+            _animator.SetFloat(MoveXHash, _lastMoveDirection.x);
+            _animator.SetFloat(MoveYHash, _lastMoveDirection.y);
+            int moveDir = ResolveMoveDirection(_lastMoveDirection);
+            _animator.SetInteger(MoveDirHash, moveDir);
+            _animator.speed = isMoving ? 1f : 0f;
+
+            UpdateSideMirror(moveDir, _lastMoveDirection);
+        }
+
+        private static int ResolveMoveDirection(Vector2 direction)
+        {
+            if (Mathf.Abs(direction.x) > Mathf.Abs(direction.y))
+            {
+                return 2; // Side
+            }
+
+            return direction.y >= 0f ? 1 : 0; // Back / Front
+        }
+
+        private void UpdateSideMirror(int moveDir, Vector2 direction)
+        {
+            if (_spriteRenderer is null)
+            {
+                return;
+            }
+
+            // Only side movement uses horizontal mirroring.
+            if (moveDir != 2 || Mathf.Abs(direction.x) <= 0.0001f)
+            {
+                _spriteRenderer.flipX = false;
+                return;
+            }
+
+            bool movingRight = direction.x > 0f;
+            _spriteRenderer.flipX = _sideFramesFaceLeft ? movingRight : !movingRight;
         }
     }
 }

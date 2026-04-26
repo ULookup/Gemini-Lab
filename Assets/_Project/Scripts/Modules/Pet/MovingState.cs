@@ -63,29 +63,62 @@ namespace GeminiLab.Modules.Pet
 
         private static void AcquireTargetAndPath(PetContext context)
         {
-            FurnitureInteractionQuery query = context.RuntimeData.WorkRequested && context.RuntimeData.RequiredWorkTargetType == PetWorkTargetType.WorkDesk
-                ? FurnitureInteractionQuery.WorkDeskOnly
-                : FurnitureInteractionQuery.Any;
-            if (context.FurnitureService is null || !context.FurnitureService.TryGetBestInteractionTarget(context.RuntimeData.Position, query, out FurnitureInteractionTarget target))
+            if (context.FurnitureService is null)
             {
                 context.RuntimeData.TargetReached = true;
+                context.RuntimeData.TargetFurnitureId = string.Empty;
+                context.RuntimeData.TargetFurnitureCategory = FurnitureCategory.Unknown;
+                context.RuntimeData.ActivePath.Clear();
+                context.RuntimeData.PathIndex = 0;
+                return;
+            }
+
+            bool foundTarget;
+            FurnitureInteractionTarget target;
+            if (context.RuntimeData.WorkRequested && context.RuntimeData.RequiredWorkTargetType == PetWorkTargetType.WorkDesk)
+            {
+                foundTarget = context.FurnitureService.TryGetBestInteractionTarget(
+                    context.RuntimeData.Position,
+                    FurnitureInteractionQuery.WorkDeskOnly,
+                    out target);
+            }
+            else if (context.RuntimeData.Energy <= context.Config.SleepEnterEnergyThreshold)
+            {
+                foundTarget = context.FurnitureService.TryGetBestInteractionTarget(
+                    context.RuntimeData.Position,
+                    FurnitureInteractionQuery.BedOnly,
+                    out target);
+            }
+            else
+            {
+                // Autonomous roaming: never pick WorkDesk without an explicit work request.
+                foundTarget = context.FurnitureService.TryGetBestInteractionTarget(
+                    context.RuntimeData.Position,
+                    new FurnitureInteractionQuery(FurnitureCategory.Leisure, hasRequiredCategory: true),
+                    out target)
+                    || context.FurnitureService.TryGetBestInteractionTarget(
+                        context.RuntimeData.Position,
+                        FurnitureInteractionQuery.BedOnly,
+                        out target);
+            }
+
+            if (!foundTarget)
+            {
+                context.RuntimeData.TargetReached = true;
+                context.RuntimeData.TargetFurnitureId = string.Empty;
+                context.RuntimeData.TargetFurnitureCategory = FurnitureCategory.Unknown;
+                context.RuntimeData.ActivePath.Clear();
+                context.RuntimeData.PathIndex = 0;
                 if (context.RuntimeData.WorkRequested)
                 {
-                    context.RuntimeData.WorkRequested = false;
-                    if (!string.IsNullOrWhiteSpace(context.RuntimeData.ActiveWorkTraceId))
-                    {
-                        context.EventBus?.Publish(new PetWorkFailedEvent(context.RuntimeData.ActiveWorkTraceId, "No reachable work target."));
-                    }
-
-                    context.RuntimeData.ActiveWorkTraceId = string.Empty;
-                    context.RuntimeData.ActiveWorkMessage = string.Empty;
-                    context.RuntimeData.RequiredWorkTargetType = PetWorkTargetType.Any;
+                    context.RuntimeData.IsAtRequiredWorkTarget = false;
                 }
 
                 return;
             }
 
             context.RuntimeData.TargetFurnitureId = target.FurnitureId;
+            context.RuntimeData.TargetFurnitureCategory = target.Category;
             context.RuntimeData.TargetPosition = target.InteractionPoint;
             context.RuntimeData.IsAtRequiredWorkTarget =
                 !context.RuntimeData.WorkRequested ||
