@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-05-02
+Updated: 2026-05-03
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -82,6 +82,15 @@ Updated: 2026-05-02
   - 把 `花盆方桌` 的场景定义从误写的装饰类修正为 `WorkDesk`
   - 为 `窗台 / 玩偶 / 枕头` 补上更贴近对象语义的对象级交互类型
   - 让 `小圆镜`、`园地毯`、`左下小家具`、`左下窄家具` 与当前脚本推断口径重新对齐
+- `2026-05-03` 已继续把“已有资源但未完全落场景”的对象收口到 `Apartment_Main.unity`：
+  - 修正 `照片板` 的空绑定 `_target`
+  - 将 `园地毯` 接入场景显式绑定
+  - 将 `小圆镜 / 羽翼边柜 / 恶魔盆栽 / 左下小家具 / 左下窄家具` 补入 `StaticFurnitureDecorOnly` 并接入交互绑定
+- `2026-05-03` 已同步适配桌宠新版移动美术资源：
+  - `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前改为 `正面 / 背面 / 侧面` 三个子目录
+  - `PetMoveAnimationSetupEditor` 现会优先读取这三个子目录，旧版 `Pet_Angel_Move_{Front|Back|Side}_0001...` 仍作为兜底
+  - `Pet_Angel_Move_Front.anim`、`Pet_Angel_Move_Back.anim`、`Pet_Angel_Move_Side.anim` 已切换到新版移动帧引用
+  - 运行时移动表现继续采用“前后分离、左右共用侧面并通过 `SpriteRenderer.flipX` 翻转”的四方向规则
 - `Assets/_Project/Prefabs/` 目前仍没有真实 `.prefab` 资产；`Assets/_Project/ScriptableObjects/` 目前仍没有真实 `.asset` 配置资产。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。

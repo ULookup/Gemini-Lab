@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-05-02
+Updated: 2026-05-03
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -41,7 +41,7 @@ Updated: 2026-05-02
 | 宠物可对家具发起自主交互 |  |  |
 | 家具摆放后导航系统能正确更新 |  |  |
 | `Furniture/StaticFurnitureDecorOnly` 下的纯静态补景对象与现有可交互家具不会明显重叠或错位 |  |  |
-| `Furniture` 根上的 `ApartmentSceneFurnitureBindings` 已把当前主要可交互对象正确接入家具系统，且不存在重复 `_target` 绑定 |  | 当前至少应覆盖首批关键家具，并扩展到镜子、地毯、沙发、凳子、椅子、纸张、耳机、音响、柜体、窗台、玩偶、枕头等对象 |
+| `Furniture` 根上的 `ApartmentSceneFurnitureBindings` 已把当前主要可交互对象正确接入家具系统，且不存在重复或空 `_target` 绑定 |  | 当前至少应覆盖首批关键家具，并扩展到镜子、地毯、园地毯、沙发、凳子、椅子、纸张、耳机、音响、柜体、窗台、玩偶、枕头、小圆镜、羽翼边柜、左下小家具、左下窄家具、恶魔盆栽、照片板等对象 |
 | `SceneFurnitureDefinitionHint` 配置的类别和 Buff 会优先于名称推断生效 |  |  |
 | 睡眠交互 / 装饰观察 / 休闲交互 三种交互类型会正确传递到运行时摘要与状态面板 |  |  |
 | 镜子 / 地毯 / 沙发 / 凳子 / 椅子 / 画架 / 照片板 已进入对象级交互链路，且在场景中位置可达、不会明显错位 |  |  |
@@ -122,21 +122,22 @@ Updated: 2026-05-02
 - 本节先确认“现有资源可以直接支持哪些补齐项”，不要求本节内直接产出缺失美术
 
 当前确认事实：
-- `Move/` 目录已有三组真实序列帧：`Front / Back / Side`
+- `Move/` 目录当前已切换为三组真实序列帧子目录：`正面 / 背面 / 侧面`
 - `Idle/`、`Emotion/` 目录当前为空；`Interact/` 已新增 `read/` 与 `beside door/` 两组状态帧
 - 当前已有 `Pet_Angel_Move_Front.anim`、`Pet_Angel_Move_Back.anim`、`Pet_Angel_Move_Side.anim`
 - 当前已有 `Pet_Angel.controller`，但其中只有 `Move_Front / Move_Back / Move_Side`
 - `Apartment_Main.unity` 里的 `Pet_Angel` 目前还没有实际 `Animator` 组件挂载记录
-- 当前编辑器工具 `PetMoveAnimationSetupEditor` 只覆盖移动动画与 controller 绑定
+- 当前编辑器工具 `PetMoveAnimationSetupEditor` 已可优先读取 `正面 / 背面 / 侧面` 子目录，并保留旧命名规则兜底
 
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
-| `Frames/Move/` 中的 `Front / Back / Side` 序列帧编号连续、无缺帧 |  |  |
-| `Pet_Angel_Move_Front.anim` 可对应 6 帧 Front 移动序列 |  |  |
-| `Pet_Angel_Move_Back.anim` 可对应 6 帧 Back 移动序列 |  |  |
-| `Pet_Angel_Move_Side.anim` 可对应 6 帧 Side 移动序列 |  |  |
+| `Frames/Move/正面`、`背面`、`侧面` 序列帧目录存在且编号连续、无缺帧 |  |  |
+| `Pet_Angel_Move_Front.anim` 可对应 `正面` 6 帧移动序列 |  |  |
+| `Pet_Angel_Move_Back.anim` 可对应 `背面` 6 帧移动序列 |  |  |
+| `Pet_Angel_Move_Side.anim` 可对应 `侧面` 6 帧移动序列 |  |  |
 | `Pet_Angel.controller` 当前只包含 `Move_Front / Move_Back / Move_Side` 三个状态 |  |  |
 | 当前 controller 参数与 `PetController` 驱动保持一致：`IsMoving / MoveX / MoveY / MoveDir` |  |  |
+| `PetController` 当前会用 `Move_Front / Move_Back / Move_Side` 实现四方向移动表现：前后分离、左右共用侧面并通过 `flipX` 翻转 |  |  |
 | `Apartment_Main.unity` 中的 `Pet_Angel` 已绑定 `Pet_Angel.controller` 引用 |  |  |
 | `Pet_Angel` 在进入 PlayMode 后会自动补 `Animator` 并使用现有 Move controller |  |  |
 | 使用现有资源可以直接进入补齐范围的内容：移动动画 clip 校验、controller 整理、场景 `Animator` 挂载与移动表现验证 |  |  |

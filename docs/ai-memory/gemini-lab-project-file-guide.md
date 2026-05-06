@@ -1,6 +1,6 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-05-02
+Updated: 2026-05-03
 
 ## 入口文件
 - `AGENTS.md`
@@ -45,6 +45,7 @@ Updated: 2026-05-02
 - `Assets/_Project/Scripts/Core/GameBootstrap.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetController.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs`
+- `Assets/_Project/Scripts/Editor/Pet/PetMoveAnimationSetupEditor.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs`
@@ -117,10 +118,12 @@ Updated: 2026-05-02
 6. 多个系统当前依赖运行时兜底或 Mock 配置，看到“能跑起来”不等于“资产作者化已完成”。
 7. Apartment 场景中的 `TopLeft_StatusPanel`、`Right_InventoryPanel`、`BottomRight_PersonalityRadar` 目前走的是脚本内自动绑定子文本的方式，而不是 Prefab 化 UI 绑定。
 8. `Assets/_Project/Animations/Pet/` 当前除 3 个 move clip 外，已新增 `Pet_Angel_Interact_Read.anim` 与 `Pet_Angel_Interact_BesideDoor.anim`，但 `Idle` / `Emotion` 仍未补齐。
-9. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
-10. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
+9. `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前已经从旧的平铺命名，切换为 `正面 / 背面 / 侧面` 三个子目录；对应导入链路由 `PetMoveAnimationSetupEditor` 兼容新旧两套来源。
+10. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
+11. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
    - 有些对象已经进入对象级交互类型，却未必已经摆进 `Apartment_Main.unity`
    - 场景绑定里的定义 ID、类别和交互类型需要持续与真实 Sprite 资源名保持一致，不能把 `WorkDesk` 类资源误绑成装饰类
+12. `Apartment_Main.unity` 当前会用 `StaticFurnitureDecorOnly` 承载一部分“已有独立 Sprite、但不直接走原始关卡对象”的静态家具；这类对象进入交互系统时，也要同步补进 `ApartmentSceneFurnitureBindings`，避免出现“场景有图但无交互绑定”或“绑定有定义但 `_target` 为空”。
 
 ## 模块 README 导航
 - `Assets/_Project/Scripts/Modules/Pet/README.md`

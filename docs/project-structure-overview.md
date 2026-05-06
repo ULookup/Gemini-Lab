@@ -1,6 +1,6 @@
 # Gemini-Lab 项目结构总览
 
-Updated: 2026-05-02
+Updated: 2026-05-03
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -81,6 +81,7 @@ AI 协作工具链目录。
 - 但它们仍然更接近原型场景，而不是完整量产场景集
 - `Apartment_Main.unity` 当前已经承载宠物、现成家具与状态/库存/概览面板，是任务 1 的主验证场景
 - `Apartment_Main.unity` 当前除可交互家具对象外，还可能包含一个仅承载纯静态补景家具的 `StaticFurnitureDecorOnly` 子节点
+- `StaticFurnitureDecorOnly` 当前不只用于“纯视觉补景”，也开始承载一部分已有独立 Sprite 家具对象；这些对象若需要进入交互系统，必须同步补场景显式绑定，不能只把 Sprite 摆进场景
 
 ### `Assets/_Project/Tests/`
 当前已存在：
@@ -105,6 +106,7 @@ SO 分类规划已写明，但当前仍没有实际 `.asset` 文件。
 
 当前可见内容包括：
 - 宠物移动帧
+- 宠物移动帧当前已切换为 `Frames/Move/正面`、`背面`、`侧面` 三个子目录
 - 宠物交互帧（`read`、`beside door`）
 - 家具与环境示例 Sprite
 - `Art/Sprites/Furniture/` 下已开始承接从 `公寓场景.psd` 派生出来、准备进入家具系统接线的独立 Sprite，后续按中文语义命名维护

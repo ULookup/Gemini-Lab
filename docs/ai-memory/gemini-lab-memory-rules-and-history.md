@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Rules And History
 
-Updated: 2026-05-02
+Updated: 2026-05-03
 
 ## 长期规则
 1. 所有中文文档、中文注释、中文说明都必须保持 UTF-8 正常显示。
@@ -166,6 +166,23 @@ Updated: 2026-05-02
   - 把 `花盆方桌` 的场景定义从误写的装饰类修正为 `WorkDesk`
   - 新增 `ObserveWindow`、`InspectToy`、`ArrangePillow` 三个对象级交互类型，替换此前对窗台、玩偶、枕头的语义借位
   - 让 `小圆镜`、`园地毯`、`左下小家具`、`左下窄家具` 的脚本覆盖情况与交互覆盖表重新对齐
+### 2026-05-03
+- 继续处理“已有资源但未完全落场景”的尾项：
+  - 修掉 `ApartmentSceneFurnitureBindings` 中 `照片板` 的空 `_target`
+  - 把场景里已存在的 `园地毯` 正式接进显式绑定
+  - 把 `小圆镜`、`羽翼边柜`、`恶魔盆栽`、`左下小家具`、`左下窄家具` 真正补进 `StaticFurnitureDecorOnly`
+  - 新增对象同步接入 `ApartmentSceneFurnitureBindings`，不再停留在“脚本能识别但场景没对象”的状态
+- 桌宠移动美术资源已切换到新的目录结构：
+  - `Assets/_Project/Art/Sprites/Pet/Frames/Move/正面`
+  - `Assets/_Project/Art/Sprites/Pet/Frames/Move/背面`
+  - `Assets/_Project/Art/Sprites/Pet/Frames/Move/侧面`
+- `PetMoveAnimationSetupEditor` 已更新为优先读取上述三个子目录，并保留旧前缀命名兜底。
+- `Pet_Angel_Move_Front.anim`、`Pet_Angel_Move_Back.anim`、`Pet_Angel_Move_Side.anim` 的 sprite 引用已切到新移动资源。
+- 当前桌宠移动规则明确为：
+  - 前进使用正面动画
+  - 后退使用背面动画
+  - 左右移动共用侧面动画
+  - 左右差异由 `PetController` 里的 `SpriteRenderer.flipX` 处理
 
 ## 已确认决策
 

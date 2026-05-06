@@ -14,12 +14,16 @@ using UnityEngine;
 namespace GeminiLab.EditorTools.Pet
 {
     /// <summary>
-    /// Builds pet movement clips/controller from naming convention:
-    /// Pet_Angel_Move_{Front|Back|Side}_0001...
+    /// Builds pet movement clips/controller from either:
+    /// 1. Move/正面、Move/背面、Move/侧面 目录下的序列帧
+    /// 2. 旧版 Pet_Angel_Move_{Front|Back|Side}_0001... 命名约定
     /// </summary>
     public static class PetMoveAnimationSetupEditor
     {
         private const string MoveSpriteFolder = "Assets/_Project/Art/Sprites/Pet/Frames/Move";
+        private const string MoveFrontFolder = MoveSpriteFolder + "/正面";
+        private const string MoveBackFolder = MoveSpriteFolder + "/背面";
+        private const string MoveSideFolder = MoveSpriteFolder + "/侧面";
         private const string InteractReadFolder = "Assets/_Project/Art/Sprites/Pet/Frames/Interact/read";
         private const string InteractBesideDoorFolder = "Assets/_Project/Art/Sprites/Pet/Frames/Interact/beside door";
         private const string AnimationFolder = "Assets/_Project/Animations/Pet";
@@ -39,9 +43,9 @@ namespace GeminiLab.EditorTools.Pet
             {
                 EnsureFolder(AnimationFolder);
 
-                List<Sprite> frontSprites = LoadSpritesByPrefix("Pet_Angel_Move_Front_");
-                List<Sprite> backSprites = LoadSpritesByPrefix("Pet_Angel_Move_Back_");
-                List<Sprite> sideSprites = LoadSpritesByPrefix("Pet_Angel_Move_Side_");
+                List<Sprite> frontSprites = LoadMoveSprites(MoveFrontFolder, "Pet_Angel_Move_Front_");
+                List<Sprite> backSprites = LoadMoveSprites(MoveBackFolder, "Pet_Angel_Move_Back_");
+                List<Sprite> sideSprites = LoadMoveSprites(MoveSideFolder, "Pet_Angel_Move_Side_");
                 List<Sprite> interactReadSprites = LoadSpritesFromFolder(InteractReadFolder);
                 List<Sprite> interactBesideDoorSprites = LoadSpritesFromFolder(InteractBesideDoorFolder);
 
@@ -269,6 +273,17 @@ namespace GeminiLab.EditorTools.Pet
                 .OrderBy(sprite => ExtractOrder(sprite!.name, suffixRegex))
                 .Cast<Sprite>()
                 .ToList();
+        }
+
+        private static List<Sprite> LoadMoveSprites(string folderPath, string legacyPrefix)
+        {
+            List<Sprite> folderSprites = LoadSpritesFromFolder(folderPath);
+            if (folderSprites.Count > 0)
+            {
+                return folderSprites;
+            }
+
+            return LoadSpritesByPrefix(legacyPrefix);
         }
 
         private static List<Sprite> LoadSpritesFromFolder(string folderPath)

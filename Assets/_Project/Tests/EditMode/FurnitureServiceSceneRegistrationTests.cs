@@ -64,6 +64,8 @@ namespace GeminiLab.Tests.EditMode
         [TestCase("家具_装饰_镜子_恶魔_01", FurnitureCategory.Decoration, FurnitureInteractionType.InspectMirror)]
         [TestCase("家具_装饰_小圆镜_天使_01", FurnitureCategory.Decoration, FurnitureInteractionType.InspectMirror)]
         [TestCase("家具_装饰_园地毯_天使_01", FurnitureCategory.Decoration, FurnitureInteractionType.RestOnRug)]
+        [TestCase("家具_装饰_羽翼边柜_天使_01", FurnitureCategory.Decoration, FurnitureInteractionType.OrganizeStorage)]
+        [TestCase("家具_装饰_盆栽_恶魔_01", FurnitureCategory.Decoration, FurnitureInteractionType.ObservePlant)]
         [TestCase("家具_休闲_画架_恶魔_01", FurnitureCategory.Leisure, FurnitureInteractionType.PaintAtEasel)]
         [TestCase("家具_休闲_照片板_恶魔_01", FurnitureCategory.Leisure, FurnitureInteractionType.ViewPhotoBoard)]
         [TestCase("家具_工作桌_花盆方桌_天使_01", FurnitureCategory.WorkDesk, FurnitureInteractionType.WorkFocus)]
