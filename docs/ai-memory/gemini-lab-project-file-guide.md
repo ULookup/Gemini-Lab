@@ -1,6 +1,6 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-05-03
+Updated: 2026-05-07
 
 ## 入口文件
 - `AGENTS.md`
@@ -46,6 +46,7 @@ Updated: 2026-05-03
 - `Assets/_Project/Scripts/Modules/Pet/PetController.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs`
 - `Assets/_Project/Scripts/Editor/Pet/PetMoveAnimationSetupEditor.cs`
+- `Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs`
@@ -59,6 +60,7 @@ Updated: 2026-05-03
 - `docs/apartment-scene-sprite-naming-guide.md`
 - `Assets/_Project/Art/README.md`
 - `Assets/_Project/Art/Sprites/Furniture/README.md`
+- `Assets/_Project/Art/Sprites/Pet/README.md`
 - `Assets/_Project/Prefabs/README.md`
 - `Assets/_Project/ScriptableObjects/README.md`
 
@@ -111,19 +113,20 @@ Updated: 2026-05-03
 
 ## 当前真实存在但容易误判的情况
 1. `Assets/_Project/Scenes/` 已经有真实 `.unity` 场景文件，但它们当前更接近原型场景，不等于所有 README 里的目标场景集合都已完成。
-2. `Assets/_Project/Prefabs/` 目前仍没有真实 `.prefab` 资源。
+2. `Assets/_Project/Prefabs/` 已开始落地真实 `.prefab` 资源，当前 `Furniture/` 已覆盖全部家具 Sprite 资源。
 3. `Assets/_Project/Scripts/` 已经有大量真实 C# 业务实现与 asmdef，不再是只有 README 的空目录。
-4. `Assets/_Project/ScriptableObjects/` 目前仍没有实际 `.asset` 配置；很多 SO 类型只存在于代码层。
+4. `Assets/_Project/ScriptableObjects/` 已开始落地实际 `.asset` 配置，当前 `FurnitureConfig/` 已覆盖全部家具 Sprite 资源；很多其他 SO 类型仍只存在于代码层。
 5. `Assets/_Project/Scripts/Modules/Desktop/README.md` 仍承载桌面模块的设计说明，但当前真实运行时代码目录是 `Assets/_Project/Scripts/Modules/DesktopOverlay/`。
 6. 多个系统当前依赖运行时兜底或 Mock 配置，看到“能跑起来”不等于“资产作者化已完成”。
 7. Apartment 场景中的 `TopLeft_StatusPanel`、`Right_InventoryPanel`、`BottomRight_PersonalityRadar` 目前走的是脚本内自动绑定子文本的方式，而不是 Prefab 化 UI 绑定。
 8. `Assets/_Project/Animations/Pet/` 当前除 3 个 move clip 外，已新增 `Pet_Angel_Interact_Read.anim` 与 `Pet_Angel_Interact_BesideDoor.anim`，但 `Idle` / `Emotion` 仍未补齐。
 9. `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前已经从旧的平铺命名，切换为 `正面 / 背面 / 侧面` 三个子目录；对应导入链路由 `PetMoveAnimationSetupEditor` 兼容新旧两套来源。
-10. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
-11. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
+10. `Assets/_Project/Art/Sprites/Pet/Frames/Interact/` 当前两组交互帧已经统一改为规范命名：`Pet_Angel_Interact_Read_0001...` 与 `Pet_Angel_Interact_BesideDoor_0001...`，不再使用 `IMG_986x.PNG`。
+11. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
+12. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
    - 有些对象已经进入对象级交互类型，却未必已经摆进 `Apartment_Main.unity`
    - 场景绑定里的定义 ID、类别和交互类型需要持续与真实 Sprite 资源名保持一致，不能把 `WorkDesk` 类资源误绑成装饰类
-12. `Apartment_Main.unity` 当前会用 `StaticFurnitureDecorOnly` 承载一部分“已有独立 Sprite、但不直接走原始关卡对象”的静态家具；这类对象进入交互系统时，也要同步补进 `ApartmentSceneFurnitureBindings`，避免出现“场景有图但无交互绑定”或“绑定有定义但 `_target` 为空”。
+13. `Apartment_Main.unity` 当前会用 `StaticFurnitureDecorOnly` 承载一部分“已有独立 Sprite、但不直接走原始关卡对象”的静态家具；这类对象进入交互系统时，也要同步补进 `ApartmentSceneFurnitureBindings`，避免出现“场景有图但无交互绑定”或“绑定有定义但 `_target` 为空”。
 
 ## 模块 README 导航
 - `Assets/_Project/Scripts/Modules/Pet/README.md`

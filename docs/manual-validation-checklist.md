@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-05-03
+Updated: 2026-05-07
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -35,6 +35,8 @@ Updated: 2026-05-03
 | :--- | :--- | :--- |
 | 公寓主场景已创建 |  |  |
 | 家具 Prefab 已开始落地 |  |  |
+| `Assets/_Project/Prefabs/Furniture/**` 中已存在当前全部家具 Sprite 资源对应的真实 prefab 资产 |  |  |
+| `Assets/_Project/ScriptableObjects/FurnitureConfig/**` 中已存在当前全部家具 Sprite 资源对应的真实 `FurnitureDefinitionSO` 资产 |  |  |
 | 长按 `V` 的建造模式可进入 / 退出 |  |  |
 | 家具能正确吸附地板或墙体 |  |  |
 | 家具放置合法性校验可用 |  |  |
@@ -157,6 +159,8 @@ Updated: 2026-05-03
 | :--- | :--- | :--- |
 | `read` 状态序列帧已按当前资源目录完整纳入 clip |  |  |
 | `beside door` 状态序列帧已按当前资源目录完整纳入 clip |  |  |
+| `read` 状态帧当前命名符合 `Pet_Angel_Interact_Read_0001.png` 规则 |  |  |
+| `beside door` 状态帧当前命名符合 `Pet_Angel_Interact_BesideDoor_0001.png` 规则 |  |  |
 | `Pet_Angel_Interact_Read.anim` 的首帧保持时长为 10 帧 |  |  |
 | `Pet_Angel_Interact_Read.anim` 的尾帧保持时长为 10 帧 |  |  |
 | `Pet_Angel_Interact_BesideDoor.anim` 的首帧保持时长为 10 帧 |  |  |

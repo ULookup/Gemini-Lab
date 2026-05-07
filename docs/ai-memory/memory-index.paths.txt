@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-05-03
+# Updated: 2026-05-07
 
 AGENTS.md
 
@@ -30,9 +30,12 @@ Assets/_Project/Scenes/Boot.unity
 Assets/_Project/Scenes/Apartment/Apartment_Main.unity
 Assets/_Project/Scenes/Desktop/Desktop_Overlay.unity
 Assets/_Project/Prefabs/README.md
+Assets/_Project/Prefabs/Furniture
 Assets/_Project/ScriptableObjects/README.md
+Assets/_Project/ScriptableObjects/FurnitureConfig
 Assets/_Project/Art/README.md
 Assets/_Project/Art/Sprites/Furniture/README.md
+Assets/_Project/Art/Sprites/Pet/README.md
 Assets/_Project/Art/Sprites/Environment/ApartmentScene_Extracted/README.md
 Assets/_Project/Audio/README.md
 Assets/_Project/Settings/README.md
@@ -48,6 +51,7 @@ Assets/_Project/Scripts/Modules/Desktop/README.md
 Assets/_Project/Scripts/Modules/Persistence/README.md
 Assets/_Project/Scripts/UI/README.md
 Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs
+Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs
 Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs
 Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs
 Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs

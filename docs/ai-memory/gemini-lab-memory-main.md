@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-05-03
+Updated: 2026-05-07
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -91,7 +91,16 @@ Updated: 2026-05-03
   - `PetMoveAnimationSetupEditor` 现会优先读取这三个子目录，旧版 `Pet_Angel_Move_{Front|Back|Side}_0001...` 仍作为兜底
   - `Pet_Angel_Move_Front.anim`、`Pet_Angel_Move_Back.anim`、`Pet_Angel_Move_Side.anim` 已切换到新版移动帧引用
   - 运行时移动表现继续采用“前后分离、左右共用侧面并通过 `SpriteRenderer.flipX` 翻转”的四方向规则
-- `Assets/_Project/Prefabs/` 目前仍没有真实 `.prefab` 资产；`Assets/_Project/ScriptableObjects/` 目前仍没有真实 `.asset` 配置资产。
+- `2026-05-06` 已开始把 Apartment 家具交互链路从“场景直挂 + 运行时兜底”推进到“真实作者化资源”：
+  - 已为当前 `Art/Sprites/Furniture/**/` 下的全部 `49` 个家具 Sprite 资源生成对应 `FurnitureDefinitionSO`
+  - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
+  - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
+  - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
+- `2026-05-07` 已完成 `Interact` 资源命名规范收口：
+  - `read/` 组重命名为 `Pet_Angel_Interact_Read_0001...0006.png`
+  - `beside door/` 组重命名为 `Pet_Angel_Interact_BesideDoor_0001...0005.png`
+  - `Assets/_Project/Art/Sprites/Pet/README.md` 已改为“方向型帧保留方向字段，非方向型交互帧允许使用变体名”的真实规则
+- `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 现在都不再是完全空目录，且 `Furniture` / `FurnitureConfig` 这条线已覆盖当前全部家具 Sprite 资源；其他模块仍未完成资产作者化。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。
 
@@ -114,8 +123,7 @@ Updated: 2026-05-03
    - `GatewayRuntimeHost` 在缺少配置资产时会回退到运行时创建的 Mock 配置
    - `FurnitureService` 在缺少配置资产时会补运行时家具定义
 6. 当前最明显的资源层缺口仍是：
-   - 缺少真实 Prefab 资产
-   - 缺少真实 ScriptableObject 配置资产
+   - `Furniture` 之外的大部分 `Prefab` / `ScriptableObject` 资产仍未作者化
    - 真实人格雷达、美术更完整的交互动画与更正式的 UI 资源仍未补齐
    - `Pet_Angel` 当前已有 `Move_Front / Move_Back / Move_Side / Interact_Read / Interact_BesideDoor`
    - 但 `Idle` 与更完整的 `Emotion` 仍缺少正式资源与状态链路

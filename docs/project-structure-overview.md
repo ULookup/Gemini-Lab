@@ -1,6 +1,6 @@
 # Gemini-Lab 项目结构总览
 
-Updated: 2026-05-03
+Updated: 2026-05-07
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -92,14 +92,19 @@ AI 协作工具链目录。
 这意味着测试目录和测试程序集已经真实落地。
 
 ### `Assets/_Project/Prefabs/`
-Prefab 结构规划已写明，但当前仍没有真正的 `.prefab` 资产。
+Prefab 结构规划已写明，而且当前已经开始落地真实 `.prefab` 资产。
+
+当前真实状态：
+- `Assets/_Project/Prefabs/Furniture/**` 当前已覆盖 `Art/Sprites/Furniture/**/` 下的全部家具 Sprite 资源
+- 当前 prefab 化仍主要集中在 `Furniture` 这条线，`Pet / UI / Environment / FX` 仍未收口
 
 ### `Assets/_Project/ScriptableObjects/`
-SO 分类规划已写明，但当前仍没有实际 `.asset` 文件。
+SO 分类规划已写明，而且当前已经开始落地实际 `.asset` 文件。
 
 需要区分：
 - SO 类型代码已经存在于 `Scripts/Modules/**`
-- 但对应配置资产还没有真正作者化落地
+- 当前 `Assets/_Project/ScriptableObjects/FurnitureConfig/**` 已覆盖 `Art/Sprites/Furniture/**/` 下的全部真实 `FurnitureDefinitionSO` 资产
+- 但其他模块配置资产还没有真正作者化落地
 
 ### `Assets/_Project/Art/` 与 `Assets/_Project/Animations/`
 这里已经开始承接真实资源，而不只是目录规范。
@@ -107,7 +112,7 @@ SO 分类规划已写明，但当前仍没有实际 `.asset` 文件。
 当前可见内容包括：
 - 宠物移动帧
 - 宠物移动帧当前已切换为 `Frames/Move/正面`、`背面`、`侧面` 三个子目录
-- 宠物交互帧（`read`、`beside door`）
+- 宠物交互帧（`read`、`beside door`），并已按非方向型交互变体规范统一重命名
 - 家具与环境示例 Sprite
 - `Art/Sprites/Furniture/` 下已开始承接从 `公寓场景.psd` 派生出来、准备进入家具系统接线的独立 Sprite，后续按中文语义命名维护
 - 宠物动画片段与 Animator Controller
@@ -135,8 +140,8 @@ SO 分类规划已写明，但当前仍没有实际 `.asset` 文件。
 - 文档协作体系
 
 ### 仍未完全具备
-- 真实 Prefab 资产
-- 真实 ScriptableObject 配置资产
+- `Furniture` 之外的真实 Prefab 资产
+- `FurnitureConfig` 之外的真实 ScriptableObject 配置资产
 - 完整的 2D NavMesh 实现
 - 原生桌面透明窗口 / 点击穿透实现
 - 完整收口后的正式场景 / 资源作者化体系

@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Rules And History
 
-Updated: 2026-05-03
+Updated: 2026-05-07
 
 ## 长期规则
 1. 所有中文文档、中文注释、中文说明都必须保持 UTF-8 正常显示。
@@ -18,8 +18,8 @@ Updated: 2026-05-03
 9. 手工验证结果要落到 `docs/manual-validation-checklist.md`，不能只停留在聊天记录里。
 
 ## 当前已知问题
-1. `Assets/_Project/Prefabs/` 仍没有真实 `.prefab` 资产，很多场景对象与运行时结构尚未完成 Prefab 化。
-2. `Assets/_Project/ScriptableObjects/` 仍没有真实 `.asset` 配置资产；`GatewayConfigSO`、`FurnitureDefinitionSO`、`PetStateValueSO` 等类型已存在，但当前仍依赖场景引用或运行时兜底。
+1. `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 已开始落地真实作者化资源，其中 `Furniture` / `FurnitureConfig` 已覆盖当前全部家具 Sprite 资源；`Pet`、`UI`、`Gateway`、`Travel` 等模块仍未完成同等程度的资产化。
+2. `FurnitureService` 当前已支持优先使用真实 `FurnitureDefinitionSO`，但整个家具链路仍同时保留 `SceneFurnitureDefinitionHint` 和名称推断兜底，属于“作者化与原型并存”的过渡态。
 3. `Packages/manifest.json` 已经包含 `com.unity.ai.navigation`，但当前 `NavigationService` / `NavMesh2DRebaker` 仍是占位实现，不等于真实 2D NavMesh 链路已完成。
 4. `DesktopOverlay` 模块已有运行时代码，但 `WindowModeAdapter` 还没有落真实原生透明窗口 / 点击穿透实现。
 5. 桌面相关文档目前同时存在“设计名 `Desktop`”和“运行时代码目录 `DesktopOverlay`”两套表述，阅读时要显式区分。
@@ -183,6 +183,24 @@ Updated: 2026-05-03
   - 后退使用背面动画
   - 左右移动共用侧面动画
   - 左右差异由 `PetController` 里的 `SpriteRenderer.flipX` 处理
+
+### 2026-05-06
+- 已开始为当前 Apartment 交互家具批量生成真实作者化资产：
+  - `Assets/_Project/ScriptableObjects/FurnitureConfig/**` 下已生成对应 `FurnitureDefinitionSO`
+  - `Assets/_Project/Prefabs/Furniture/**` 下已生成对应 `Prefab`
+  - `Apartment_Main.unity` 已开始转为引用这些 Prefab 实例，而不再只依赖纯场景直挂对象
+- `FurnitureService.ResolveSceneFurnitureDefinition` 现已新增“优先读取场景对象上已赋值的真实 `FurnitureDefinitionSO`”逻辑。
+- 为了完成这轮作者化，新增了编辑器工具：
+  - `Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs`
+- 已继续把剩余 `11` 个未作者化家具资源补齐，当前 `Art/Sprites/Furniture/**/` 下的全部 `49` 个家具 Sprite 资源都已有对应 `FurnitureDefinitionSO` 与 `Prefab`。
+
+### 2026-05-07
+- 已统一整理宠物 `Interact` 帧命名：
+  - `read/` 目录改为 `Pet_Angel_Interact_Read_0001...0006.png`
+  - `beside door/` 目录改为 `Pet_Angel_Interact_BesideDoor_0001...0005.png`
+- `Assets/_Project/Art/Sprites/Pet/README.md` 已改为更符合当前项目真实情况的命名规则：
+  - `Move` 等方向型序列帧继续保留方向字段
+  - `Interact_Read`、`Interact_BesideDoor` 这类非方向型交互帧允许使用“状态 + 变体 + 帧号”命名，不强行补虚假的方向字段
 
 ## 已确认决策
 

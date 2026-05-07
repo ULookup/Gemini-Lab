@@ -383,6 +383,17 @@ namespace GeminiLab.Modules.Furniture
             string spriteName = renderer?.sprite?.name ?? string.Empty;
             string objectName = furniture.gameObject.name;
 
+            if (TryGetAuthoredDefinition(furniture, out FurnitureDefinitionSO? authoredDefinition))
+            {
+                _definitions[authoredDefinition.Id] = authoredDefinition;
+                if (!_buildPalette.Contains(authoredDefinition))
+                {
+                    _buildPalette.Add(authoredDefinition);
+                }
+
+                return authoredDefinition;
+            }
+
             if (furniture.TryGetComponent(out SceneFurnitureDefinitionHint hint) && hint.EnabledHint)
             {
                 string hintedDefinitionId = !string.IsNullOrWhiteSpace(hint.DefinitionId)
@@ -446,6 +457,33 @@ namespace GeminiLab.Modules.Furniture
             _definitions[definitionId] = definition;
             _buildPalette.Add(definition);
             return definition;
+        }
+
+        private static bool TryGetAuthoredDefinition(Furniture furniture, out FurnitureDefinitionSO? definition)
+        {
+            definition = null;
+            try
+            {
+                definition = furniture.Definition;
+            }
+            catch
+            {
+                return false;
+            }
+
+            if (definition is null || string.IsNullOrWhiteSpace(definition.Id))
+            {
+                definition = null;
+                return false;
+            }
+
+            if (string.Equals(definition.Id, "Furniture.Fallback", StringComparison.Ordinal))
+            {
+                definition = null;
+                return false;
+            }
+
+            return true;
         }
 
         private static void ApplyFurniturePresentation(Furniture furniture, SpriteRenderer renderer, FurnitureDefinitionSO definition)

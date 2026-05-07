@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f5fa12a8a3625d44a5b6a8b4a187c91, type: 3}
+  m_Name: "\u5BB6\u5177_\u88C5\u9970_\u6C99\u53D1\u4E0A\u6795\u5934_\u6076\u9B54_01"
+  m_EditorClassIdentifier: 
+  _id: "\u5BB6\u5177_\u88C5\u9970_\u6C99\u53D1\u4E0A\u6795\u5934_\u6076\u9B54_01"
+  _sprite: {fileID: 21300000, guid: 89a9dda47a964d99af887ae7c867d7a2, type: 3}
+  _category: 4
+  _interactionType: 22
+  _interactionDurationSeconds: 1.4
+  _placementType: 0
+  _occupiedCells: {x: 1, y: 1}
+  _buff:
+    MoodDelta: 1
+    EnergyDelta: 0

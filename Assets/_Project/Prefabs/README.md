@@ -3,6 +3,10 @@
 ## 文件夹职责
 存放**所有运行时可实例化的 Unity 2D 预制体**。按业务域分类组织，严禁按场景切分（跨场景复用是预制体的价值来源）。
 
+## 当前真实状态
+- `Furniture/` 当前已为 `Assets/_Project/Art/Sprites/Furniture/**/` 下的全部 `49` 个家具 Sprite 资源生成对应 prefab。
+- 这些 prefab 目前主要服务于家具作者化与场景稳态接线；`Pet/`、`UI/`、`Environment/`、`FX/` 仍未落到真实 prefab 交付。
+
 ## 子目录规划
 
 | 子目录 | 内容 |
