@@ -68,6 +68,8 @@ namespace GeminiLab.Modules.Pet
                 context.RuntimeData.TargetReached = true;
                 context.RuntimeData.TargetFurnitureId = string.Empty;
                 context.RuntimeData.TargetFurnitureCategory = FurnitureCategory.Unknown;
+                context.RuntimeData.TargetFurnitureInteractionType = FurnitureInteractionType.Unknown;
+                context.RuntimeData.TargetInteractionDurationSeconds = 1f;
                 context.RuntimeData.ActivePath.Clear();
                 context.RuntimeData.PathIndex = 0;
                 return;
@@ -82,24 +84,18 @@ namespace GeminiLab.Modules.Pet
                     FurnitureInteractionQuery.WorkDeskOnly,
                     out target);
             }
-            else if (context.RuntimeData.Energy <= context.Config.SleepEnterEnergyThreshold)
+            else if (ShouldPreferBedTarget(context))
             {
                 foundTarget = context.FurnitureService.TryGetBestInteractionTarget(
                     context.RuntimeData.Position,
                     FurnitureInteractionQuery.BedOnly,
-                    out target);
+                    out target)
+                    || TryGetAutonomousAwakeTarget(context, out target);
             }
             else
             {
-                // Autonomous roaming: never pick WorkDesk without an explicit work request.
-                foundTarget = context.FurnitureService.TryGetBestInteractionTarget(
-                    context.RuntimeData.Position,
-                    new FurnitureInteractionQuery(FurnitureCategory.Leisure, hasRequiredCategory: true),
-                    out target)
-                    || context.FurnitureService.TryGetBestInteractionTarget(
-                        context.RuntimeData.Position,
-                        FurnitureInteractionQuery.BedOnly,
-                        out target);
+                foundTarget = TryGetAutonomousAwakeTarget(context, out target)
+                    || TryGetAutonomousBedFallback(context, out target);
             }
 
             if (!foundTarget)
@@ -107,6 +103,8 @@ namespace GeminiLab.Modules.Pet
                 context.RuntimeData.TargetReached = true;
                 context.RuntimeData.TargetFurnitureId = string.Empty;
                 context.RuntimeData.TargetFurnitureCategory = FurnitureCategory.Unknown;
+                context.RuntimeData.TargetFurnitureInteractionType = FurnitureInteractionType.Unknown;
+                context.RuntimeData.TargetInteractionDurationSeconds = 1f;
                 context.RuntimeData.ActivePath.Clear();
                 context.RuntimeData.PathIndex = 0;
                 if (context.RuntimeData.WorkRequested)
@@ -119,6 +117,8 @@ namespace GeminiLab.Modules.Pet
 
             context.RuntimeData.TargetFurnitureId = target.FurnitureId;
             context.RuntimeData.TargetFurnitureCategory = target.Category;
+            context.RuntimeData.TargetFurnitureInteractionType = target.InteractionType;
+            context.RuntimeData.TargetInteractionDurationSeconds = target.InteractionDurationSeconds;
             context.RuntimeData.TargetPosition = target.InteractionPoint;
             context.RuntimeData.IsAtRequiredWorkTarget =
                 !context.RuntimeData.WorkRequested ||
@@ -145,6 +145,70 @@ namespace GeminiLab.Modules.Pet
             {
                 context.RuntimeData.PathIndex = 0;
             }
+        }
+
+        private static bool TryGetAutonomousAwakeTarget(PetContext context, out FurnitureInteractionTarget target)
+        {
+            // Autonomous roaming: never pick WorkDesk without an explicit work request.
+            bool shouldPreferLeisure = context.RuntimeData.Mood <= context.Config.LeisureSeekMoodThreshold ||
+                                       context.RuntimeData.Energy >= context.Config.NighttimeBedSeekEnergyThreshold;
+
+            if (shouldPreferLeisure &&
+                context.FurnitureService!.TryGetBestInteractionTarget(
+                    context.RuntimeData.Position,
+                    new FurnitureInteractionQuery(FurnitureCategory.Leisure, hasRequiredCategory: true),
+                    out target))
+            {
+                return true;
+            }
+
+            if (context.FurnitureService!.TryGetBestInteractionTarget(
+                context.RuntimeData.Position,
+                new FurnitureInteractionQuery(FurnitureCategory.Decoration, hasRequiredCategory: true),
+                out target))
+            {
+                return true;
+            }
+
+            if (!shouldPreferLeisure &&
+                context.FurnitureService!.TryGetBestInteractionTarget(
+                    context.RuntimeData.Position,
+                    new FurnitureInteractionQuery(FurnitureCategory.Leisure, hasRequiredCategory: true),
+                    out target))
+            {
+                return true;
+            }
+
+            target = default;
+            return false;
+        }
+
+        private static bool TryGetAutonomousBedFallback(PetContext context, out FurnitureInteractionTarget target)
+        {
+            if (!context.IsRealWorldNight() && context.RuntimeData.Energy > context.Config.DaytimeBedSeekEnergyThreshold)
+            {
+                target = default;
+                return false;
+            }
+
+            return context.FurnitureService!.TryGetBestInteractionTarget(
+                context.RuntimeData.Position,
+                FurnitureInteractionQuery.BedOnly,
+                out target);
+        }
+
+        private static bool ShouldPreferBedTarget(PetContext context)
+        {
+            if (context.RuntimeData.Energy <= context.Config.SleepEnterEnergyThreshold)
+            {
+                return true;
+            }
+
+            float threshold = context.IsRealWorldNight()
+                ? context.Config.NighttimeBedSeekEnergyThreshold
+                : context.Config.DaytimeBedSeekEnergyThreshold;
+
+            return context.RuntimeData.Energy <= threshold;
         }
     }
 }

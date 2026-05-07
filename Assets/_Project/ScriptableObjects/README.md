@@ -3,6 +3,10 @@
 ## 文件夹职责
 承载**所有数据驱动的配置类资产**（SO）。任何数值、模板、映射表都必须落在这里，**严禁硬编码在 MonoBehaviour 或静态类字段**。
 
+## 当前真实状态
+- `FurnitureConfig/` 当前已为 `Assets/_Project/Art/Sprites/Furniture/**/` 下的全部 `49` 个家具 Sprite 资源生成对应 `FurnitureDefinitionSO` 资产。
+- 其余如 `PetConfig/`、`GatewayConfig/`、`TravelConfig/`、`UIConfig/` 等目录目前仍主要停留在规划态或代码态，尚未全面作者化。
+
 ## 子目录规划
 
 | 子目录 | 内容 |

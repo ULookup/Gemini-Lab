@@ -13,6 +13,10 @@ namespace GeminiLab.Modules.Pet
     /// </summary>
     public sealed class PetController : MonoBehaviour
     {
+        private const string MoveFrontStateName = "Move_Front";
+        private const string InteractReadStateName = "Interact_Read";
+        private const string InteractBesideDoorStateName = "Interact_BesideDoor";
+
         private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
         private static readonly int MoveXHash = Animator.StringToHash("MoveX");
         private static readonly int MoveYHash = Animator.StringToHash("MoveY");
@@ -22,6 +26,7 @@ namespace GeminiLab.Modules.Pet
 
         [SerializeField] private PetStateValueSO? _config;
         [SerializeField] private PersonalityMatrixSO? _personality;
+        [SerializeField] private RuntimeAnimatorController? _movementController;
         [SerializeField] private bool _sideFramesFaceLeft = true;
 
         private PetContext? _context;
@@ -32,6 +37,8 @@ namespace GeminiLab.Modules.Pet
         private SpriteRenderer? _spriteRenderer;
         private Vector2 _lastAnimationPosition;
         private Vector2 _lastMoveDirection = Vector2.down;
+        private string _lastForcedAnimatorStateName = string.Empty;
+        private PetRuntimeSnapshotChangedEvent? _lastPublishedSnapshot;
 
         public string CurrentState => _context?.RuntimeData.CurrentState ?? "None";
 
@@ -41,6 +48,7 @@ namespace GeminiLab.Modules.Pet
         {
             _animator = GetComponent<Animator>();
             _spriteRenderer = GetComponent<SpriteRenderer>();
+            EnsureAnimatorBinding();
             _lastAnimationPosition = transform.position;
 
             PetStateValueSO config = _config ?? ScriptableObject.CreateInstance<PetStateValueSO>();
@@ -102,6 +110,7 @@ namespace GeminiLab.Modules.Pet
             _stateMachine.Tick(Time.deltaTime);
             _context.ApplyPosition?.Invoke(_context.RuntimeData.Position);
             UpdateMovementAnimation();
+            PublishSnapshotIfChanged(_context);
         }
 
         private void FixedUpdate()
@@ -254,6 +263,8 @@ namespace GeminiLab.Modules.Pet
             context.RuntimeData.IsAtRequiredWorkTarget = false;
             context.RuntimeData.TargetFurnitureId = string.Empty;
             context.RuntimeData.TargetFurnitureCategory = FurnitureCategory.Unknown;
+            context.RuntimeData.TargetFurnitureInteractionType = FurnitureInteractionType.Unknown;
+            context.RuntimeData.TargetInteractionDurationSeconds = 1f;
             context.RuntimeData.TargetReached = false;
             context.RuntimeData.ActivePath.Clear();
         }
@@ -265,13 +276,30 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
+            string? currentState = _context?.RuntimeData.CurrentState;
+            if (currentState == InteractingState.StateName || currentState == WorkingState.StateName)
+            {
+                PlayForcedAnimatorState(ResolveInteractionStateName());
+                _animator.SetBool(IsMovingHash, false);
+                _animator.speed = 1f;
+                return;
+            }
+
             Vector2 currentPosition = transform.position;
             Vector2 delta = currentPosition - _lastAnimationPosition;
             _lastAnimationPosition = currentPosition;
 
-            string? currentState = _context?.RuntimeData.CurrentState;
             bool isMoving = string.Equals(currentState, MovingState.StateName, System.StringComparison.Ordinal);
             bool hasDelta = delta.sqrMagnitude > DirectionEpsilonSqr;
+
+            if (!isMoving)
+            {
+                PlayForcedAnimatorState(MoveFrontStateName);
+            }
+            else
+            {
+                _lastForcedAnimatorStateName = string.Empty;
+            }
 
             if (hasDelta)
             {
@@ -324,6 +352,116 @@ namespace GeminiLab.Modules.Pet
 
             bool movingRight = direction.x > 0f;
             _spriteRenderer.flipX = _sideFramesFaceLeft ? movingRight : !movingRight;
+        }
+
+        private string ResolveInteractionStateName()
+        {
+            if (_context?.RuntimeData.RequiredWorkTargetType == PetWorkTargetType.WorkDesk ||
+                _context?.RuntimeData.TargetFurnitureInteractionType == FurnitureInteractionType.WorkFocus ||
+                _context?.RuntimeData.TargetFurnitureCategory == FurnitureCategory.WorkDesk)
+            {
+                return InteractReadStateName;
+            }
+
+            return _context?.RuntimeData.TargetFurnitureInteractionType switch
+            {
+                FurnitureInteractionType.PlayHarp => InteractReadStateName,
+                FurnitureInteractionType.PlayGuitar => InteractReadStateName,
+                FurnitureInteractionType.PaintAtEasel => InteractReadStateName,
+                FurnitureInteractionType.ViewPhotoBoard => InteractReadStateName,
+                FurnitureInteractionType.LeisureEngage => InteractReadStateName,
+                FurnitureInteractionType.InspectBookshelf => InteractBesideDoorStateName,
+                FurnitureInteractionType.InspectMirror => InteractBesideDoorStateName,
+                FurnitureInteractionType.InspectNightstand => InteractBesideDoorStateName,
+                FurnitureInteractionType.ObservePlant => InteractBesideDoorStateName,
+                FurnitureInteractionType.ObserveWindow => InteractBesideDoorStateName,
+                FurnitureInteractionType.InspectToy => InteractBesideDoorStateName,
+                FurnitureInteractionType.ArrangePillow => InteractBesideDoorStateName,
+                FurnitureInteractionType.InspectPapers => InteractBesideDoorStateName,
+                FurnitureInteractionType.ListenToAudio => InteractBesideDoorStateName,
+                FurnitureInteractionType.OrganizeStorage => InteractBesideDoorStateName,
+                FurnitureInteractionType.DecorInspect => InteractBesideDoorStateName,
+                FurnitureInteractionType.RestOnRug => MoveFrontStateName,
+                FurnitureInteractionType.SitOnSeat => MoveFrontStateName,
+                FurnitureInteractionType.LoungeOnSofa => MoveFrontStateName,
+                FurnitureInteractionType.SleepInBed => MoveFrontStateName,
+                FurnitureInteractionType.SleepRest => MoveFrontStateName,
+                _ => MoveFrontStateName
+            };
+        }
+
+        private void PlayForcedAnimatorState(string stateName)
+        {
+            if (_animator is null || string.IsNullOrWhiteSpace(stateName))
+            {
+                return;
+            }
+
+            if (_lastForcedAnimatorStateName == stateName)
+            {
+                return;
+            }
+
+            _animator.Play(stateName, 0, 0f);
+            _lastForcedAnimatorStateName = stateName;
+        }
+
+        private void PublishSnapshotIfChanged(PetContext context)
+        {
+            if (context.EventBus is null)
+            {
+                return;
+            }
+
+            PetRuntimeData runtime = context.RuntimeData;
+            PetRuntimeSnapshotChangedEvent snapshot = new(
+                runtime.CurrentState,
+                runtime.Mood,
+                runtime.Energy,
+                runtime.Satiety,
+                runtime.WorkRequested,
+                runtime.TargetFurnitureId,
+                runtime.TargetFurnitureCategory,
+                runtime.TargetFurnitureInteractionType,
+                runtime.IsTraveling,
+                runtime.LastInteractionFurnitureId,
+                runtime.LastInteractionSummary);
+
+            if (_lastPublishedSnapshot.HasValue && AreSnapshotsEquivalent(_lastPublishedSnapshot.Value, snapshot))
+            {
+                return;
+            }
+
+            _lastPublishedSnapshot = snapshot;
+            context.EventBus.Publish(snapshot);
+        }
+
+        private static bool AreSnapshotsEquivalent(PetRuntimeSnapshotChangedEvent previous, PetRuntimeSnapshotChangedEvent current)
+        {
+            return previous.CurrentState == current.CurrentState &&
+                   Mathf.Abs(previous.Mood - current.Mood) < 0.01f &&
+                   Mathf.Abs(previous.Energy - current.Energy) < 0.01f &&
+                   Mathf.Abs(previous.Satiety - current.Satiety) < 0.01f &&
+                   previous.WorkRequested == current.WorkRequested &&
+                   previous.TargetFurnitureId == current.TargetFurnitureId &&
+                   previous.TargetFurnitureCategory == current.TargetFurnitureCategory &&
+                   previous.TargetFurnitureInteractionType == current.TargetFurnitureInteractionType &&
+                   previous.IsTraveling == current.IsTraveling &&
+                   previous.LastInteractionFurnitureId == current.LastInteractionFurnitureId &&
+                   previous.LastInteractionSummary == current.LastInteractionSummary;
+        }
+
+        private void EnsureAnimatorBinding()
+        {
+            if (_animator is null)
+            {
+                _animator = gameObject.AddComponent<Animator>();
+            }
+
+            if (_movementController is not null && _animator.runtimeAnimatorController != _movementController)
+            {
+                _animator.runtimeAnimatorController = _movementController;
+            }
         }
     }
 }

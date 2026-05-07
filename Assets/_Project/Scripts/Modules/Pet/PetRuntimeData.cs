@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
+using GeminiLab.Modules.Furniture;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Pet
@@ -34,6 +35,12 @@ namespace GeminiLab.Modules.Pet
 
         public string TargetFurnitureId = string.Empty;
 
+        public FurnitureCategory TargetFurnitureCategory = FurnitureCategory.Unknown;
+
+        public FurnitureInteractionType TargetFurnitureInteractionType = FurnitureInteractionType.Unknown;
+
+        public float TargetInteractionDurationSeconds = 1f;
+
         public bool TargetReached;
 
         public int PathIndex;
@@ -61,5 +68,9 @@ namespace GeminiLab.Modules.Pet
         public float TravelEndAtSeconds;
 
         public int TravelCompletedCount;
+
+        public string LastInteractionFurnitureId = string.Empty;
+
+        public string LastInteractionSummary = string.Empty;
     }
 }

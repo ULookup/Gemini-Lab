@@ -7,15 +7,21 @@
 
 ## 目录建议
 - `{PetName}/Frames/Idle/`：待机序列帧。
-- `{PetName}/Frames/Move/`：移动序列帧。
-- `{PetName}/Frames/Interact/`：交互序列帧（如吃饭、玩耍）。
+- `{PetName}/Frames/Move/`：移动序列帧；当前项目允许继续按 `正面 / 背面 / 侧面` 子目录组织资源。
+- `{PetName}/Frames/Interact/`：交互序列帧（如吃饭、玩耍），允许继续按子状态分目录，例如 `read/`、`beside door/`。
 - `{PetName}/Frames/Emotion/`：情绪序列帧（如开心、困倦）。
 - `{PetName}/PreviewGIF/`：宠物预览 GIF（仅评审，不参与打包）。
 
 ## 命名规范
-1. 序列帧：`Pet_{宠物名}_{状态}_{方向}_{帧号4位}.png`
+1. 方向型序列帧：`Pet_{宠物名}_{状态}_{方向}_{帧号4位}.png`
    - 示例：`Pet_Cat_Idle_Down_0001.png`
-2. 预览 GIF：`Pet_{宠物名}_{状态}_Preview.gif`
+   - 当前项目移动帧示例：`Pet_Angel_Move_Front_0001.png`
+   - 当前项目移动帧示例：`Pet_Angel_Move_Back_0001.png`
+   - 当前项目移动帧示例：`Pet_Angel_Move_Side_0001.png`
+2. 非方向型序列帧：`Pet_{宠物名}_{状态}_{变体}_{帧号4位}.png`
+   - 示例：`Pet_Angel_Interact_Read_0001.png`
+   - 示例：`Pet_Angel_Interact_BesideDoor_0001.png`
+3. 预览 GIF：`Pet_{宠物名}_{状态}_Preview.gif`
    - 示例：`Pet_Cat_Idle_Preview.gif`
 
 ## 导入与播放规范
@@ -27,6 +33,7 @@
 2. 动画制作：
    - 使用序列帧生成 `.anim`，由 `AnimatorController` 播放。
    - 默认帧率建议：`Idle = 8~12 FPS`，`Move = 12~15 FPS`，`Interact/Emotion = 12~24 FPS`。
+   - `Move` 保留方向字段；像 `Interact_Read`、`Interact_BesideDoor` 这类非方向型交互帧允许不带方向字段，改用“变体名 + 帧号”。
 3. 状态机约定（建议）：
    - 最少包含 `Idle`、`Move`、`Interact` 三类状态。
    - 参数命名遵循项目规范：`b_IsMoving`、`t_Trigger`、`f_Speed`。
