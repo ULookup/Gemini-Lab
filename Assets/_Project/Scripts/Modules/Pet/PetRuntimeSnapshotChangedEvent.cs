@@ -19,8 +19,10 @@ namespace GeminiLab.Modules.Pet
             FurnitureInteractionType targetFurnitureInteractionType,
             bool isTraveling,
             string lastInteractionFurnitureId,
-            string lastInteractionSummary)
+            string lastInteractionSummary,
+            PetId petId = PetId.Angel)
         {
+            PetId = petId;
             CurrentState = currentState;
             Mood = mood;
             Energy = energy;
@@ -33,6 +35,8 @@ namespace GeminiLab.Modules.Pet
             LastInteractionFurnitureId = lastInteractionFurnitureId;
             LastInteractionSummary = lastInteractionSummary;
         }
+
+        public PetId PetId { get; }
 
         public string CurrentState { get; }
 

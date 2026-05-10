@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-05-07
+Updated: 2026-05-10
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -96,6 +96,29 @@ Updated: 2026-05-07
   - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
   - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
   - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
+- `2026-05-10` 已落地「B1 塔罗垂直切片」：
+  - 新模块 `Modules/Tarot`（asmdef `GeminiLab.Modules.Tarot`）：`TarotOrientation`、`TarotCardSO`、`TarotDeckSO`、`TarotModels`（DrawResult/Reading/事件）、`ITarotService` + `TarotService`（每日一次，`yyyy-MM-dd` PlayerPrefs 记录）、`ITarotReadingBackend` + `LocalFallback` + `GatewayTarotBackend`、`TarotRuntimeBootstrap`
+  - 22 张大阿卡那 `TarotCardSO` + 1 张 `TarotDeckSO` 已生成到 `ScriptableObjects/TarotConfig/`；占位卡面 PNG 在 `Art/Sprites/Tarot/Majors/`（256x384 色块 + 卡框十字基准），美术交付后替换 `TarotCardSO._artwork`
+  - Apartment `Panel_Tarot` 已升级成真实面板：左侧卡面 + 正/逆位标识、底部"抽今日塔罗"按钮、右上 `AngelBubble`（天使·正位）、右下 `DevilBubble`（恶魔·逆位）；所有 TMP 自动挂 `TMPFontBinder`
+  - 塔罗解读路径：抽卡后**并行**发起 Angel 正位 / Devil 逆位两个 `RequestReadingAsync`；后端优先走 Gateway，失败或超时回退到 `LocalFallback`（关键词 + 人格模板拼接）
+  - `TarotRuntimeBootstrap` 已挂在 Boot.unity 的 BootstrapRoot 上，绑定 `TarotDeck.asset`；Gateway 未就绪时自动走 Fallback-only backend
+  - Editor 工具：`Tools/Gemini-Lab/Author Tarot Deck (22 Majors)`、`Author Tarot Panel UI`、`Author Boot TarotBootstrap`
+- `2026-05-10` 已落地「A1 双宠改造 + A2 CJK 字体 / Catalog 真接入」：
+  - **A1 双宠改造**：`Modules/Pet/` 新增 `PetId` 枚举（Angel / Devil）、`IPetRoster` + `PetRoster`；`PetRuntimeData`、`PetContext`、`PetStateChangedEvent`、`PetRuntimeSnapshotChangedEvent` 都带上 PetId（默认 Angel 保持老代码零改动）。`PetController` 增加 `[SerializeField] _petId` 并在 Awake 时向 Roster 注册。`PetRuntimeBootstrap` 现会先保证 `IPetRoster` 已注册。Apartment / WorldMap 各有 Pet_Angel + Pet_Devil 两只宠物（Devil 用暖色染色占位，真实美术后续替换）。
+  - **A2 CJK 字体 + Catalog 接入**：`Art/Fonts/` 落地 `NotoSansSC-VF.ttf`（17MB）+ 动态 SDF `NotoSansSC_SDF.asset`（~3KB）；`ScriptableObjects/UIArt/UIFontCatalog.asset` + `UIArtCatalog.asset` 落地，FontCatalog 的 default/title/bubble 三个 key 全部指向 NotoSansSC_SDF。`Modules/UI/Catalogs/` 新增 `IUIFontService`、`IUIArtService`、`UICatalogHost`（挂 Boot.unity，DontDestroyOnLoad，把 Catalog 以服务形式注册）、`TMPFontBinder`（挂每个 TMP_Text 上 Awake 时自动从 Catalog 取字体）。MainMenu / Apartment / WorldMap 三个场景的占位英文标签已替换为中文（开始/存档/设置、收藏/塔罗/花园/…），TMP Binder 已回填到 18 个 TMP 对象。
+  - Editor 新增 authoring 菜单：`Tools/Gemini-Lab/Author Dual Pets (Apartment + WorldMap)`、`Generate CJK TMP Font Asset`、`Author UI Catalogs`、`Author Boot UICatalogHost`、`Author TMP Binder Backfill`
+- `2026-05-10` 已落地「框架搭建 + 场景切换」承重层（P0）：
+  - Core 新增 `SceneFlow/` 命名空间：`SceneId` 枚举（Boot / MainMenu / Apartment / WorldMap / DesktopOverlay）、`ISceneCatalog` 与 `DefaultSceneCatalog`、`ISceneFlowService` 与 `SceneFlowService`、`SceneTransitionPayload`、`SceneLoadStartedEvent` / `SceneLoadCompletedEvent`
+  - Core 新增 `UI/` 命名空间：`PanelId`、`IUIPanel`、`IUIRouter` 与 `UIRouter`（含 `UIPanelOpenedEvent` / `UIPanelClosedEvent`）
+  - `GameBootstrap` 升级：注册 EventBus / CommandDispatcher / SceneFlowService / UIRouter；Boot 场景启动后自动加载 `MainMenu`；在非 Boot 场景（直开 Editor 调试）跳过自动跳转并同步当前场景 id
+  - `DesktopOverlayManager` 改造：切场景走 `ISceneFlowService.LoadAsync`，不再直接调用 `SceneManager`；仍由 `DesktopOverlayRuntimeBootstrap` 在首次场景加载后挂到 DontDestroyOnLoad 的 `DesktopOverlaySystem` 上
+  - 新增模块 asmdef：`GeminiLab.Modules.MainMenu`、`GeminiLab.Modules.HubUI`、`GeminiLab.Modules.WorldMap`
+  - 新增 `UIArtCatalogSO` / `UIFontCatalogSO`（放在 `Modules/UI/Catalogs/`）：静态 UI 走 Sprite key、动态文本走 TMP key；美术替换只改 `.asset`，不改 Prefab / 代码
+  - 新增场景骨架：`Scenes/MainMenu/MainMenu.unity`（开始 / 存档 / 设置 三个占位按钮）、`Scenes/WorldMap/WorldMap_Main.unity`（横板摄像头 + 返回公寓按钮 + Garden Zone 标记）
+  - 公寓场景注入 `UI_Sidebar`（展开/收起 + 4 个占位 Panel：PetStatus / Tarot / Collection / Inventory）与右上 `UI_WorldMapPortal` 按钮
+  - EditorBuildSettings 整理：`Boot(0) / MainMenu / Apartment_Main / WorldMap_Main / Desktop_Overlay`，移除 Unity 默认 SampleScene
+  - Editor 新增一次性 authoring 入口：`Tools/Gemini-Lab/Author MainMenu Scene`、`Author WorldMap Scene`、`Author Apartment Sidebar`
+  - UI 静态文本统一走 Sprite（美术交付后替换）、动态文本走 TMP；当前占位 TMP 使用 LiberationSans SDF，中文字符显示为 □，待补中文 CJK TMP Font Asset
 - `2026-05-07` 已完成 `Interact` 资源命名规范收口：
   - `read/` 组重命名为 `Pet_Angel_Interact_Read_0001...0006.png`
   - `beside door/` 组重命名为 `Pet_Angel_Interact_BesideDoor_0001...0005.png`
@@ -108,9 +131,9 @@ Updated: 2026-05-07
 1. 这个仓库不再是“只有说明文档”的空骨架，已经有一轮可运行原型；但说明文档密度依然高于最终实现密度。
 2. `_Project/` 继续是自研业务代码与资源的唯一正式落点。
 3. 当前已真实落地的关键内容包括：
-   - 场景：`Boot.unity`、`Apartment/Apartment_Main.unity`、`Desktop/Desktop_Overlay.unity`
-   - Core：`ServiceLocator`、`EventBus`、`CommandDispatcher`、FSM、`GameBootstrap`
-   - 业务模块：`Pet`、`Furniture`、`Navigation`、`Gateway`、`Travel`、`Persistence`、`UI`、`DesktopOverlay`
+   - 场景：`Boot.unity`、`MainMenu/MainMenu.unity`、`Apartment/Apartment_Main.unity`、`WorldMap/WorldMap_Main.unity`、`Desktop/Desktop_Overlay.unity`
+   - Core：`ServiceLocator`、`EventBus`、`CommandDispatcher`、FSM、`GameBootstrap`、`SceneFlow/*`、`UI/*`（Router + PanelId）
+   - 业务模块：`Pet`、`Furniture`、`Navigation`、`Gateway`、`Travel`、`Persistence`、`UI`（含 `Catalogs/`）、`DesktopOverlay`、`MainMenu`、`HubUI`、`WorldMap`、`Tarot`
    - 测试：`EditMode` / `PlayMode` 测试程序集与多组核心模块测试
 4. `Packages/manifest.json` 当前已经包含：
    - `com.unity.ai.navigation`

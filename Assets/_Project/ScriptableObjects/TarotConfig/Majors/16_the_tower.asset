@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca33628aeb73e5742a66ce0c90fbd89a, type: 3}
+  m_Name: 16_the_tower
+  m_EditorClassIdentifier: 
+  _majorIndex: 16
+  _id: the_tower
+  _displayNameZh: "\u5854"
+  _displayNameEn: The Tower
+  _uprightKeywords:
+  - "\u5D29\u584C"
+  - "\u771F\u76F8"
+  - "\u5FC5\u8981\u7684\u6467\u6BC1"
+  _reversedKeywords:
+  - "\u82DF\u5EF6"
+  - "\u5EF6\u8FDF"
+  - "\u62D2\u7EDD\u771F\u76F8"
+  _artwork: {fileID: 21300000, guid: 5ba9a48067572e2448c2bf5039631e09, type: 3}

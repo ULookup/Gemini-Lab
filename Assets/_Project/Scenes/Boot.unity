@@ -224,6 +224,8 @@ GameObject:
   m_Component:
   - component: {fileID: 1934747560}
   - component: {fileID: 1934747559}
+  - component: {fileID: 1934747561}
+  - component: {fileID: 1934747562}
   m_Layer: 0
   m_Name: BootstrapRoot
   m_TagString: Untagged
@@ -243,6 +245,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 79557cfe500f0d246a45a1c6cbb87825, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _nextScene: 1
+  _skipAutoFlowWhenNotInBoot: 1
 --- !u!4 &1934747560
 Transform:
   m_ObjectHideFlags: 0
@@ -258,6 +262,33 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1934747561
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 672af43211d9c504ca2bf82799e71a11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _fontCatalog: {fileID: 11400000, guid: 71a4d21ed2a1b134fa9598e94e1efab6, type: 2}
+  _artCatalog: {fileID: 11400000, guid: be14dab566e8853419d6f667c4bed75d, type: 2}
+--- !u!114 &1934747562
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 11a423671c598764baf4f8e969425fcd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _deck: {fileID: 11400000, guid: 7a2560ab8af095d44a8baba7d0818e46, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

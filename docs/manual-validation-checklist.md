@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-05-07
+Updated: 2026-05-10
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -29,6 +29,33 @@ Updated: 2026-05-07
 | FSM 核心类已实现并可编译 |  |  |
 | 宠物能在空场景中完成基本状态切换 |  |  |
 | EditMode 测试可以运行 |  |  |
+
+## B2. 框架 + 场景切换（P0 2026-05-10 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 从 `Boot.unity` 点 Play 后自动跳到 `MainMenu` |  |  |
+| `MainMenu` 的"开始"按钮点击后进入 `Apartment_Main` |  |  |
+| `MainMenu` 的"存档"按钮打开 SaveSlots 面板（当前骨架尚未注册可见 Panel 属正常） |  |  |
+| `MainMenu` 的"设置"按钮打开 Settings 面板（同上） |  |  |
+| `Apartment_Main` 的右上 `UI_WorldMapPortal` 按钮可切到 `WorldMap_Main` |  |  |
+| `WorldMap_Main` 的左上 `Return` 按钮可切回 `Apartment_Main` |  |  |
+| `WorldMap_Main` 中 `A` / `D` 键可左右平移摄像头；鼠标右键拖拽同理 |  |  |
+| 在任意场景按 `F10` 可在公寓与 Desktop Overlay 之间切换（`DesktopOverlayManager`） |  |  |
+| 跨场景 `F10` 不再丢失 manager（切回 Apartment 后 F10 仍响应） |  |  |
+| EditorBuildSettings 顺序为 `Boot(0) / MainMenu / Apartment_Main / WorldMap_Main / Desktop_Overlay` |  |  |
+| `DesktopOverlayManagerEditModeTests` 通过 |  |  |
+| Console 无 `CS` 编译错误（CJK 字形 □ 警告在补 CJK 字体前可接受） |  |  |
+
+## B3. 塔罗垂直切片（B1 2026-05-10 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 打开 Apartment → 侧边栏点"每日塔罗"，面板显示"抽今日塔罗"按钮 |  |  |
+| 点按钮后卡面刷新、显示牌名 + 正/逆位、按钮变"今天已抽过，明天再来" |  |  |
+| 右侧 AngelBubble 显示"（天使视角）… 愿光照亮你…" 或 Gateway 真实回复 |  |  |
+| 右侧 DevilBubble 显示"（恶魔视角）… 别被光晃得太舒服…" 或 Gateway 真实回复 |  |  |
+| 关闭 Panel 再打开，按钮保持"明天再来"状态（今日已抽过） |  |  |
+| 次日重启游戏，按钮恢复成"抽今日塔罗" |  |  |
+| Console 无 `TarotBootstrap` ERROR；看到 `[TarotBootstrap] TarotService registered.` |  |  |
 
 ## C. Phase 2 家具、建造与导航
 | 检查项 | 结果 | 备注 |

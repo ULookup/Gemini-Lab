@@ -1,0 +1,38 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 731e111a6ef16db42ba68f064c84022e, type: 3}
+  m_Name: TarotDeck
+  m_EditorClassIdentifier: 
+  _cards:
+  - {fileID: 11400000, guid: f877c9c8882d39f44a106c0149d91dfb, type: 2}
+  - {fileID: 11400000, guid: 6ddb1dd6269078e40bd63f4c8bbc262d, type: 2}
+  - {fileID: 11400000, guid: 1d6cfe5ad2a947e46b3d3c09f7e21080, type: 2}
+  - {fileID: 11400000, guid: a927b35b76f11ed48867844e4f9f080b, type: 2}
+  - {fileID: 11400000, guid: 4876f5c8b3abcf6438bca01b0ab9a819, type: 2}
+  - {fileID: 11400000, guid: 9198363cda7e74c4aa110af3c360e628, type: 2}
+  - {fileID: 11400000, guid: 443828a149e0d1b48a1cca85e1f2048b, type: 2}
+  - {fileID: 11400000, guid: 158d3349714f2304ab79565f7570e1b8, type: 2}
+  - {fileID: 11400000, guid: af79dc77e5b17b44c83378beb9dcbd1f, type: 2}
+  - {fileID: 11400000, guid: 51e8635fe68aed642b7d17a0d41cf8c4, type: 2}
+  - {fileID: 11400000, guid: 83fdc3ed9c7d58c4f906abc40225d83e, type: 2}
+  - {fileID: 11400000, guid: 6da5d9a0bb3e13444bcf5037251d94d6, type: 2}
+  - {fileID: 11400000, guid: 70b3b25c97a00aa4e9cf9ab2fc526c85, type: 2}
+  - {fileID: 11400000, guid: e5d082d8b64546847bbe9faf9d0db30f, type: 2}
+  - {fileID: 11400000, guid: 0821e54c78e9a3144818016622face45, type: 2}
+  - {fileID: 11400000, guid: 8c64e13ee54e06c4fba82f8ca12d1794, type: 2}
+  - {fileID: 11400000, guid: 1841795eb566ffa4cb37e3055606fa32, type: 2}
+  - {fileID: 11400000, guid: 5e7155e4a9a830849b2bbdc42ed91ca4, type: 2}
+  - {fileID: 11400000, guid: 72b75fef1e8a71f4c9aa570ab28087cd, type: 2}
+  - {fileID: 11400000, guid: 883e547fd6d3c684a9a943abc8c2ce56, type: 2}
+  - {fileID: 11400000, guid: 61481d7183d7aa045a721bdd39407a58, type: 2}
+  - {fileID: 11400000, guid: 11945416ae39477458839d91f97280e4, type: 2}
+  _cardBack: {fileID: 21300000, guid: aae28521564e55b46ac8abae142fbe7c, type: 3}
