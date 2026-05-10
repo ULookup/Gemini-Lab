@@ -28,6 +28,9 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private PersonalityMatrixSO? _personality;
         [SerializeField] private RuntimeAnimatorController? _movementController;
         [SerializeField] private bool _sideFramesFaceLeft = true;
+        [SerializeField] private PetId _petId = PetId.Angel;
+
+        public PetId PetId => _petId;
 
         private PetContext? _context;
         private StateMachine<PetContext>? _stateMachine;
@@ -56,11 +59,17 @@ namespace GeminiLab.Modules.Pet
 
             PetRuntimeData runtime = new()
             {
+                PetId = _petId,
                 Mood = config.InitialMood,
                 Energy = config.InitialEnergy,
                 Satiety = config.InitialSatiety,
                 Position = transform.position
             };
+
+            if (ServiceLocator.TryResolve(out IPetRoster? roster) && roster is not null)
+            {
+                roster.Register(_petId, runtime);
+            }
 
             if (!ServiceLocator.TryResolve(out EventBus? eventBus))
             {
@@ -92,7 +101,7 @@ namespace GeminiLab.Modules.Pet
             };
             _tickService = new StatTickService();
             _stateMachine = PetStateMachineBuilder.Build(_context);
-            _stateMachine.StateChanged += PublishStateChanged;
+            _stateMachine.StateChanged += PublishStateChangedForThisPet;
         }
 
         private void Update()
@@ -122,10 +131,28 @@ namespace GeminiLab.Modules.Pet
         {
             if (_stateMachine is not null)
             {
-                _stateMachine.StateChanged -= PublishStateChanged;
+                _stateMachine.StateChanged -= PublishStateChangedForThisPet;
+            }
+
+            if (ServiceLocator.TryResolve(out IPetRoster? roster) && roster is not null)
+            {
+                roster.Unregister(_petId);
             }
         }
 
+        private void PublishStateChangedForThisPet(string from, string to)
+        {
+            Debug.Log($"[PetFSM {_petId}] {from} -> {to}");
+            if (ServiceLocator.TryResolve(out EventBus? eventBus) && eventBus is not null)
+            {
+                eventBus.Publish(new PetStateChangedEvent(from, to, _petId));
+            }
+        }
+
+        /// <summary>
+        /// 兼容旧 API 的静态版本：默认以 Angel 身份广播。
+        /// 新代码请用实例方法 <c>PublishStateChangedForThisPet</c>，它会带上真实 PetId。
+        /// </summary>
         public static void PublishStateChanged(string from, string to)
         {
             Debug.Log($"[PetFSM] {from} -> {to}");
@@ -425,7 +452,8 @@ namespace GeminiLab.Modules.Pet
                 runtime.TargetFurnitureInteractionType,
                 runtime.IsTraveling,
                 runtime.LastInteractionFurnitureId,
-                runtime.LastInteractionSummary);
+                runtime.LastInteractionSummary,
+                petId: runtime.PetId);
 
             if (_lastPublishedSnapshot.HasValue && AreSnapshotsEquivalent(_lastPublishedSnapshot.Value, snapshot))
             {
@@ -438,7 +466,8 @@ namespace GeminiLab.Modules.Pet
 
         private static bool AreSnapshotsEquivalent(PetRuntimeSnapshotChangedEvent previous, PetRuntimeSnapshotChangedEvent current)
         {
-            return previous.CurrentState == current.CurrentState &&
+            return previous.PetId == current.PetId &&
+                   previous.CurrentState == current.CurrentState &&
                    Mathf.Abs(previous.Mood - current.Mood) < 0.01f &&
                    Mathf.Abs(previous.Energy - current.Energy) < 0.01f &&
                    Mathf.Abs(previous.Satiety - current.Satiety) < 0.01f &&

@@ -31,6 +31,8 @@ namespace GeminiLab.Modules.Pet
 
         public PetRuntimeData RuntimeData { get; }
 
+        public PetId PetId => RuntimeData.PetId;
+
         public PetStateValueSO Config { get; }
 
         public INavigationService? NavigationService { get; set; }
