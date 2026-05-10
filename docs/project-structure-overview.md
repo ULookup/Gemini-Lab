@@ -1,6 +1,6 @@
 # Gemini-Lab 项目结构总览
 
-Updated: 2026-05-07
+Updated: 2026-05-10
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -73,13 +73,17 @@ AI 协作工具链目录。
 ### `Assets/_Project/Scenes/`
 当前已存在真实场景文件：
 - `Boot.unity`
+- `MainMenu/MainMenu.unity`
 - `Apartment/Apartment_Main.unity`
+- `WorldMap/WorldMap_Main.unity`
 - `Desktop/Desktop_Overlay.unity`
 
 当前判断：
-- 这 3 个场景已经足以说明仓库不再是“没有场景”的状态
+- 这 5 个场景已经足以说明仓库不再是”没有场景”的状态
 - 但它们仍然更接近原型场景，而不是完整量产场景集
-- `Apartment_Main.unity` 当前已经承载宠物、现成家具与状态/库存/概览面板，是任务 1 的主验证场景
+- `MainMenu.unity` 当前是占位骨架：开始 / 存档 / 设置 三个按钮 + `MainMenuController`；点击"开始"走 `SceneFlowService.LoadAsync(SceneId.Apartment)`
+- `WorldMap_Main.unity` 当前是骨架：`WorldMapCameraController` 支持左右平移、Garden Zone 标记、返回公寓按钮
+- `Apartment_Main.unity` 当前已经承载宠物、现成家具与状态/库存/概览面板，是任务 1 的主验证场景；额外注入了左侧 `UI_Sidebar`（4 个占位面板）和右上 `UI_WorldMapPortal` 按钮
 - `Apartment_Main.unity` 当前除可交互家具对象外，还可能包含一个仅承载纯静态补景家具的 `StaticFurnitureDecorOnly` 子节点
 - `StaticFurnitureDecorOnly` 当前不只用于“纯视觉补景”，也开始承载一部分已有独立 Sprite 家具对象；这些对象若需要进入交互系统，必须同步补场景显式绑定，不能只把 Sprite 摆进场景
 

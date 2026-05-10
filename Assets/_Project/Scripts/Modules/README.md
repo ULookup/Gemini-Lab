@@ -7,13 +7,18 @@
 
 | 子目录 | 领域 | 对应 README 章节 |
 | :--- | :--- | :--- |
-| `Pet/` | 宠物状态值、性格矩阵、养成、FSM 绑定 | 养成系统 |
+| `Pet/` | 宠物状态值、性格矩阵、养成、FSM 绑定（双宠 Angel/Devil 后续接入） | 养成系统 |
 | `Furniture/` | V-Decor 建造、家具数据、环境 Buff、羁绊 | V-Decor |
 | `Navigation/` | NavMesh 动态烘焙、路径请求、障碍物管理 | 寻路 |
 | `Gateway/` | OpenClaw 通信、Prompt 组装、事件路由 | 大模型链路 |
 | `Travel/` | 旅行指令、异步小记/照片拉取、回归奖励 | 旅行系统 |
-| `Desktop/` | 桌面透明 Overlay、系统级感知、跨屏陪伴 | 桌面场景 |
+| `DesktopOverlay/` | 桌面透明 Overlay、前台应用感知、跨屏陪伴（切场景走 `ISceneFlowService`，自身 DontDestroyOnLoad） | 桌面场景 |
 | `Persistence/` | 存档/读档、JSON 序列化、云同步占位 | 持久化 |
+| `UI/` | 聊天、状态、性格雷达、家具库存等视图层；`Catalogs/` 提供 `UIArtCatalogSO` / `UIFontCatalogSO` 解耦美术资源 | UI |
+| `MainMenu/` | 主菜单控制器（开始 / 存档 / 设置），点击"开始"走 `SceneFlowService.LoadAsync(SceneId.Apartment)` | 主菜单 |
+| `HubUI/` | 可在 Apartment 与 WorldMap 共用的侧边栏、4 个占位 Panel、通往 WorldMap 的 Portal 与 `StubPanelBase` | Hub UI |
+| `WorldMap/` | 2D 横板摄像头控制 + 返回公寓出口；花园 / 种地等玩法后续在 `GardenService` 中补齐 | 大地图 |
+| `Tarot/` | 每日塔罗：SO（卡牌/牌堆）、Service（抽卡+每日限制）、Backend（Gateway 人格 prompt / LocalFallback）、Bootstrap；双宠人格切换在这里 | 塔罗 |
 
 ## 依赖关系（允许的引用方向）
 

@@ -11,10 +11,13 @@
 
 | 子目录 | 内容 |
 | :--- | :--- |
-| `Pet/` | 宠物主体 Prefab（`SpriteRenderer` + `Animator` + `Rigidbody2D` + `CapsuleCollider2D` + `NavMeshAgent` + `SortingGroup` + `PetController`）。 |
+| `Pet/Angel/` | 天使宠物主体 Prefab（`SpriteRenderer` + `Animator` + `Rigidbody2D` + `CapsuleCollider2D` + `NavMeshAgent` + `SortingGroup` + `PetController`）。 |
+| `Pet/Devil/` | 恶魔宠物主体 Prefab（结构对称 Angel；双宠独立 PetId）。 |
 | `Furniture/` | 家具 Prefab（`SpriteRenderer` + 可选 `Animator` + `BoxCollider2D` + `DynamicObstacle2D` + `SortingGroup` + `Furniture`）。 |
 | `UI/Panels/` | 聊天面板、库存、性格雷达图等面板预制体（UGUI Canvas）。 |
 | `UI/Widgets/` | 可复用 UI 小控件（按钮、列表项、气泡）。 |
+| `UI/Hub/` | 侧边栏（`Sidebar` + 4 个 Tab）、Apartment / WorldMap 共用 Portal Prefab。 |
+| `UI/Tarot/` | 塔罗抽卡 / 翻牌 / 正逆位解读气泡 Prefab。 |
 | `Environment/` | Tilemap 预制体（Floor Tilemap、Wall Tilemap、Decoration Tilemap）与 2D Light 预制体。 |
 | `FX/` | 粒子 / Sprite 动画特效预制体（离场转场、旅行光圈、建造提示）。 |
 
@@ -39,3 +42,4 @@
 6. 家具类 Prefab 根节点必须挂 `DynamicObstacle2D`；否则 2D NavMesh 不识别。
 7. 不允许在 Prefab 上直接保存**运行时状态**（如已选中的家具）；状态只能由 Service 管理。
 8. Prefab 每次修改必须 Apply 到根资产，禁止保留"Modified on Instance"。
+9. **UI Prefab 禁止直接引用 Sprite/TMP_FontAsset**。静态图从 `UIArtCatalogSO` 取、字体从 `UIFontCatalogSO` 取。参见 `docs/art-replacement-workflow.md`。

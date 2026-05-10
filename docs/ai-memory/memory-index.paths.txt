@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-05-07
+# Updated: 2026-05-10
 
 AGENTS.md
 
@@ -27,7 +27,9 @@ Assets/plan.md
 Assets/_Project/README.md
 Assets/_Project/Scenes/README.md
 Assets/_Project/Scenes/Boot.unity
+Assets/_Project/Scenes/MainMenu/MainMenu.unity
 Assets/_Project/Scenes/Apartment/Apartment_Main.unity
+Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity
 Assets/_Project/Scenes/Desktop/Desktop_Overlay.unity
 Assets/_Project/Prefabs/README.md
 Assets/_Project/Prefabs/Furniture
@@ -41,7 +43,52 @@ Assets/_Project/Audio/README.md
 Assets/_Project/Settings/README.md
 Assets/_Project/Scripts/README.md
 Assets/_Project/Scripts/Core/README.md
+Assets/_Project/Scripts/Core/SceneFlow/SceneId.cs
+Assets/_Project/Scripts/Core/SceneFlow/ISceneCatalog.cs
+Assets/_Project/Scripts/Core/SceneFlow/DefaultSceneCatalog.cs
+Assets/_Project/Scripts/Core/SceneFlow/ISceneFlowService.cs
+Assets/_Project/Scripts/Core/SceneFlow/SceneFlowService.cs
+Assets/_Project/Scripts/Core/SceneFlow/SceneFlowEvents.cs
+Assets/_Project/Scripts/Core/SceneFlow/SceneTransitionPayload.cs
+Assets/_Project/Scripts/Core/UI/PanelId.cs
+Assets/_Project/Scripts/Core/UI/IUIPanel.cs
+Assets/_Project/Scripts/Core/UI/IUIRouter.cs
+Assets/_Project/Scripts/Core/UI/UIRouter.cs
 Assets/_Project/Scripts/Modules/README.md
+Assets/_Project/Scripts/Modules/MainMenu/MainMenuController.cs
+Assets/_Project/Scripts/Modules/HubUI/SidebarController.cs
+Assets/_Project/Scripts/Modules/HubUI/ApartmentToWorldMapPortal.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/StubPanelBase.cs
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapCameraController.cs
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapExit.cs
+Assets/_Project/Scripts/Modules/UI/Catalogs/UIArtCatalogSO.cs
+Assets/_Project/Scripts/Modules/UI/Catalogs/UIFontCatalogSO.cs
+Assets/_Project/Scripts/Modules/UI/Catalogs/IUIFontService.cs
+Assets/_Project/Scripts/Modules/UI/Catalogs/IUIArtService.cs
+Assets/_Project/Scripts/Modules/UI/Catalogs/UICatalogHost.cs
+Assets/_Project/Scripts/Modules/UI/Catalogs/TMPFontBinder.cs
+Assets/_Project/Scripts/Modules/Pet/PetId.cs
+Assets/_Project/Scripts/Modules/Pet/IPetRoster.cs
+Assets/_Project/Scripts/Modules/Pet/PetRoster.cs
+Assets/_Project/Art/Fonts/NotoSansSC-VF.ttf
+Assets/_Project/Art/Fonts/NotoSansSC_SDF.asset
+Assets/_Project/ScriptableObjects/UIArt/UIFontCatalog.asset
+Assets/_Project/ScriptableObjects/UIArt/UIArtCatalog.asset
+Assets/_Project/ScriptableObjects/TarotConfig/TarotDeck.asset
+Assets/_Project/ScriptableObjects/TarotConfig/Majors
+Assets/_Project/Scripts/Modules/Tarot/TarotOrientation.cs
+Assets/_Project/Scripts/Modules/Tarot/TarotCardSO.cs
+Assets/_Project/Scripts/Modules/Tarot/TarotDeckSO.cs
+Assets/_Project/Scripts/Modules/Tarot/TarotModels.cs
+Assets/_Project/Scripts/Modules/Tarot/ITarotService.cs
+Assets/_Project/Scripts/Modules/Tarot/TarotService.cs
+Assets/_Project/Scripts/Modules/Tarot/ITarotReadingBackend.cs
+Assets/_Project/Scripts/Modules/Tarot/LocalFallback.cs
+Assets/_Project/Scripts/Modules/Tarot/GatewayTarotBackend.cs
+Assets/_Project/Scripts/Modules/Tarot/TarotRuntimeBootstrap.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/MainMenuSceneAuthoring.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapSceneAuthoring.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/ApartmentSidebarAuthoring.cs
 Assets/_Project/Scripts/Modules/Pet/README.md
 Assets/_Project/Scripts/Modules/Furniture/README.md
 Assets/_Project/Scripts/Modules/Navigation/README.md

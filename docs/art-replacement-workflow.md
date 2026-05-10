@@ -1,6 +1,6 @@
 # Gemini-Lab 美术替换工作流
 
-Updated: 2026-04-27
+Updated: 2026-05-10
 
 ## 文档目标
 这份文档约束 Gemini-Lab 后续进行 Sprite、Tile、动画、UI 图标等视觉资源替换时的标准流程，目标是：
@@ -140,8 +140,31 @@ Updated: 2026-04-27
 - 大图、PSB、PSD、超大 PNG 走 Git LFS。
 - 不把运行期缓存、导出中间件、临时文件提交进仓库。
 
+## UI 资源的 Catalog 接入契约（关键）
+
+从 2026-05-10 起，UI 静态图（按钮、标题、图标、9-slice 框）与字体一律通过 **Catalog ScriptableObject** 接入：
+
+- `UIArtCatalogSO`（`GeminiLab.Modules.UI.Catalogs`）：`string key → Sprite`
+- `UIFontCatalogSO`：`string key → TMP_FontAsset`
+- 未来扩展：`TarotCardCatalogSO`、`PetArtCatalogSO`、`CropCatalogSO` 等同型目录
+
+**硬规则：**
+1. UI Prefab 禁止直引 Sprite 与 `TMP_FontAsset`。代码运行时从 Catalog 取：`_uiArt.Get("btn_start")`。
+2. 美术替换 = 修改 Catalog `.asset` 里对应 key 的 Sprite 引用；不改 Prefab、不改代码。
+3. 占位阶段，所有 key 的 Sprite 可指向同一张占位色块 PNG；`description` 字段写清楚"该槽位期待的图"。
+4. 禁止使用 `UnityEngine.UI.Text`。动态文本用 `TMP_Text` + `UIFontCatalogSO`。
+
+### 目前有哪些场景/Prefab 还没接入 Catalog
+当前 MainMenu / Sidebar / Panels 使用的是「**纯色块 + TMP 占位文字**」硬编码样式，**未**经过 Catalog。这是原型阶段的临时状态。
+
+美术资源交付顺序一旦启动：
+1. 先在 `Assets/_Project/ScriptableObjects/UIArt/` 创建 `UIArtCatalog.asset` 与 `UIFontCatalog.asset`
+2. 把 Prefab 里的 `Image.sprite` / `TMP_Text.font` 逐个改成由 Controller 从 Catalog 取值
+3. 美术交付的 Sprite/Font 只需要填进 Catalog 的对应槽位
+
 ## 当前项目特别需要注意的点
 1. 这个仓库已经不再是纯骨架；`Assets/_Project/Art/` 与 `Assets/_Project/Animations/` 下已经有宠物、家具、环境示例资源和宠物动画，所以替换前要先确认真实引用链。
 2. `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 仍缺少真实资产，很多替换动作可能会直接作用在场景对象、Animator 或运行时兜底定义上。
 3. 当前 `Apartment_Main.unity` 已经承载一批原型资源与 UI，替换资源后要回到真实场景里看效果，而不是只看文件夹。
-4. 如果替换导致资源结构第一次成型，要顺手把文件指南、结构总览和人工验证清单一起更新。
+4. 当前 TMP 默认字体为 `LiberationSans SDF`，不含 CJK，中文字会显示为 □。需要尽快交付一个中文 TMP Font Asset（优先像素/装饰体各一）。
+5. 如果替换导致资源结构第一次成型，要顺手把文件指南、结构总览和人工验证清单一起更新。
