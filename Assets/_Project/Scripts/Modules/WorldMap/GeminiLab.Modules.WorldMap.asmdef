@@ -1,0 +1,16 @@
+{
+  "name": "GeminiLab.Modules.WorldMap",
+  "rootNamespace": "GeminiLab.Modules.WorldMap",
+  "references": [
+    "GeminiLab.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
