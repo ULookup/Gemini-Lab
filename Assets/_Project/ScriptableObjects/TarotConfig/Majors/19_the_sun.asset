@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca33628aeb73e5742a66ce0c90fbd89a, type: 3}
+  m_Name: 19_the_sun
+  m_EditorClassIdentifier: 
+  _majorIndex: 19
+  _id: the_sun
+  _displayNameZh: "\u592A\u9633"
+  _displayNameEn: The Sun
+  _uprightKeywords:
+  - "\u559C\u60A6"
+  - "\u6D3B\u529B"
+  - "\u6E05\u660E"
+  _reversedKeywords:
+  - "\u6682\u65F6\u4E4C\u4E91"
+  - "\u81EA\u4FE1\u53D7\u632B"
+  - "\u6B22\u6109\u5EF6\u8FDF"
+  _artwork: {fileID: 21300000, guid: aa2dd4bd64a1a7b4a954bb2d2e07e4eb, type: 3}

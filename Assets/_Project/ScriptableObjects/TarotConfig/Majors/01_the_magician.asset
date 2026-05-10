@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca33628aeb73e5742a66ce0c90fbd89a, type: 3}
+  m_Name: 01_the_magician
+  m_EditorClassIdentifier: 
+  _majorIndex: 1
+  _id: the_magician
+  _displayNameZh: "\u9B54\u672F\u5E08"
+  _displayNameEn: The Magician
+  _uprightKeywords:
+  - "\u884C\u52A8\u529B"
+  - "\u4E13\u6CE8"
+  - "\u805A\u5408\u80FD\u91CF"
+  _reversedKeywords:
+  - "\u64CD\u7EB5"
+  - "\u6563\u4E71"
+  - "\u5938\u5927"
+  _artwork: {fileID: 21300000, guid: 18859ac6bee73974a9de32183c6f9175, type: 3}
