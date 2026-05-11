@@ -2,7 +2,9 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Time;
 using GeminiLab.Modules.Pet;
 using UnityEngine;
 
@@ -10,7 +12,8 @@ namespace GeminiLab.Modules.Tarot
 {
     /// <summary>
     /// <see cref="ITarotService"/> 默认实现。
-    /// 每日限制：当前阶段用 PlayerPrefs 记录上次抽卡日期（存档系统 C1 完成后迁移到 SaveSlot.tarot.lastDrawDate）。
+    /// 日期来源统一走 <see cref="IGameClock"/>；PlayerPrefs 仍作为临时存档载体，
+    /// C1 存档整合后会迁移到 SaveSlot.tarot.lastDrawDate。
     /// </summary>
     public sealed class TarotService : ITarotService
     {
@@ -19,26 +22,25 @@ namespace GeminiLab.Modules.Tarot
         private readonly TarotDeckSO _deck;
         private readonly EventBus? _eventBus;
         private readonly ITarotReadingBackend _readingBackend;
-        private readonly Func<DateTime> _nowProvider;
+        private readonly IGameClock _clock;
 
         public TarotService(
             TarotDeckSO deck,
             EventBus? eventBus,
             ITarotReadingBackend readingBackend,
-            Func<DateTime>? nowProvider = null)
+            IGameClock? clock = null)
         {
             _deck = deck ?? throw new ArgumentNullException(nameof(deck));
             _eventBus = eventBus;
             _readingBackend = readingBackend ?? throw new ArgumentNullException(nameof(readingBackend));
-            _nowProvider = nowProvider ?? (() => DateTime.Now);
+            _clock = clock ?? ResolveClockOrFallback();
         }
 
         public string LastDrawDateIso => PlayerPrefs.GetString(LastDrawDateKey, string.Empty);
 
         public bool CanDrawToday()
         {
-            string today = _nowProvider().ToString("yyyy-MM-dd");
-            return !string.Equals(LastDrawDateIso, today, StringComparison.Ordinal);
+            return !_clock.IsToday(LastDrawDateIso);
         }
 
         public TarotDrawResult? DrawDaily(Func<int, int>? randomRange = null)
@@ -60,7 +62,7 @@ namespace GeminiLab.Modules.Tarot
             var card = _deck.Cards[cardIndex];
             var orientation = orientationRoll == 0 ? TarotOrientation.Upright : TarotOrientation.Reversed;
 
-            string today = _nowProvider().ToString("yyyy-MM-dd");
+            string today = _clock.TodayIso;
             PlayerPrefs.SetString(LastDrawDateKey, today);
             PlayerPrefs.Save();
 
@@ -88,6 +90,17 @@ namespace GeminiLab.Modules.Tarot
 
             _eventBus?.Publish(new TarotReadingReceivedEvent(draw, reading));
             return reading;
+        }
+
+        private static IGameClock ResolveClockOrFallback()
+        {
+            if (ServiceLocator.TryResolve(out IGameClock? resolved) && resolved is not null)
+            {
+                return resolved;
+            }
+
+            Debug.LogWarning("[Tarot] 未在 ServiceLocator 找到 IGameClock，回退到 SystemGameClock");
+            return new SystemGameClock();
         }
     }
 }
