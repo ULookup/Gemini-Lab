@@ -5,6 +5,7 @@ using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Pet;
+using GeminiLab.Modules.Pet.Personality;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -159,21 +160,36 @@ namespace GeminiLab.Modules.HubUI.Panels
         {
             if (_radar == null) return;
 
-            var p = _currentPet == PetId.Angel ? _angelPersonality : _devilPersonality;
             var values = new List<float>(7);
-            if (p != null)
+            if (ServiceLocator.TryResolve(out IPersonalityEvolutionService? evolution) && evolution is not null)
             {
-                values.Add(p.Kindness);
-                values.Add(p.Evilness);
-                values.Add(p.Calmness);
-                values.Add(p.Bravery);
-                values.Add(p.Shyness);
-                values.Add(p.Integrity);
-                values.Add(p.Curiosity);
+                var v = evolution.GetMatrix(_currentPet);
+                values.Add(v.Kindness);
+                values.Add(v.Evilness);
+                values.Add(v.Calmness);
+                values.Add(v.Bravery);
+                values.Add(v.Shyness);
+                values.Add(v.Integrity);
+                values.Add(v.Curiosity);
             }
             else
             {
-                for (int i = 0; i < 7; i++) values.Add(0f);
+                // Fallback：Inspector SO
+                var p = _currentPet == PetId.Angel ? _angelPersonality : _devilPersonality;
+                if (p != null)
+                {
+                    values.Add(p.Kindness);
+                    values.Add(p.Evilness);
+                    values.Add(p.Calmness);
+                    values.Add(p.Bravery);
+                    values.Add(p.Shyness);
+                    values.Add(p.Integrity);
+                    values.Add(p.Curiosity);
+                }
+                else
+                {
+                    for (int i = 0; i < 7; i++) values.Add(0f);
+                }
             }
             _radar.SetValues(values);
         }
