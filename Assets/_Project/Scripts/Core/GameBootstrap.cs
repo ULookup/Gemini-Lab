@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
 using GeminiLab.Core.SceneFlow;
 using GeminiLab.Core.Time;
 using GeminiLab.Core.UI;
@@ -92,6 +93,7 @@ namespace GeminiLab.Core
             ServiceLocator.Register<ISceneFlowService>(sceneFlow);
 
             ServiceLocator.Register<IUIRouter>(new UIRouter(eventBus));
+            ServiceLocator.Register<IPersistentServiceRegistry>(new PersistentServiceRegistry());
         }
 
         private static void SyncCurrentScene(ISceneFlowService sceneFlow, string activeName)
