@@ -6,6 +6,9 @@
     "GeminiLab.Modules.UI",
     "GeminiLab.Modules.Pet",
     "GeminiLab.Modules.Tarot",
+    "GeminiLab.Modules.Settings",
+    "GeminiLab.Modules.Inventory",
+    "GeminiLab.Modules.Collection",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
