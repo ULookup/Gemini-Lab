@@ -12,8 +12,14 @@ using UnityEngine.UI;
 namespace GeminiLab.Editor.SceneBootstrap
 {
     /// <summary>
-    /// 往 Apartment_Main.unity 里增量注入侧边栏 + 4 个占位面板 + 通往 WorldMap 的按钮。
-    /// 幂等：重复执行会先清除旧的 SidebarRoot 节点再重建。
+    /// 往 Apartment_Main.unity 里重建侧边栏 + 5 个占位面板 + 通往 WorldMap 的按钮。
+    /// ⚠ 非增量：重复执行会先清除旧的 UI_Sidebar 节点再完全重建，
+    /// 各 Panel_* Content 会被重置成最简 "(WIP)" label stub。
+    /// 如果想保留 Phase D/E/G 对各 Panel 的真实 UI，跑完这个工具后必须依次重跑：
+    ///   1. Tools/Gemini-Lab/Author Inventory + Collection Panels (Apartment)
+    ///   2. Tools/Gemini-Lab/Author Garden Panel (Apartment)
+    /// 若只想增量加 Garden tab，请改用
+    ///   Tools/Gemini-Lab/Patch Apartment Sidebar (add Garden only)
     /// </summary>
     public static class ApartmentSidebarAuthoring
     {
@@ -135,7 +141,9 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[ApartmentSidebarAuthoring] Sidebar + panels + portal 已注入");
+            Debug.LogWarning("[ApartmentSidebarAuthoring] Sidebar + 5 panels + portal 已重建。" +
+                             "各 Panel 现为占位 stub，如需恢复真实 UI 请依次重跑 " +
+                             "Author Inventory + Collection Panels / Author Garden Panel。");
         }
 
         private static GameObject BuildOrGetSidebarCanvas(int uiLayer)
