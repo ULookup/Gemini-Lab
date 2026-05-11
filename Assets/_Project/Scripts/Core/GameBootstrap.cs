@@ -52,6 +52,12 @@ namespace GeminiLab.Core
 
         private IEnumerator Start()
         {
+            // 每次启动后先探测一次跨天；后续场景完成时再探一次（延长 session 时也会触发）
+            if (ServiceLocator.TryResolve(out IDailyResetService? dailyReset) && dailyReset is not null)
+            {
+                dailyReset.CheckAndReset();
+            }
+
             if (!ServiceLocator.TryResolve(out ISceneFlowService? sceneFlow))
             {
                 yield break;
@@ -85,7 +91,9 @@ namespace GeminiLab.Core
             EventBus eventBus = new();
             ServiceLocator.Register(eventBus);
             ServiceLocator.Register(new CommandDispatcher());
-            ServiceLocator.Register<IGameClock>(new SystemGameClock());
+
+            IGameClock clock = new SystemGameClock();
+            ServiceLocator.Register(clock);
 
             ISceneCatalog catalog = new DefaultSceneCatalog();
             SceneFlowService sceneFlow = new(catalog, eventBus);
@@ -93,7 +101,13 @@ namespace GeminiLab.Core
             ServiceLocator.Register<ISceneFlowService>(sceneFlow);
 
             ServiceLocator.Register<IUIRouter>(new UIRouter(eventBus));
-            ServiceLocator.Register<IPersistentServiceRegistry>(new PersistentServiceRegistry());
+
+            var registry = new PersistentServiceRegistry();
+            ServiceLocator.Register<IPersistentServiceRegistry>(registry);
+
+            var dailyReset = new DailyResetService(clock, eventBus);
+            ServiceLocator.Register<IDailyResetService>(dailyReset);
+            registry.Register(dailyReset);
         }
 
         private static void SyncCurrentScene(ISceneFlowService sceneFlow, string activeName)
