@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-05-10
+Updated: 2026-05-11
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -96,6 +96,14 @@ Updated: 2026-05-10
   - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
   - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
   - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
+- `2026-05-11` 已落地「Phase C 第一轮：底座 + PetStatus Panel」：
+  - **GameClock**：`Core/Time/IGameClock` + `SystemGameClock`（默认）+ `FakeGameClock`（测试用）；GameBootstrap 以 `IGameClock` 注册到 ServiceLocator，是业务侧取时间的**唯一入口**。
+  - **塔罗每日限制迁移**：`TarotService` 从直接 `DateTime.Now` 改走 `IGameClock.TodayIso` / `IsToday`，构造参数里 `Func<DateTime>` 改为 `IGameClock?`；PlayerPrefs 仍作为临时载体，C1 存档整合时迁移到 SaveSlot。
+  - **Toast 通知系统**：`Core/UI/ToastKind` + `ToastRequestedEvent` + `IToastService`；`Modules/HubUI/Toast/ToastOverlayController` 挂 Boot、DontDestroyOnLoad，既是 IToastService 实现也订阅 EventBus；TarotRuntimeBootstrap 订阅 `TarotDrawnEvent` 自动发 Success Toast。
+  - **ESC 关栈 + Scene 淡入淡出**：`Modules/HubUI/UIInputRouter`（ESC → IUIRouter.CloseTop）、`Modules/HubUI/SceneFadeOverlay`（订阅 SceneLoadStarted/Completed 事件，黑幕 CanvasGroup 淡入淡出）都挂在 Boot.BootstrapRoot。
+  - **IPersistentService 契约**：`Core/Persistence/IPersistentService`（Key + CaptureJson + RestoreJson），当前只是空接口 + 协议文档，C1 阶段 SaveSystem 整合时启用。
+  - **PetStatus Panel 真实化**：`PersonalityRadarGraphic`（手绘 UI Mesh 7 维雷达）+ `PetStatusPanelStub` 升级为真实控制器（Angel/Devil 页签 + 心情/精力/饱食进度条 + 当前状态 + 雷达图）；数据源 `IPetRoster` + `PetRuntimeSnapshotChangedEvent` 实时刷新。
+  - Editor 新增 3 个 authoring：`Tools/Gemini-Lab/Author Boot ToastOverlay`、`Author Boot InputRouter + Fade`、`Author Pet Status Panel UI`。
 - `2026-05-10` 已落地「B1 塔罗垂直切片」：
   - 新模块 `Modules/Tarot`（asmdef `GeminiLab.Modules.Tarot`）：`TarotOrientation`、`TarotCardSO`、`TarotDeckSO`、`TarotModels`（DrawResult/Reading/事件）、`ITarotService` + `TarotService`（每日一次，`yyyy-MM-dd` PlayerPrefs 记录）、`ITarotReadingBackend` + `LocalFallback` + `GatewayTarotBackend`、`TarotRuntimeBootstrap`
   - 22 张大阿卡那 `TarotCardSO` + 1 张 `TarotDeckSO` 已生成到 `ScriptableObjects/TarotConfig/`；占位卡面 PNG 在 `Art/Sprites/Tarot/Majors/`（256x384 色块 + 卡框十字基准），美术交付后替换 `TarotCardSO._artwork`

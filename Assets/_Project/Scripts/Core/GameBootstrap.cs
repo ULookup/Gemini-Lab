@@ -2,6 +2,7 @@
 using System.Collections;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.SceneFlow;
+using GeminiLab.Core.Time;
 using GeminiLab.Core.UI;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -83,6 +84,7 @@ namespace GeminiLab.Core
             EventBus eventBus = new();
             ServiceLocator.Register(eventBus);
             ServiceLocator.Register(new CommandDispatcher());
+            ServiceLocator.Register<IGameClock>(new SystemGameClock());
 
             ISceneCatalog catalog = new DefaultSceneCatalog();
             SceneFlowService sceneFlow = new(catalog, eventBus);

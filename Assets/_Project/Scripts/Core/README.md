@@ -21,6 +21,9 @@
 | `SceneFlow/SceneTransitionPayload.cs` | 跨场景一次性数据包（例：进入 WorldMap 时附带 spawn id）。 |
 | `UI/PanelId.cs` | UI 面板的逻辑标识（SaveSlots / Settings / PetStatus / Tarot / Collection / Inventory …）。 |
 | `UI/IUIPanel.cs`、`IUIRouter.cs`、`UIRouter.cs` | 面板栈路由；面板 Prefab 在 Awake 时 Register，业务代码只通过 `Open(PanelId)` 发意图。 |
+| `UI/ToastKind.cs`、`ToastEvents.cs`、`IToastService.cs` | Toast 通知契约；运行时实现在 `Modules/HubUI/Toast/ToastOverlayController`，业务既可 `toast.Show(...)` 也可 `eventBus.Publish(new ToastRequestedEvent(...))`。 |
+| `Time/IGameClock.cs`、`SystemGameClock.cs`、`FakeGameClock.cs` | 全局时间源；塔罗每日限制、花园离线生长、宠物日夜判定**都必须**走这里，禁止业务侧直接 `DateTime.Now`。 |
+| `Persistence/IPersistentService.cs` | 存档契约（Key + CaptureJson + RestoreJson）；当前是空接口 + 协议文档，C1 阶段 SaveSystem 启用后按此扫描所有服务。 |
 | `Utils/` | `CoroutineRunner`、`MainThreadDispatcher`、`ObjectPool<T>`、`Logger` 等工具。 |
 | `Interfaces/` | 跨模块共享的抽象接口（如 `ISaveable`、`ITickable`）。 |
 

@@ -54,6 +54,17 @@ Assets/_Project/Scripts/Core/UI/PanelId.cs
 Assets/_Project/Scripts/Core/UI/IUIPanel.cs
 Assets/_Project/Scripts/Core/UI/IUIRouter.cs
 Assets/_Project/Scripts/Core/UI/UIRouter.cs
+Assets/_Project/Scripts/Core/UI/ToastKind.cs
+Assets/_Project/Scripts/Core/UI/ToastEvents.cs
+Assets/_Project/Scripts/Core/UI/IToastService.cs
+Assets/_Project/Scripts/Core/Time/IGameClock.cs
+Assets/_Project/Scripts/Core/Time/SystemGameClock.cs
+Assets/_Project/Scripts/Core/Time/FakeGameClock.cs
+Assets/_Project/Scripts/Core/Persistence/IPersistentService.cs
+Assets/_Project/Scripts/Modules/HubUI/UIInputRouter.cs
+Assets/_Project/Scripts/Modules/HubUI/SceneFadeOverlay.cs
+Assets/_Project/Scripts/Modules/HubUI/Toast/ToastOverlayController.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/PersonalityRadarGraphic.cs
 Assets/_Project/Scripts/Modules/README.md
 Assets/_Project/Scripts/Modules/MainMenu/MainMenuController.cs
 Assets/_Project/Scripts/Modules/HubUI/SidebarController.cs

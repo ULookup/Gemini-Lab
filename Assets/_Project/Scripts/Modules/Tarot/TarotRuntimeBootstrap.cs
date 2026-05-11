@@ -1,6 +1,8 @@
 #nullable enable
+using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.UI;
 using GeminiLab.Modules.Gateway;
 using UnityEngine;
 
@@ -15,6 +17,9 @@ namespace GeminiLab.Modules.Tarot
     {
         [SerializeField] private TarotDeckSO? _deck;
 
+        private IDisposable? _drawnSub;
+        private EventBus? _eventBus;
+
         private void Awake()
         {
             DontDestroyOnLoad(gameObject);
@@ -25,10 +30,7 @@ namespace GeminiLab.Modules.Tarot
                 return;
             }
 
-            if (!ServiceLocator.TryResolve(out EventBus? eventBus))
-            {
-                eventBus = null;
-            }
+            ServiceLocator.TryResolve(out _eventBus);
 
             ITarotReadingBackend backend;
             if (ServiceLocator.TryResolve(out IGatewayClient? client) && client is not null)
@@ -41,8 +43,30 @@ namespace GeminiLab.Modules.Tarot
                 Debug.Log("[TarotBootstrap] 未发现 IGatewayClient，塔罗解读走本地 fallback");
             }
 
-            ServiceLocator.Register<ITarotService>(new TarotService(_deck, eventBus, backend));
+            ServiceLocator.Register<ITarotService>(new TarotService(_deck, _eventBus, backend));
             Debug.Log("[TarotBootstrap] TarotService registered.");
+
+            if (_eventBus is not null)
+            {
+                _drawnSub = _eventBus.Subscribe<TarotDrawnEvent>(OnTarotDrawn);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            _drawnSub?.Dispose();
+        }
+
+        private void OnTarotDrawn(TarotDrawnEvent evt)
+        {
+            if (_eventBus is null)
+            {
+                return;
+            }
+
+            string orientZh = evt.Result.Orientation == TarotOrientation.Upright ? "正位" : "逆位";
+            string msg = $"今日塔罗：{evt.Result.Card.DisplayNameZh} · {orientZh}";
+            _eventBus.Publish(new ToastRequestedEvent(msg, ToastKind.Success, 0f));
         }
 
         private sealed class FallbackOnlyBackend : ITarotReadingBackend
