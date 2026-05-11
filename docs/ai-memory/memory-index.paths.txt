@@ -91,6 +91,14 @@ Assets/_Project/Scripts/Modules/Collection/CollectionService.cs
 Assets/_Project/Scripts/Modules/Collection/CollectionModels.cs
 Assets/_Project/Scripts/Modules/Collection/CollectionCategory.cs
 Assets/_Project/Scripts/Modules/Collection/CollectionRuntimeBootstrap.cs
+Assets/_Project/Scripts/Modules/Garden/GeminiLab.Modules.Garden.asmdef
+Assets/_Project/Scripts/Modules/Garden/GardenModels.cs
+Assets/_Project/Scripts/Modules/Garden/IGardenService.cs
+Assets/_Project/Scripts/Modules/Garden/GardenService.cs
+Assets/_Project/Scripts/Modules/Garden/GardenRuntimeBootstrap.cs
+Assets/_Project/Scripts/Modules/Garden/SeedDefinitionSO.cs
+Assets/_Project/Scripts/Modules/Garden/SeedCatalogSO.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/GardenPanelStub.cs
 Assets/_Project/ScriptableObjects/InventoryConfig/ItemCatalog.asset
 Assets/_Project/ScriptableObjects/InventoryConfig/Items
 Assets/_Project/Scripts/Modules/README.md
