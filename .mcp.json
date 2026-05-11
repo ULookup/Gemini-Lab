@@ -1,14 +1,8 @@
 {
   "mcpServers": {
     "ai-game-developer": {
-      "type": "stdio",
-      "command": "E:\\UnityProject\\Gemini_Lab\\Library\\mcp-server\\win-x64\\unity-mcp-server.exe",
-      "args": [
-        "port=26799",
-        "plugin-timeout=10000",
-        "client-transport=stdio"
-      ],
-      "env": {}
+      "type": "http",
+      "url": "http://localhost:26799"
     }
   }
 }

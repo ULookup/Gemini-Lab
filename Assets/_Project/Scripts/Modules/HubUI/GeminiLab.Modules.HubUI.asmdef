@@ -10,6 +10,7 @@
     "GeminiLab.Modules.Settings",
     "GeminiLab.Modules.Inventory",
     "GeminiLab.Modules.Collection",
+    "GeminiLab.Modules.Garden",
     "GeminiLab.Modules.Persistence",
     "Unity.TextMeshPro"
   ],

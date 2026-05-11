@@ -96,6 +96,17 @@ Updated: 2026-05-11
   - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
   - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
   - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
+- `2026-05-11` 已落地「Phase G P0：花园（实时生长 2 小时）」：
+  - 新 asmdef `GeminiLab.Modules.Garden`（引用 Core + Inventory + Collection）
+  - `GardenStage` 枚举（Empty / Seeded / Growing / Ready / Withered）；`GardenPlot` 运行态（`PlantedAtUtcTicks`, `TotalGrowSeconds`）；`GardenPlotChangedEvent` / `GardenHarvestedEvent`
+  - `SeedDefinitionSO`（种子 itemId → 作物 itemId + 成熟秒数 + Growing 阈值）；`SeedCatalogSO` 目录
+  - `IGardenService` + `GardenService`：9 格；`Plant`（扣 Inventory 一颗种子）→ `Refresh`（每帧按 IGameClock 算 elapsed）→ `Harvest`（给 Inventory.Add(crop) + CollectionService.Register 到 GardenHarvest 分类，首次入集）；实现 `IPersistentService`，Key=`garden`（plantedAtUtcTicks 存 UTC Ticks，天然支持离线补算）
+  - `GardenRuntimeBootstrap` 挂 Boot.BootstrapRoot，Awake 注册到 ServiceLocator + Registry，Update 每帧 Refresh
+  - `InventoryRuntimeBootstrap` 新增 `_starterItems` 字段：Inventory 首次为空时注入初始礼包（当前配置：`seed_carrot/tomato/wheat` 各 5）。不会叠加到 SaveCoordinator 恢复的存档上。
+  - `GardenPanelStub`（`PanelId.Garden = 24`）：3×3 地块 + 种子选择条 + 剩余秒数计时；订阅 `GardenPlotChangedEvent` / `InventoryChangedEvent` 自动刷新
+  - `SidebarController` 增 `_tabGarden`，`ApartmentSidebarAuthoring` 把 Garden 做成侧边栏第 5 项并生成 `Panel_Garden`
+  - Editor 新增三个 authoring：`Tools/Gemini-Lab/Author Seed Catalog`、`Author Boot Garden Bootstrap`、`Author Garden Panel (Apartment)`
+  - HubUI asmdef 新增对 `GeminiLab.Modules.Garden` 的引用
 - `2026-05-11` 已落地「Phase F（P0 2.5 天）：宠物陈衰 + 每日重置 + 性格演化」：
   - **F-1 状态真实衰减**：`PetStateValueSO` 新增 `SatietyDecayPerSecond / LowSatietyMoodPenaltyPerSecond / LowEnergyMoodPenaltyPerSecond / MoodRecoveryPenaltyFactor`；`StatTickService` 重写：饱食始终衰减（睡眠中也饿）、清醒时精力持续衰减、饱食或精力触底时心情反向扣除并把回复速度降到 `MoodRecoveryPenaltyFactor` 倍（默认 0.2）。同时新增 `ApplySatietyDelta` 静态入口供后续喂食流程调用。
   - **F-2 DailyResetService**：`Core/Time/` 新增 `NewDayStartedEvent` + `IDailyResetService` + `DailyResetService`；实现 `IPersistentService`（Key=`daily_reset`），`LastRecordedDateIso` 进 SaveBundle，同时用 PlayerPrefs 兜底冷启动跨天。`GameBootstrap.RegisterCoreServices` 注册并登记到 Registry；`Start()` 每次入场先 `CheckAndReset` 一次。后续 `TarotService` / 花园 / 每日奖励订阅 `NewDayStartedEvent` 自行刷新。

@@ -14,6 +14,18 @@ namespace GeminiLab.Modules.Inventory
     {
         [SerializeField] private ItemCatalogSO? _catalog;
 
+        [Tooltip("新存档首次启动时自动注入的初始种子。Inventory 首次为空时才触发。")]
+        [SerializeField] private StarterItem[] _starterItems = System.Array.Empty<StarterItem>();
+
+        private InventoryService? _service;
+
+        [System.Serializable]
+        public struct StarterItem
+        {
+            public string ItemId;
+            [Min(1)] public int Count;
+        }
+
         private void Awake()
         {
             DontDestroyOnLoad(gameObject);
@@ -25,15 +37,29 @@ namespace GeminiLab.Modules.Inventory
             }
 
             ServiceLocator.TryResolve(out EventBus? eventBus);
-            var service = new InventoryService(_catalog, eventBus);
-            ServiceLocator.Register<IInventoryService>(service);
+            _service = new InventoryService(_catalog, eventBus);
+            ServiceLocator.Register<IInventoryService>(_service);
 
             if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
             {
-                registry.Register(service);
+                registry.Register(_service);
             }
 
             Debug.Log("[InventoryBootstrap] InventoryService registered.");
+        }
+
+        private void Start()
+        {
+            // 首次启动（存档恢复前 Inventory 仍为空）注入初始礼包。
+            // 若后续 SaveCoordinator.LoadAsync 覆盖了 stacks，这批种子会被替换成真实存档，不会叠加。
+            if (_service == null || _starterItems == null || _starterItems.Length == 0) return;
+            if (_service.GetAllStacks().Count > 0) return;
+
+            foreach (var s in _starterItems)
+            {
+                if (string.IsNullOrEmpty(s.ItemId) || s.Count <= 0) continue;
+                _service.Add(s.ItemId, s.Count);
+            }
         }
     }
 }

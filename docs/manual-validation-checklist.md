@@ -110,6 +110,21 @@ Updated: 2026-05-11
 | Console 看到 `PersonalityEvolutionBootstrap` / `PetRuntimeBootstrap` / `DailyResetService` 注册日志 |  |  |
 | Boot.BootstrapRoot 上已挂 `PersonalityEvolutionBootstrap`，且 `_rules` 指向 `PersonalityEvolutionRules.asset` |  |  |
 
+## B8. Phase G 花园（实时 2 小时，2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 启动新存档后打开侧边栏，看到第 5 个入口"Garden" |  |  |
+| 打开 Garden 面板，看到 3×3 空地块 + 右侧 3 种种子（胡萝卜/番茄/小麦 各 ×5） |  |  |
+| 点击种子选中（出现高亮），再点空地块 → 地块变成 Seeded；种子 -1 |  |  |
+| 地块显示倒计时（格式 `MM:SS`） |  |  |
+| 等过 Growing 阈值（默认 40 分钟，调试时可改 SeedDef 为 60 秒）→ 外观变亮 |  |  |
+| 等到 TotalGrowSeconds → 格子切到 Ready，点击可收获 |  |  |
+| 收获后：Inventory 增加对应 crop_*；Collection 的"花园收获"分类新增一条（首次） |  |  |
+| 种后存档 → 退出 → 过 10 分钟 → 读档：倒计时按真实秒差已推进（离线补算生效） |  |  |
+| Boot.BootstrapRoot 上 GardenRuntimeBootstrap 的 `_seedCatalog` 指向 `SeedCatalog.asset` |  |  |
+| InventoryRuntimeBootstrap 的 `_starterItems` 配置了 3 种种子各 5 |  |  |
+| Console 看到 `[InventoryBootstrap]` / `[GardenBootstrap]` 注册日志，无 ERROR |  |  |
+
 ## C. Phase 2 家具、建造与导航
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |

@@ -13,11 +13,12 @@ namespace GeminiLab.Core.UI
         SaveSlots = 10,
         Settings = 11,
 
-        // 侧边栏四件套
+        // 侧边栏五件套
         PetStatus = 20,
         Tarot = 21,
         Collection = 22,
         Inventory = 23,
+        Garden = 24,
 
         // 通用
         ConfirmDialog = 90

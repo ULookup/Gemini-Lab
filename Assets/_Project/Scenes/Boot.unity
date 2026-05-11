@@ -233,6 +233,7 @@ GameObject:
   - component: {fileID: 1934747567}
   - component: {fileID: 1934747566}
   - component: {fileID: 1934747569}
+  - component: {fileID: 1934747570}
   m_Layer: 0
   m_Name: BootstrapRoot
   m_TagString: Untagged
@@ -364,6 +365,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _catalog: {fileID: 11400000, guid: bde5c9348fb02b44db8ca0951fc6a796, type: 2}
+  _starterItems:
+  - ItemId: seed_carrot
+    Count: 5
+  - ItemId: seed_tomato
+    Count: 5
+  - ItemId: seed_wheat
+    Count: 5
 --- !u!114 &1934747568
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -389,6 +397,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _rules: {fileID: 11400000, guid: 0520f091833661946a60a77e3c1d6165, type: 2}
+--- !u!114 &1934747570
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 957d162025df97345b0e5e76b3b48478, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _seedCatalog: {fileID: 11400000, guid: eb0faa0ab922f57408ddaf5742be41fe, type: 2}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
