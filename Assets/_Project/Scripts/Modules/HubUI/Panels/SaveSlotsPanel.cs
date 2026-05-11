@@ -1,10 +1,10 @@
 #nullable enable
 using System;
 using System.Collections.Generic;
-using System.IO;
 using GeminiLab.Core;
-using GeminiLab.Core.Time;
+using GeminiLab.Core.SceneFlow;
 using GeminiLab.Core.UI;
+using GeminiLab.Modules.Persistence;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,14 +13,13 @@ namespace GeminiLab.Modules.HubUI.Panels
 {
     /// <summary>
     /// 主菜单"存档"按钮打开的面板。
-    /// Phase D 骨架版：读写 Application.persistentDataPath/saves/slot_N.json。
-    /// Phase E 存档整合后会改走 IPersistentService 扫描；当前只保留"槽位元数据"骨架。
+    /// Phase E 起走真实 <see cref="ISaveCoordinator"/>：List / Save / Load / Delete。
+    /// 读档成功时跳转到 Apartment（通过 ISceneFlowService），同时 SaveCoordinator
+    /// 会把 Settings / Inventory / Collection / Tarot 的状态恢复回当前 Service 实例。
     /// </summary>
     public sealed class SaveSlotsPanel : StubPanelBase
     {
         public override PanelId Id => PanelId.SaveSlots;
-
-        private const int SlotCount = 3;
 
         [Header("槽位按钮（容器）")]
         [SerializeField] private Transform? _slotContainer;
@@ -30,19 +29,11 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private TMP_Text? _statusText;
 
         private readonly List<SlotRow> _rows = new();
-
-        [Serializable]
-        private struct SlotMeta
-        {
-            public int SlotId;
-            public string CreatedAtIso;
-            public string LastPlayedIso;
-            public float PlayTimeSeconds;
-        }
+        private ISaveCoordinator? _coordinator;
 
         private sealed class SlotRow
         {
-            public int SlotId;
+            public string SlotId = string.Empty;
             public GameObject Root = null!;
             public TMP_Text? Summary;
             public Button? LoadButton;
@@ -59,10 +50,18 @@ namespace GeminiLab.Modules.HubUI.Panels
         public override void OnOpen(object? payload)
         {
             base.OnOpen(payload);
-            EnsureSlotsFolder();
+            EnsureCoordinator();
             BuildRowsIfNeeded();
-            RefreshAll();
+            _ = RefreshAllAsync();
             SetStatus("");
+        }
+
+        private void EnsureCoordinator()
+        {
+            if (_coordinator == null)
+            {
+                ServiceLocator.TryResolve(out _coordinator);
+            }
         }
 
         private void CloseSelf()
@@ -76,7 +75,10 @@ namespace GeminiLab.Modules.HubUI.Panels
         private void BuildRowsIfNeeded()
         {
             if (_slotContainer == null) return;
-            if (_rows.Count == SlotCount) return;
+            if (_coordinator == null) return;
+
+            var defaultSlots = _coordinator.DefaultSlotIds;
+            if (_rows.Count == defaultSlots.Count) return;
 
             for (int i = _slotContainer.childCount - 1; i >= 0; i--)
             {
@@ -84,13 +86,13 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
             _rows.Clear();
 
-            for (int i = 1; i <= SlotCount; i++)
+            foreach (var slotId in defaultSlots)
             {
-                _rows.Add(BuildRow(i));
+                _rows.Add(BuildRow(slotId));
             }
         }
 
-        private SlotRow BuildRow(int slotId)
+        private SlotRow BuildRow(string slotId)
         {
             int layer = _slotContainer != null ? _slotContainer.gameObject.layer : 5;
             var rowGo = new GameObject($"Slot_{slotId}");
@@ -127,9 +129,9 @@ namespace GeminiLab.Modules.HubUI.Panels
                 DeleteButton = delBtn
             };
 
-            loadBtn.onClick.AddListener(() => OnLoad(row));
-            saveBtn.onClick.AddListener(() => OnNewOrOverwrite(row));
-            delBtn.onClick.AddListener(() => OnDelete(row));
+            loadBtn.onClick.AddListener(() => _ = OnLoadAsync(row));
+            saveBtn.onClick.AddListener(() => _ = OnSaveAsync(row));
+            delBtn.onClick.AddListener(() => _ = OnDeleteAsync(row));
 
             return row;
         }
@@ -164,107 +166,85 @@ namespace GeminiLab.Modules.HubUI.Panels
             return btn;
         }
 
-        private void RefreshAll()
+        private async System.Threading.Tasks.Task RefreshAllAsync()
         {
-            foreach (var row in _rows)
+            if (_coordinator == null) return;
+            var summaries = await _coordinator.ListSlotsAsync().ConfigureAwait(true);
+            foreach (var summary in summaries)
             {
-                RefreshRow(row);
+                var row = _rows.Find(r => r.SlotId == summary.SlotId);
+                if (row != null) ApplySummary(row, summary);
             }
         }
 
-        private void RefreshRow(SlotRow row)
+        private static void ApplySummary(SlotRow row, SlotSummary summary)
         {
             if (row.Summary == null) return;
-
-            string path = SlotPath(row.SlotId);
-            if (File.Exists(path))
+            if (summary.Exists)
             {
-                try
-                {
-                    var json = File.ReadAllText(path);
-                    var meta = JsonUtility.FromJson<SlotMeta>(json);
-                    row.Summary.text = $"存档 {row.SlotId}：{meta.LastPlayedIso}";
-                    if (row.LoadButton != null) row.LoadButton.interactable = true;
-                    if (row.DeleteButton != null) row.DeleteButton.interactable = true;
-                }
-                catch
-                {
-                    row.Summary.text = $"存档 {row.SlotId}：损坏（建议删除）";
-                    if (row.LoadButton != null) row.LoadButton.interactable = false;
-                    if (row.DeleteButton != null) row.DeleteButton.interactable = true;
-                }
+                row.Summary.text = $"{summary.SlotId}：{summary.LastSavedAtIso}";
+                if (row.LoadButton != null) row.LoadButton.interactable = true;
+                if (row.DeleteButton != null) row.DeleteButton.interactable = true;
             }
             else
             {
-                row.Summary.text = $"存档 {row.SlotId}：空槽位";
+                row.Summary.text = $"{summary.SlotId}：空槽位";
                 if (row.LoadButton != null) row.LoadButton.interactable = false;
                 if (row.DeleteButton != null) row.DeleteButton.interactable = false;
             }
         }
 
-        private void OnLoad(SlotRow row)
+        private async System.Threading.Tasks.Task OnLoadAsync(SlotRow row)
         {
-            SetStatus($"（骨架版）读取槽位 {row.SlotId}：Phase E 接入 SaveSystem 后生效。");
+            if (_coordinator == null) return;
+            SetStatus($"正在读取 {row.SlotId} …");
+            bool ok = await _coordinator.LoadAsync(row.SlotId).ConfigureAwait(true);
+            if (!ok)
+            {
+                SetStatus($"{row.SlotId} 读取失败或槽位为空");
+                return;
+            }
+
+            SetStatus($"{row.SlotId} 读取成功");
+            // 读档完成后切回公寓
+            if (ServiceLocator.TryResolve(out ISceneFlowService? sceneFlow) && sceneFlow is not null)
+            {
+                sceneFlow.LoadAsync(SceneId.Apartment);
+            }
         }
 
-        private void OnNewOrOverwrite(SlotRow row)
+        private async System.Threading.Tasks.Task OnSaveAsync(SlotRow row)
         {
-            EnsureSlotsFolder();
-
-            string now;
-            if (ServiceLocator.TryResolve(out IGameClock? clock) && clock is not null)
-            {
-                now = clock.Now.ToString("yyyy-MM-dd HH:mm");
-            }
-            else
-            {
-                now = DateTime.Now.ToString("yyyy-MM-dd HH:mm");
-            }
-
-            var meta = new SlotMeta
-            {
-                SlotId = row.SlotId,
-                CreatedAtIso = now,
-                LastPlayedIso = now,
-                PlayTimeSeconds = 0f
-            };
-
+            if (_coordinator == null) return;
+            SetStatus($"正在写入 {row.SlotId} …");
             try
             {
-                File.WriteAllText(SlotPath(row.SlotId), JsonUtility.ToJson(meta, prettyPrint: true));
-                SetStatus($"槽位 {row.SlotId} 已写入（mock）。");
+                await _coordinator.SaveAsync(row.SlotId).ConfigureAwait(true);
+                SetStatus($"{row.SlotId} 已保存");
             }
             catch (Exception ex)
             {
-                SetStatus($"槽位 {row.SlotId} 写入失败：{ex.Message}");
+                SetStatus($"{row.SlotId} 写入失败：{ex.Message}");
             }
 
-            RefreshRow(row);
+            await RefreshAllAsync().ConfigureAwait(true);
         }
 
-        private void OnDelete(SlotRow row)
+        private async System.Threading.Tasks.Task OnDeleteAsync(SlotRow row)
         {
-            string path = SlotPath(row.SlotId);
+            if (_coordinator == null) return;
             try
             {
-                if (File.Exists(path)) File.Delete(path);
-                SetStatus($"槽位 {row.SlotId} 已删除。");
+                await _coordinator.DeleteAsync(row.SlotId).ConfigureAwait(true);
+                SetStatus($"{row.SlotId} 已删除");
             }
             catch (Exception ex)
             {
-                SetStatus($"槽位 {row.SlotId} 删除失败：{ex.Message}");
+                SetStatus($"{row.SlotId} 删除失败：{ex.Message}");
             }
-            RefreshRow(row);
-        }
 
-        private static void EnsureSlotsFolder()
-        {
-            var dir = SlotsFolder;
-            if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+            await RefreshAllAsync().ConfigureAwait(true);
         }
-
-        private static string SlotsFolder => Path.Combine(Application.persistentDataPath, "saves");
-        private static string SlotPath(int slotId) => Path.Combine(SlotsFolder, $"slot_{slotId}.json");
 
         private void SetStatus(string msg)
         {

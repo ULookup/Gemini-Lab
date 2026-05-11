@@ -9,6 +9,7 @@
     "GeminiLab.Modules.Settings",
     "GeminiLab.Modules.Inventory",
     "GeminiLab.Modules.Collection",
+    "GeminiLab.Modules.Persistence",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
