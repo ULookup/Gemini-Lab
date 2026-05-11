@@ -9,38 +9,19 @@
 
 ## 子目录规划
 
-| 子目录 | 内容 | 当前状态 |
-| :--- | :--- | :--- |
-| `Sprites/Pet/Angel/` | 天使宠物 Sprite + 序列帧（Idle / Move / Interact / Emotions） | 部分帧已有（Move / Interact 若干），Idle 缺 |
-| `Sprites/Pet/Devil/` | 恶魔宠物 Sprite + 序列帧（结构对称 Angel） | ❌ 全部缺 |
-| `Sprites/Furniture/` | 家具 Sprite（按品类子分目录） | ✅ 覆盖现有 49 件 |
-| `Sprites/Environment/` | 场景 Sprite（地板、墙体 Tile 源图、装饰物） | 部分 |
-| `Sprites/UI/Common/` | 通用 UI 件：9-slice 面板框、按钮、Slot、气泡、滚动条、关闭图标 | ❌ 全部缺 |
-| `Sprites/UI/MainMenu/` | 主菜单背景、Logo、开始/存档/设置 按钮（含 _hover / _pressed 态） | ❌ 缺 |
-| `Sprites/UI/Sidebar/` | 侧边栏背景（展开/收起两种）、4 个 Tab 图标（_active 态） | ❌ 缺 |
-| `Sprites/UI/Panels/` | 面板标题图（宠物状态 / 塔罗 / 收藏 / 物品栏 / 设置 / 存档）、雷达图底、Angel/Devel Tab、StatBar 填充 | ❌ 缺 |
-| `Sprites/Tarot/majors/` | 大阿卡那 22 张 Sprite（`00_the_fool.png`..`21_the_world.png`），外加 `card_back.png` | ❌ 缺 |
-| `Sprites/WorldMap/Background/` | 视差三层：sky / mountains / ground | ❌ 缺 |
-| `Sprites/WorldMap/Zones/garden/` | 花园区域背景、地块 4 态（empty / tilled / watered / 成熟）、入口招牌 | ❌ 缺 |
-| `Sprites/Garden/Crops/` | 作物阶段图（sprout / growing / mature）+ 收获图标（Items/Crops 子目录复用） | ❌ 缺 |
-| `Sprites/Items/` | 物品图标（Seeds / Crops / Travel / Consumables），统一 128×128 PPU 100 | ❌ 缺 |
-| `Fonts/` | TMP 字体（常规体 CJK + 装饰体），生成为 SDF 或 Bitmap Font Asset | ❌ 缺（当前用 LiberationSans 占位） |
-| `References/GIF/` | GIF 预览图（仅评审用，不参与打包） | — |
-| `Atlases/` | `SpriteAtlas` 资产（按模块拆分，例：`Atlas_Furniture.spriteatlas`） | 部分 |
-| `Tiles/` | `TileBase` 资产（`RuleTile`、`AnimatedTile`、`ScriptableTile`） | — |
-| `Animations/` | `.anim` 剪辑 + `AnimatorController`（2D 帧动画 / 骨骼动画） | 部分（宠物 Move / Interact） |
-| `Shaders/` | 自研 2D Shader（URP 2D Renderer 兼容；含描边、溶解、材质变色等） | — |
-| `Icons/` | 家具缩略图、UI Icon | — |
-
-## UI 资源接入契约（关键约束）
-- **所有 UI Sprite 都必须经过 `UIArtCatalogSO` 映射**（见 `Assets/_Project/Scripts/Modules/UI/Catalogs/`）。
-- 代码只认 `string key`（例：`btn_start`, `tab_tarot`, `bubble_angel`），不直接引 Sprite。
-- 美术交付完成后的接入流程：
-  1. 把 Sprite 放到对应 `Sprites/UI/**` 目录
-  2. 打开 `Assets/_Project/ScriptableObjects/UIArt/UIArtCatalog.asset`
-  3. 在对应 key 的 `sprite` 槽位引用新 Sprite
-  4. 不需要改任何 Prefab / 场景 / 代码
-- 动态文字（聊天、塔罗解读、数值、时间戳）走 `TMP_Text` + `UIFontCatalogSO`。**禁止使用 `UnityEngine.UI.Text`**。
+| 子目录 | 内容 |
+| :--- | :--- |
+| `Sprites/Pet/` | 宠物 Sprite 序列 / 骨骼绑定 PSB 源文件。 |
+| `Sprites/Furniture/` | 家具 Sprite（按品类子分目录）。 |
+| `Sprites/Environment/` | 场景 Sprite（地板、墙体 Tile 源图、装饰物）。 |
+| `Sprites/UI/` | UI Sprite 源图（会被打入 Sprite Atlas）。 |
+| `Sprites/AnimFrames/` | 动效序列帧源图（按对象/动作拆分目录，运行时使用）。 |
+| `References/GIF/` | GIF 预览图（仅评审用，不参与打包）。 |
+| `Atlases/` | `SpriteAtlas` 资产（按模块拆分，例：`Atlas_Furniture.spriteatlas`）。 |
+| `Tiles/` | `TileBase` 资产（`RuleTile`、`AnimatedTile`、`ScriptableTile`）。 |
+| `Animations/` | `.anim` 剪辑 + `AnimatorController`（2D 帧动画 / 骨骼动画）。 |
+| `Shaders/` | 自研 2D Shader（URP 2D Renderer 兼容；含描边、溶解、材质变色等）。 |
+| `Icons/` | 家具缩略图、UI Icon。 |
 
 ## 依赖关系
 - **被依赖**：Prefabs、Scenes、UI、ScriptableObjects（例如家具 Icon 字段）。

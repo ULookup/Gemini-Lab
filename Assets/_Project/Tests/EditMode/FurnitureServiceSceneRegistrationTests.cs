@@ -35,6 +35,47 @@ namespace GeminiLab.Tests.EditMode
         }
 
         [Test]
+        public void CaptureLayout_ExcludesSceneFurniture_AndRestoreLayout_PreservesIt()
+        {
+            Sprite sprite = CreateNamedSprite("Furniture_Bed_Angel_001");
+            GameObject furnitureGo = new("Bed_Angel");
+            furnitureGo.AddComponent<InteractionAnchor>();
+            furnitureGo.AddComponent<BoxCollider2D>();
+            SpriteRenderer renderer = furnitureGo.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            _ = furnitureGo.AddComponent<Furniture>();
+
+            GameObject serviceHost = new("FurnitureServiceHost");
+            FurnitureService service = serviceHost.AddComponent<FurnitureService>();
+            FurnitureDefinitionSO workDesk = CreateRuntimeDefinition("Furniture_WorkDesk_Test", FurnitureCategory.WorkDesk);
+
+            bool placed = service.TryPlaceFurniture(workDesk, new Vector2(2f, 0f), 0f, out Furniture? runtimeFurniture, out string failureReason);
+            Assert.IsTrue(placed, failureReason);
+            Assert.IsNotNull(runtimeFurniture);
+
+            FurnitureLayoutSnapshot snapshot = service.CaptureLayout();
+
+            Assert.AreEqual(1, snapshot.Entries.Length);
+            Assert.AreEqual("Furniture_WorkDesk_Test", snapshot.Entries[0].DefinitionId);
+
+            service.RestoreLayout(new FurnitureLayoutSnapshot
+            {
+                Entries = System.Array.Empty<FurnitureLayoutEntry>()
+            });
+
+            bool found = service.TryGetBestInteractionTarget(Vector2.zero, FurnitureInteractionQuery.BedOnly, out FurnitureInteractionTarget target);
+
+            Assert.IsTrue(found);
+            Assert.AreEqual(FurnitureCategory.Bed, target.Category);
+
+            Object.DestroyImmediate(serviceHost);
+            Object.DestroyImmediate(furnitureGo);
+            Object.DestroyImmediate(workDesk);
+            Object.DestroyImmediate(sprite.texture);
+            Object.DestroyImmediate(sprite);
+        }
+
+        [Test]
         public void Awake_InfersObjectLevelInteractionType_FromChineseSpriteName()
         {
             Sprite sprite = CreateNamedSprite("家具_休闲_吉他_恶魔_01");
@@ -105,6 +146,26 @@ namespace GeminiLab.Tests.EditMode
             Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, 8f, 8f), new Vector2(0.5f, 0.5f), 16f);
             sprite.name = name;
             return sprite;
+        }
+
+        private static FurnitureDefinitionSO CreateRuntimeDefinition(string id, FurnitureCategory category)
+        {
+            FurnitureDefinitionSO definition = ScriptableObject.CreateInstance<FurnitureDefinitionSO>();
+            typeof(FurnitureDefinitionSO).GetMethod(
+                "ConfigureRuntime",
+                System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+                .Invoke(definition, new object[]
+                {
+                    id,
+                    category,
+                    FurniturePlacementType.Floor,
+                    Vector2Int.one,
+                    new EnvironmentalBuff(),
+                    null!,
+                    FurnitureInteractionType.Unknown,
+                    1f
+                });
+            return definition;
         }
     }
 }

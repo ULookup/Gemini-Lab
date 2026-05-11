@@ -197,11 +197,27 @@ namespace GeminiLab.Modules.Furniture
         public FurnitureLayoutSnapshot CaptureLayout()
         {
             RemoveDestroyedFurnitureEntries();
-            FurnitureLayoutEntry[] entries = new FurnitureLayoutEntry[_placedFurniture.Count];
+            int runtimeFurnitureCount = 0;
             for (int i = 0; i < _placedFurniture.Count; i++)
             {
                 Furniture furniture = _placedFurniture[i];
-                entries[i] = new FurnitureLayoutEntry
+                if (!furniture.IsSceneFurniture)
+                {
+                    runtimeFurnitureCount++;
+                }
+            }
+
+            FurnitureLayoutEntry[] entries = new FurnitureLayoutEntry[runtimeFurnitureCount];
+            int writeIndex = 0;
+            for (int i = 0; i < _placedFurniture.Count; i++)
+            {
+                Furniture furniture = _placedFurniture[i];
+                if (furniture.IsSceneFurniture)
+                {
+                    continue;
+                }
+
+                entries[writeIndex++] = new FurnitureLayoutEntry
                 {
                     FurnitureId = furniture.InstanceId,
                     DefinitionId = furniture.Definition.Id,
@@ -221,9 +237,14 @@ namespace GeminiLab.Modules.Furniture
         {
             for (int i = _placedFurniture.Count - 1; i >= 0; i--)
             {
+                if (_placedFurniture[i].IsSceneFurniture)
+                {
+                    continue;
+                }
+
                 Destroy(_placedFurniture[i].gameObject);
+                _placedFurniture.RemoveAt(i);
             }
-            _placedFurniture.Clear();
 
             for (int i = 0; i < snapshot.Entries.Length; i++)
             {
@@ -329,6 +350,7 @@ namespace GeminiLab.Modules.Furniture
         {
             Furniture runtimeFurniture = go.AddComponent<Furniture>();
             runtimeFurniture.Initialize(instanceId, definition);
+            runtimeFurniture.SetSceneFurniture(false);
             return runtimeFurniture;
         }
 
@@ -353,6 +375,7 @@ namespace GeminiLab.Modules.Furniture
                 }
 
                 FurnitureDefinitionSO resolvedDefinition = ResolveSceneFurnitureDefinition(furniture);
+                furniture.SetSceneFurniture(true);
                 furniture.Initialize(furniture.InstanceId, resolvedDefinition);
 
                 if (furniture.TryGetComponent(out SpriteRenderer renderer) && renderer is not null)
@@ -488,6 +511,11 @@ namespace GeminiLab.Modules.Furniture
 
         private static void ApplyFurniturePresentation(Furniture furniture, SpriteRenderer renderer, FurnitureDefinitionSO definition)
         {
+            if (furniture.IsSceneFurniture)
+            {
+                return;
+            }
+
             SortingGroup sortingGroup = furniture.gameObject.GetComponent<SortingGroup>() ?? furniture.gameObject.AddComponent<SortingGroup>();
             renderer.sortingLayerName = "Furniture";
             renderer.sortingOrder = CalculateSortingOrder(furniture.transform.position.y, definition.PlacementType);

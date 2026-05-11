@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Architecture
 
-Updated: 2026-05-10
+Updated: 2026-04-27
 
 ## 架构定位
 Gemini-Lab 当前采用“文档先行 + 原型实现逐步落地”的分层 Unity 2D 架构。
@@ -45,13 +45,11 @@ Core -> 无业务依赖
 作用：承载与业务无关的基础设施。
 
 当前已经真实存在的代表实现：
-- `GameBootstrap`（Boot 场景服务注册 + 自动跳转到 MainMenu）
+- `GameBootstrap`
 - `ServiceLocator`
 - `EventBus`
 - `CommandDispatcher`
 - `IState<TContext>` / `StateMachine<TContext>` / `StateTransition<TContext>` / `SubStateMachine<TContext>`
-- `SceneFlow/`：`SceneId`、`ISceneCatalog` + `DefaultSceneCatalog`、`ISceneFlowService` + `SceneFlowService`、`SceneTransitionPayload`、`SceneLoadStartedEvent` / `SceneLoadCompletedEvent`
-- `UI/`：`PanelId`、`IUIPanel`、`IUIRouter` + `UIRouter`、`UIPanelOpenedEvent` / `UIPanelClosedEvent`
 
 核心约束：
 - 不得出现宠物、家具、旅行等业务名词
@@ -132,28 +130,14 @@ Editor 约束：
 ## 场景架构
 当前真实存在的场景为：
 - `Boot.unity`
-- `MainMenu/MainMenu.unity`
 - `Apartment/Apartment_Main.unity`
-- `WorldMap/WorldMap_Main.unity`
 - `Desktop/Desktop_Overlay.unity`
 
 当前判断：
-- `Boot.unity` 作为实际启动入口，负责 Core 服务注册与自动跳转到 `MainMenu`
-- `MainMenu.unity` 为骨架态，三个入口按钮（开始 / 存档 / 设置）占位样式已就位，美术交付后通过 `UIArtCatalogSO` 替换
-- `Apartment_Main.unity` 已包含宠物、家具、UI、导航根、侧边栏与通往 WorldMap 的入口
-- `WorldMap_Main.unity` 为骨架态：横板摄像头 + Garden Zone 标记 + 返回公寓按钮，视差背景、花园交互与真实美术待补齐
-- `Desktop_Overlay.unity` 已存在，但仍接近原型，原生透明窗口尚未落地
+- `Boot.unity` 已经是实际启动入口
+- `Apartment_Main.unity` 已包含宠物、家具、UI、导航根与基础环境结构
+- `Desktop_Overlay.unity` 已存在，但还更接近原型桌面场景
 - `Dev/` 沙盒场景仍未落地
-
-### 场景切换契约
-- 全部互斥场景使用 `LoadSceneMode.Single`，由 `ISceneFlowService.LoadAsync(SceneId, SceneTransitionPayload?)` 统一入口
-- 业务代码 **禁止** 直接引用 `SceneManager.LoadSceneAsync` / 场景资产路径；只通过 `SceneId` 枚举
-- 全局服务（EventBus、SceneFlowService、UIRouter、DesktopOverlayManager、Gateway 运行态 …）挂在 Boot 场景的 BootstrapRoot 下并 `DontDestroyOnLoad`；场景内的 `*Bootstrap` 只注册随场景生命周期的服务
-
-### UI 路由契约
-- 所有 UI 面板（MainMenu 的 Settings / SaveSlots、侧边栏打开的 PetStatus / Tarot / Collection / Inventory …）通过 `IUIRouter.Open(PanelId)` 打开，面板 Prefab 自行 `Register` / `Unregister`
-- 侧边栏（`SidebarController`）在 Apartment **与** WorldMap 都可以打开（跨场景共用），面板 Prefab 在各自场景里放置
-- UI 文本分层：静态文字（按钮、标题、图标）**一律走 Sprite**（经 `UIArtCatalogSO`）；动态文字（聊天、塔罗解读、数值）走 TMP（经 `UIFontCatalogSO`）。禁止使用 `UnityEngine.UI.Text`
 
 ## 资源架构
 
