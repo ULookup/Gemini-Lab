@@ -29,6 +29,14 @@ namespace GeminiLab.Modules.Pet
         [Min(0f)] public float AwakeEnergyDecayPerSecond = 8f;
         [Min(0f)] public float SleepingEnergyRecoveryPerSecond = 15f;
         [Min(0f)] public float MoodRecoveryPerSecond = 4f;
+        [Tooltip("饱食度每秒自然下降（被饥饿曲线驱动）")]
+        [Min(0f)] public float SatietyDecayPerSecond = 1.2f;
+        [Tooltip("Hunger（饱食 <=30）时心情每秒扣除")]
+        [Min(0f)] public float LowSatietyMoodPenaltyPerSecond = 0.6f;
+        [Tooltip("Exhausted（精力 <=20）时心情每秒扣除")]
+        [Min(0f)] public float LowEnergyMoodPenaltyPerSecond = 0.8f;
+        [Tooltip("饱食或精力不足时 MoodRecoveryPerSecond 的倍率；0 = 完全停止恢复")]
+        [Range(0f, 1f)] public float MoodRecoveryPenaltyFactor = 0.2f;
 
         [Header("Command Penalty")]
         [Range(0f, 100f)] public float ForceWakeMoodPenalty = 30f;
