@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
 using GeminiLab.Core.Time;
 using GeminiLab.Modules.Pet;
 using UnityEngine;
@@ -12,10 +13,11 @@ namespace GeminiLab.Modules.Tarot
 {
     /// <summary>
     /// <see cref="ITarotService"/> 默认实现。
-    /// 日期来源统一走 <see cref="IGameClock"/>；PlayerPrefs 仍作为临时存档载体，
-    /// C1 存档整合后会迁移到 SaveSlot.tarot.lastDrawDate。
+    /// 日期来源统一走 <see cref="IGameClock"/>；
+    /// Phase E 起实现 <see cref="IPersistentService"/>，上次抽卡日期随 SaveSlot 走；
+    /// PlayerPrefs 仍保留为 Cold-start（SaveSystem 未注册或未加载存档时）的兜底。
     /// </summary>
-    public sealed class TarotService : ITarotService
+    public sealed class TarotService : ITarotService, IPersistentService
     {
         private const string LastDrawDateKey = "GeminiLab.Tarot.LastDrawDate";
 
@@ -23,6 +25,8 @@ namespace GeminiLab.Modules.Tarot
         private readonly EventBus? _eventBus;
         private readonly ITarotReadingBackend _readingBackend;
         private readonly IGameClock _clock;
+
+        private string _lastDrawDateIso;
 
         public TarotService(
             TarotDeckSO deck,
@@ -34,13 +38,16 @@ namespace GeminiLab.Modules.Tarot
             _eventBus = eventBus;
             _readingBackend = readingBackend ?? throw new ArgumentNullException(nameof(readingBackend));
             _clock = clock ?? ResolveClockOrFallback();
+            _lastDrawDateIso = PlayerPrefs.GetString(LastDrawDateKey, string.Empty);
         }
 
-        public string LastDrawDateIso => PlayerPrefs.GetString(LastDrawDateKey, string.Empty);
+        public string Key => "tarot";
+
+        public string LastDrawDateIso => _lastDrawDateIso;
 
         public bool CanDrawToday()
         {
-            return !_clock.IsToday(LastDrawDateIso);
+            return !_clock.IsToday(_lastDrawDateIso);
         }
 
         public TarotDrawResult? DrawDaily(Func<int, int>? randomRange = null)
@@ -63,6 +70,7 @@ namespace GeminiLab.Modules.Tarot
             var orientation = orientationRoll == 0 ? TarotOrientation.Upright : TarotOrientation.Reversed;
 
             string today = _clock.TodayIso;
+            _lastDrawDateIso = today;
             PlayerPrefs.SetString(LastDrawDateKey, today);
             PlayerPrefs.Save();
 
@@ -90,6 +98,37 @@ namespace GeminiLab.Modules.Tarot
 
             _eventBus?.Publish(new TarotReadingReceivedEvent(draw, reading));
             return reading;
+        }
+
+        // ---- IPersistentService ----
+        [Serializable]
+        private struct SavePayload
+        {
+            public int version;
+            public string lastDrawDateIso;
+        }
+
+        public string CaptureJson()
+        {
+            return JsonUtility.ToJson(new SavePayload { version = 1, lastDrawDateIso = _lastDrawDateIso ?? string.Empty });
+        }
+
+        public bool RestoreJson(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return false;
+            try
+            {
+                var payload = JsonUtility.FromJson<SavePayload>(json);
+                _lastDrawDateIso = payload.lastDrawDateIso ?? string.Empty;
+                // 同步回 PlayerPrefs，作为 SaveSystem 不可用时的 cold-start 兜底
+                PlayerPrefs.SetString(LastDrawDateKey, _lastDrawDateIso);
+                PlayerPrefs.Save();
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         private static IGameClock ResolveClockOrFallback()

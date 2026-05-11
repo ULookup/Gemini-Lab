@@ -1,6 +1,7 @@
 #nullable enable
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Settings
@@ -19,6 +20,11 @@ namespace GeminiLab.Modules.Settings
             var service = new SettingsService(eventBus);
             ServiceLocator.Register<ISettingsService>(service);
             eventBus?.Publish(new SettingsChangedEvent(service.Current));
+
+            if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
+            {
+                registry.Register(service);
+            }
 
             Debug.Log("[SettingsBootstrap] SettingsService registered.");
         }

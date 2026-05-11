@@ -1,13 +1,14 @@
 #nullable enable
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Inventory
 {
     /// <summary>
     /// Boot.BootstrapRoot 上挂一个本组件，Inspector 拖入 ItemCatalogSO。
-    /// Awake 时把 InventoryService 注册到 ServiceLocator。
+    /// Awake 时把 InventoryService 注册到 ServiceLocator + IPersistentServiceRegistry。
     /// </summary>
     public sealed class InventoryRuntimeBootstrap : MonoBehaviour
     {
@@ -24,7 +25,14 @@ namespace GeminiLab.Modules.Inventory
             }
 
             ServiceLocator.TryResolve(out EventBus? eventBus);
-            ServiceLocator.Register<IInventoryService>(new InventoryService(_catalog, eventBus));
+            var service = new InventoryService(_catalog, eventBus);
+            ServiceLocator.Register<IInventoryService>(service);
+
+            if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
+            {
+                registry.Register(service);
+            }
+
             Debug.Log("[InventoryBootstrap] InventoryService registered.");
         }
     }
