@@ -75,7 +75,6 @@ namespace GeminiLab.Modules.Pet
             _lastAnimationPosition = transform.position;
 
             PetStateValueSO config = _config ?? ScriptableObject.CreateInstance<PetStateValueSO>();
-            _ = _personality; // Reserved for Phase 3 prompt adaptation.
 
             PetRuntimeData runtime = new()
             {
@@ -94,6 +93,11 @@ namespace GeminiLab.Modules.Pet
             if (!ServiceLocator.TryResolve(out EventBus? eventBus))
             {
                 eventBus = null;
+            }
+            else
+            {
+                // 广播 PetController 初始化完成，供外部（如 PersonalityEvolutionService）观察
+                eventBus.Publish(new PetControllerInitializedEvent(_petId, _personality));
             }
 
             if (!ServiceLocator.TryResolve(out INavigationService? navigationService))

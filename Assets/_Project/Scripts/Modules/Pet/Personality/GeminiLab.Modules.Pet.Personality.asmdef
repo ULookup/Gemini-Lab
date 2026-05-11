@@ -1,0 +1,19 @@
+{
+  "name": "GeminiLab.Modules.Pet.Personality",
+  "rootNamespace": "GeminiLab.Modules.Pet.Personality",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.Pet",
+    "GeminiLab.Modules.Furniture",
+    "GeminiLab.Modules.Tarot"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
