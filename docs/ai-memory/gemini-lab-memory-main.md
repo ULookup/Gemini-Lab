@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-05-07
+Updated: 2026-05-08
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -25,9 +25,9 @@ Updated: 2026-05-07
 
 ## Workspace Identity
 - 项目名称：Gemini-Lab
-- 项目类型：Unity 2D 桌宠 / AI 虚拟宠物客户端
+- 项目类型：Unity 2D 桌宠客户端（长期目标仍保留 AI 陪伴方向）
 - Unity 版本：`2022.3.62f3c1`
-- 目标体验：让宠物在公寓场景与桌面 Overlay 两种形态中持续陪伴用户，并通过 OpenClaw Gateway 获得对话、工作、旅行等行为能力
+- 当前阶段目标体验：让宠物在公寓场景中完成基础移动、家具展示、交互与状态显示；现阶段暂不接入大模型，桌宠主要由玩家直接控制移动
 - 当前协作工具：Unity MCP、嵌入式 Unity Skills、`.cursor/skills/` 与 `.agents/skills/`
 
 ## 当前状态
@@ -100,6 +100,27 @@ Updated: 2026-05-07
   - `read/` 组重命名为 `Pet_Angel_Interact_Read_0001...0006.png`
   - `beside door/` 组重命名为 `Pet_Angel_Interact_BesideDoor_0001...0005.png`
   - `Assets/_Project/Art/Sprites/Pet/README.md` 已改为“方向型帧保留方向字段，非方向型交互帧允许使用变体名”的真实规则
+- `2026-05-08` 已把 Apartment 原型里的桌宠行动入口调整为玩家直接控制：
+  - 新增 `PetPlayerInputController`
+  - 新增 `PetPlayerFurnitureInteractionController`
+  - 新增 `PetClickReactionController`
+  - 新增 `PetClickResponseLibrary`
+  - `Pet_Angel` 现支持 `WASD` 与方向键移动
+  - `Pet_Angel` 现支持靠近指定家具或交互点时按 `F` 触发玩家手动交互
+  - `Pet_Angel` 现支持鼠标左键点击后输出当前表情 Debug 信息，并弹出本地语料气泡回复
+  - `PetController` 在检测到玩家输入组件后，会停止自主移动链路，改由玩家驱动 `Idle / Moving`
+  - 当前文档口径同步收口为：现阶段暂不接入大模型，Gateway / Travel / AI 对话仍保留为后续规划
+  - 同期修正 `FurnitureLayoutPersistence` 与 `ApartmentSceneFurnitureBindings`：
+    - 当前默认禁用家具布局自动恢复
+    - 家具存档只记录运行时摆放家具，不再清掉场景预摆家具
+    - `ApartmentSceneFurnitureBindings` 现可按 `definitionId / Sprite 名 / 现有 hint` 自动找回缺失 `_target`
+  - 同期补入 `Idle` 三视图与 `Sleep` 动画资源接线：
+    - 新增 `Pet_Angel_Idle_Front.anim`
+    - 新增 `Pet_Angel_Idle_Back.anim`
+    - 新增 `Pet_Angel_Idle_Side.anim`
+    - 新增 `Pet_Angel_Sleep.anim`
+    - `Pet_Angel.controller` 新增 `Idle_Front / Idle_Back / Idle_Side / Sleep`
+    - `PetController` 当前会在静止时切到 `Idle_*`，在 `SleepingState` 时切到 `Sleep`
 - `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 现在都不再是完全空目录，且 `Furniture` / `FurnitureConfig` 这条线已覆盖当前全部家具 Sprite 资源；其他模块仍未完成资产作者化。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。
@@ -112,23 +133,24 @@ Updated: 2026-05-07
    - Core：`ServiceLocator`、`EventBus`、`CommandDispatcher`、FSM、`GameBootstrap`
    - 业务模块：`Pet`、`Furniture`、`Navigation`、`Gateway`、`Travel`、`Persistence`、`UI`、`DesktopOverlay`
    - 测试：`EditMode` / `PlayMode` 测试程序集与多组核心模块测试
-4. `Packages/manifest.json` 当前已经包含：
+4. 当前 Apartment 原型里的桌宠主行动方式已经调整为“玩家直接控制移动优先”，不再把自主寻路 / 大模型驱动行为作为当前阶段默认验证目标。
+5. `Packages/manifest.json` 当前已经包含：
    - `com.unity.ai.navigation`
    - `com.ivanmurzak.unity.mcp`
    - `com.ivanmurzak.unity.mcp.particlesystem`
    - `com.ivanmurzak.unity.mcp.animation`
-5. 当前原型里仍存在多处“占位实现 / 运行时兜底”：
+6. 当前原型里仍存在多处“占位实现 / 运行时兜底”：
    - `NavigationService` 与 `NavMesh2DRebaker` 目前更接近占位导航层，不是完整 2D NavMesh 方案
    - `WindowModeAdapter` 目前只提供模式状态与点击穿透标记，没有真正的原生透明窗口实现
    - `GatewayRuntimeHost` 在缺少配置资产时会回退到运行时创建的 Mock 配置
    - `FurnitureService` 在缺少配置资产时会补运行时家具定义
-6. 当前最明显的资源层缺口仍是：
+7. 当前最明显的资源层缺口仍是：
    - `Furniture` 之外的大部分 `Prefab` / `ScriptableObject` 资产仍未作者化
    - 真实人格雷达、美术更完整的交互动画与更正式的 UI 资源仍未补齐
    - `Pet_Angel` 当前已有 `Move_Front / Move_Back / Move_Side / Interact_Read / Interact_BesideDoor`
    - 但 `Idle` 与更完整的 `Emotion` 仍缺少正式资源与状态链路
-7. 当前工作树不是干净状态，执行任何修改前都要先看 `git status`，避免覆盖用户现有改动。
-8. 当前版本控制协作基线已经固定为 `fork + upstream + feature branch + PR` 工作流。
+8. 当前工作树不是干净状态，执行任何修改前都要先看 `git status`，避免覆盖用户现有改动。
+9. 当前版本控制协作基线已经固定为 `fork + upstream + feature branch + PR` 工作流。
 
 ## 长期目标
 - 做成一个真正可持续演化的 AI 桌宠项目，而不是一次性 Demo。

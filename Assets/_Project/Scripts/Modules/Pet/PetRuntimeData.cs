@@ -72,5 +72,15 @@ namespace GeminiLab.Modules.Pet
         public string LastInteractionFurnitureId = string.Empty;
 
         public string LastInteractionSummary = string.Empty;
+
+        public bool IsPlayerInteractionActive;
+
+        public float PlayerInteractionRemainingSeconds;
+
+        public string PlayerInteractionAnimationVariant = string.Empty;
+
+        public string PlayerInteractionAnimatorStateName = string.Empty;
+
+        public string PlayerInteractionLabel = string.Empty;
     }
 }

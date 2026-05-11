@@ -16,6 +16,8 @@ namespace GeminiLab.Modules.Furniture
     {
         private const string LayoutSlot = "furniture_layout";
 
+        [SerializeField] private bool _enableAutoRestore;
+
         private IFurnitureService? _furnitureService;
         private ISaveSystem? _saveSystem;
         private EventBus? _eventBus;
@@ -36,10 +38,13 @@ namespace GeminiLab.Modules.Furniture
                 return;
             }
 
-            FurnitureLayoutSnapshot? snapshot = await _saveSystem.LoadAsync<FurnitureLayoutSnapshot>(LayoutSlot);
-            if (snapshot is not null)
+            if (_enableAutoRestore)
             {
-                _furnitureService.RestoreLayout(snapshot);
+                FurnitureLayoutSnapshot? snapshot = await _saveSystem.LoadAsync<FurnitureLayoutSnapshot>(LayoutSlot);
+                if (snapshot is not null)
+                {
+                    _furnitureService.RestoreLayout(snapshot);
+                }
             }
 
             if (ServiceLocator.TryResolve(out _eventBus))

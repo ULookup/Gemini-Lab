@@ -1,6 +1,6 @@
 # Gemini-Lab 项目结构总览
 
-Updated: 2026-05-07
+Updated: 2026-05-08
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -66,6 +66,8 @@ AI 协作工具链目录。
 - `Editor/` 已有编辑器脚本
 - `Scripts/UI/` 目前主要仍承载目录说明；真实 UI 运行时代码当前主要在 `Scripts/Modules/UI/`
 - `Pet` 与 `Furniture` 当前已经开始补“现有场景家具交互 + 运行时状态显示”链路
+- `Pet` 当前还新增了玩家直接控制入口：`PetPlayerInputController` 已开始用于 `Apartment_Main.unity` 中的 `Pet_Angel`
+- `Pet` 当前还新增了点击回应入口：`PetClickReactionController` 与本地 `PetClickResponseLibrary` 已开始用于 `Pet_Angel` 的点击气泡反馈
 - `Furniture` 当前还新增了场景显式绑定入口，用于把 `Apartment_Main.unity` 里已摆好的关键家具对象稳态接入家具系统，而不是继续完全依赖名称推断
 - `Furniture` 与 `Pet` 当前还在继续补“交互类型级”运行时数据链路：交互类型、交互持续时间、状态面板摘要与动画分支已经开始从家具定义一路传到宠物状态机
 - `ApartmentSceneFurnitureBindings` 当前还承担一层场景作者化兜底：需要持续清理重复 `_target`、修正误绑的定义 ID / 类别，并让场景中的显式绑定与真实 Sprite 资源名保持一致
@@ -80,6 +82,7 @@ AI 协作工具链目录。
 - 这 3 个场景已经足以说明仓库不再是“没有场景”的状态
 - 但它们仍然更接近原型场景，而不是完整量产场景集
 - `Apartment_Main.unity` 当前已经承载宠物、现成家具与状态/库存/概览面板，是任务 1 的主验证场景
+- `Apartment_Main.unity` 当前也是玩家控制宠物移动的主验证场景；`Pet_Angel` 已开始通过 `WASD` / 方向键直接控制
 - `Apartment_Main.unity` 当前除可交互家具对象外，还可能包含一个仅承载纯静态补景家具的 `StaticFurnitureDecorOnly` 子节点
 - `StaticFurnitureDecorOnly` 当前不只用于“纯视觉补景”，也开始承载一部分已有独立 Sprite 家具对象；这些对象若需要进入交互系统，必须同步补场景显式绑定，不能只把 Sprite 摆进场景
 
@@ -152,6 +155,7 @@ SO 分类规划已写明，而且当前已经开始落地实际 `.asset` 文件�
 3. 只有仓库里真实存在的 `.cs`、`.unity`、`.prefab`、`.asset` 等文件，才算已落地内容。
 4. 看到“可运行原型”也不等于看到“最终正式结构”；仍要判断哪些地方是占位实现、哪些地方是资产化落地。
 5. 结构变化以后，要同时更新文档和索引，不能只改文件夹。
+6. 当前阶段如果文档提到“大模型驱动”“自主行动”，要先确认它说的是长期规划还是现阶段原型；现阶段原型已切换为玩家直接控制宠物移动。
 
 ## 推荐阅读顺序
 1. `AGENTS.md`

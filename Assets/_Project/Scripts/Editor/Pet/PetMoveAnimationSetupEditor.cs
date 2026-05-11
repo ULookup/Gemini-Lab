@@ -14,9 +14,7 @@ using UnityEngine;
 namespace GeminiLab.EditorTools.Pet
 {
     /// <summary>
-    /// Builds pet movement clips/controller from either:
-    /// 1. Move/正面、Move/背面、Move/侧面 目录下的序列帧
-    /// 2. 旧版 Pet_Angel_Move_{Front|Back|Side}_0001... 命名约定
+    /// Builds pet move / idle / selected interact clips and wires them into the controller.
     /// </summary>
     public static class PetMoveAnimationSetupEditor
     {
@@ -24,17 +22,32 @@ namespace GeminiLab.EditorTools.Pet
         private const string MoveFrontFolder = MoveSpriteFolder + "/正面";
         private const string MoveBackFolder = MoveSpriteFolder + "/背面";
         private const string MoveSideFolder = MoveSpriteFolder + "/侧面";
-        private const string InteractReadFolder = "Assets/_Project/Art/Sprites/Pet/Frames/Interact/read";
-        private const string InteractBesideDoorFolder = "Assets/_Project/Art/Sprites/Pet/Frames/Interact/beside door";
+
+        private const string IdleSpriteFolder = "Assets/_Project/Art/Sprites/Pet/Frames/Idle";
+        private const string IdleFrontFolder = IdleSpriteFolder + "/正面";
+        private const string IdleBackFolder = IdleSpriteFolder + "/背面";
+        private const string IdleSideFolder = IdleSpriteFolder + "/侧面";
+
+        private const string InteractRootFolder = "Assets/_Project/Art/Sprites/Pet/Frames/Interact";
+        private const string InteractReadFolder = InteractRootFolder + "/self/read";
+        private const string InteractBesideDoorFolder = InteractRootFolder + "/self/beside door";
+        private const string SleepFolder = InteractRootFolder + "/self/sleep";
+
         private const string AnimationFolder = "Assets/_Project/Animations/Pet";
         private const string FrontClipPath = AnimationFolder + "/Pet_Angel_Move_Front.anim";
         private const string BackClipPath = AnimationFolder + "/Pet_Angel_Move_Back.anim";
         private const string SideClipPath = AnimationFolder + "/Pet_Angel_Move_Side.anim";
+        private const string IdleFrontClipPath = AnimationFolder + "/Pet_Angel_Idle_Front.anim";
+        private const string IdleBackClipPath = AnimationFolder + "/Pet_Angel_Idle_Back.anim";
+        private const string IdleSideClipPath = AnimationFolder + "/Pet_Angel_Idle_Side.anim";
         private const string InteractReadClipPath = AnimationFolder + "/Pet_Angel_Interact_Read.anim";
         private const string InteractBesideDoorClipPath = AnimationFolder + "/Pet_Angel_Interact_BesideDoor.anim";
+        private const string SleepClipPath = AnimationFolder + "/Pet_Angel_Sleep.anim";
         private const string ControllerPath = AnimationFolder + "/Pet_Angel.controller";
+
         private const float DefaultFps = 12f;
-        private const int EdgeHoldFrames = 10;
+        private const int InteractEdgeHoldFrames = 10;
+        private const int IdleEdgeHoldFrames = 4;
 
         [MenuItem("Tools/GeminiLab/Pet/Setup Move Animations")]
         public static void SetupMoveAnimations()
@@ -43,42 +56,68 @@ namespace GeminiLab.EditorTools.Pet
             {
                 EnsureFolder(AnimationFolder);
 
-                List<Sprite> frontSprites = LoadMoveSprites(MoveFrontFolder, "Pet_Angel_Move_Front_");
-                List<Sprite> backSprites = LoadMoveSprites(MoveBackFolder, "Pet_Angel_Move_Back_");
-                List<Sprite> sideSprites = LoadMoveSprites(MoveSideFolder, "Pet_Angel_Move_Side_");
+                List<Sprite> moveFrontSprites = LoadMoveSprites(MoveFrontFolder, "Pet_Angel_Move_Front_");
+                List<Sprite> moveBackSprites = LoadMoveSprites(MoveBackFolder, "Pet_Angel_Move_Back_");
+                List<Sprite> moveSideSprites = LoadMoveSprites(MoveSideFolder, "Pet_Angel_Move_Side_");
+
+                List<Sprite> idleFrontSprites = LoadSpritesFromFolder(IdleFrontFolder);
+                List<Sprite> idleBackSprites = LoadSpritesFromFolder(IdleBackFolder);
+                List<Sprite> idleSideSprites = LoadSpritesFromFolder(IdleSideFolder);
+
                 List<Sprite> interactReadSprites = LoadSpritesFromFolder(InteractReadFolder);
                 List<Sprite> interactBesideDoorSprites = LoadSpritesFromFolder(InteractBesideDoorFolder);
+                List<Sprite> sleepSprites = LoadSpritesFromFolder(SleepFolder);
 
-                if (frontSprites.Count == 0 || backSprites.Count == 0 || sideSprites.Count == 0)
+                if (moveFrontSprites.Count == 0 || moveBackSprites.Count == 0 || moveSideSprites.Count == 0)
                 {
-                    Debug.LogError($"[PetAnimSetup] Missing sequence frames. Front={frontSprites.Count}, Back={backSprites.Count}, Side={sideSprites.Count}");
+                    Debug.LogError($"[PetAnimSetup] Missing move sequence frames. Front={moveFrontSprites.Count}, Back={moveBackSprites.Count}, Side={moveSideSprites.Count}");
                     return;
                 }
 
-                AnimationClip frontClip = CreateOrUpdateSpriteClip(FrontClipPath, frontSprites, DefaultFps);
-                AnimationClip backClip = CreateOrUpdateSpriteClip(BackClipPath, backSprites, DefaultFps);
-                AnimationClip sideClip = CreateOrUpdateSpriteClip(SideClipPath, sideSprites, DefaultFps);
+                AnimationClip moveFrontClip = CreateOrUpdateSpriteClip(FrontClipPath, moveFrontSprites, DefaultFps);
+                AnimationClip moveBackClip = CreateOrUpdateSpriteClip(BackClipPath, moveBackSprites, DefaultFps);
+                AnimationClip moveSideClip = CreateOrUpdateSpriteClip(SideClipPath, moveSideSprites, DefaultFps);
+
+                AnimationClip? idleFrontClip = idleFrontSprites.Count > 0
+                    ? CreateOrUpdateSpriteClipWithHeldEdges(IdleFrontClipPath, idleFrontSprites, DefaultFps, IdleEdgeHoldFrames, IdleEdgeHoldFrames)
+                    : null;
+                AnimationClip? idleBackClip = idleBackSprites.Count > 0
+                    ? CreateOrUpdateSpriteClipWithHeldEdges(IdleBackClipPath, idleBackSprites, DefaultFps, IdleEdgeHoldFrames, IdleEdgeHoldFrames)
+                    : null;
+                AnimationClip? idleSideClip = idleSideSprites.Count > 0
+                    ? CreateOrUpdateSpriteClipWithHeldEdges(IdleSideClipPath, idleSideSprites, DefaultFps, IdleEdgeHoldFrames, IdleEdgeHoldFrames)
+                    : null;
+
                 AnimationClip? interactReadClip = interactReadSprites.Count > 0
-                    ? CreateOrUpdateSpriteClipWithHeldEdges(InteractReadClipPath, interactReadSprites, DefaultFps, EdgeHoldFrames, EdgeHoldFrames)
+                    ? CreateOrUpdateSpriteClipWithHeldEdges(InteractReadClipPath, interactReadSprites, DefaultFps, InteractEdgeHoldFrames, InteractEdgeHoldFrames)
                     : null;
                 AnimationClip? interactBesideDoorClip = interactBesideDoorSprites.Count > 0
-                    ? CreateOrUpdateSpriteClipWithHeldEdges(InteractBesideDoorClipPath, interactBesideDoorSprites, DefaultFps, EdgeHoldFrames, EdgeHoldFrames)
+                    ? CreateOrUpdateSpriteClipWithHeldEdges(InteractBesideDoorClipPath, interactBesideDoorSprites, DefaultFps, InteractEdgeHoldFrames, InteractEdgeHoldFrames)
+                    : null;
+                AnimationClip? sleepClip = sleepSprites.Count > 0
+                    ? CreateOrUpdateSpriteClip(SleepClipPath, sleepSprites, DefaultFps)
                     : null;
 
                 AnimatorController controller = CreateOrUpdateController(
                     ControllerPath,
-                    frontClip,
-                    backClip,
-                    sideClip,
+                    moveFrontClip,
+                    moveBackClip,
+                    moveSideClip,
+                    idleFrontClip,
+                    idleBackClip,
+                    idleSideClip,
                     interactReadClip,
-                    interactBesideDoorClip);
+                    interactBesideDoorClip,
+                    sleepClip);
                 int assigned = BindControllerToPetControllers(controller);
                 EditorSceneManager.MarkAllScenesDirty();
 
                 AssetDatabase.SaveAssets();
                 AssetDatabase.Refresh();
 
-                Debug.Log($"[PetAnimSetup] Completed. Move clips updated: 3, interact clips updated: {(interactReadClip is null ? 0 : 1) + (interactBesideDoorClip is null ? 0 : 1)}, controller: {controller.name}, animators assigned/updated: {assigned}.");
+                int idleClipCount = (idleFrontClip is null ? 0 : 1) + (idleBackClip is null ? 0 : 1) + (idleSideClip is null ? 0 : 1);
+                int interactClipCount = (interactReadClip is null ? 0 : 1) + (interactBesideDoorClip is null ? 0 : 1) + (sleepClip is null ? 0 : 1);
+                Debug.Log($"[PetAnimSetup] Completed. Move clips updated: 3, idle clips updated: {idleClipCount}, interact/sleep clips updated: {interactClipCount}, controller: {controller.name}, animators assigned/updated: {assigned}.");
             }
             catch (Exception ex)
             {
@@ -126,11 +165,15 @@ namespace GeminiLab.EditorTools.Pet
 
         private static AnimatorController CreateOrUpdateController(
             string path,
-            AnimationClip front,
-            AnimationClip back,
-            AnimationClip side,
+            AnimationClip moveFront,
+            AnimationClip moveBack,
+            AnimationClip moveSide,
+            AnimationClip? idleFront,
+            AnimationClip? idleBack,
+            AnimationClip? idleSide,
             AnimationClip? interactRead,
-            AnimationClip? interactBesideDoor)
+            AnimationClip? interactBesideDoor,
+            AnimationClip? sleep)
         {
             AnimatorController? controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(path);
             if (controller is null)
@@ -144,9 +187,25 @@ namespace GeminiLab.EditorTools.Pet
             EnsureParameter(controller, "MoveDir", AnimatorControllerParameterType.Int);
 
             AnimatorStateMachine sm = controller.layers[0].stateMachine;
-            AnimatorState frontState = GetOrCreateState(sm, "Move_Front", front);
-            AnimatorState backState = GetOrCreateState(sm, "Move_Back", back);
-            AnimatorState sideState = GetOrCreateState(sm, "Move_Side", side);
+            AnimatorState moveFrontState = GetOrCreateState(sm, "Move_Front", moveFront);
+            _ = GetOrCreateState(sm, "Move_Back", moveBack);
+            _ = GetOrCreateState(sm, "Move_Side", moveSide);
+
+            if (idleFront is not null)
+            {
+                _ = GetOrCreateState(sm, "Idle_Front", idleFront);
+            }
+
+            if (idleBack is not null)
+            {
+                _ = GetOrCreateState(sm, "Idle_Back", idleBack);
+            }
+
+            if (idleSide is not null)
+            {
+                _ = GetOrCreateState(sm, "Idle_Side", idleSide);
+            }
+
             if (interactRead is not null)
             {
                 _ = GetOrCreateState(sm, "Interact_Read", interactRead);
@@ -157,12 +216,17 @@ namespace GeminiLab.EditorTools.Pet
                 _ = GetOrCreateState(sm, "Interact_BesideDoor", interactBesideDoor);
             }
 
-            sm.defaultState = frontState;
+            if (sleep is not null)
+            {
+                _ = GetOrCreateState(sm, "Sleep", sleep);
+            }
+
+            sm.defaultState = moveFrontState;
 
             ClearAnyStateTransitions(sm);
-            AddDirectionTransition(sm, frontState, dir: 0);
-            AddDirectionTransition(sm, backState, dir: 1);
-            AddDirectionTransition(sm, sideState, dir: 2);
+            AddDirectionTransition(sm, moveFrontState, dir: 0);
+            AddDirectionTransition(sm, GetOrCreateState(sm, "Move_Back", moveBack), dir: 1);
+            AddDirectionTransition(sm, GetOrCreateState(sm, "Move_Side", moveSide), dir: 2);
 
             EditorUtility.SetDirty(controller);
             return controller;
@@ -261,6 +325,60 @@ namespace GeminiLab.EditorTools.Pet
             return clip;
         }
 
+        private static AnimationClip CreateOrUpdateSpriteClipWithHeldEdges(
+            string assetPath,
+            IReadOnlyList<Sprite> sprites,
+            float fps,
+            int leadingHoldFrames,
+            int trailingHoldFrames)
+        {
+            AnimationClip? clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
+            if (clip is null)
+            {
+                clip = new AnimationClip
+                {
+                    frameRate = fps,
+                    name = Path.GetFileNameWithoutExtension(assetPath)
+                };
+                AssetDatabase.CreateAsset(clip, assetPath);
+            }
+
+            clip.frameRate = fps;
+
+            EditorCurveBinding binding = EditorCurveBinding.PPtrCurve(
+                string.Empty,
+                typeof(SpriteRenderer),
+                "m_Sprite");
+
+            ObjectReferenceKeyframe[] frames = new ObjectReferenceKeyframe[sprites.Count];
+            float currentTime = 0f;
+            for (int i = 0; i < sprites.Count; i++)
+            {
+                frames[i] = new ObjectReferenceKeyframe
+                {
+                    time = currentTime,
+                    value = sprites[i]
+                };
+
+                if (i == 0)
+                {
+                    currentTime += leadingHoldFrames / fps;
+                }
+                else if (i < sprites.Count - 1)
+                {
+                    currentTime += 1f / fps;
+                }
+            }
+
+            AnimationUtility.SetObjectReferenceCurve(clip, binding, frames);
+            AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
+            settings.loopTime = true;
+            settings.stopTime = currentTime + (trailingHoldFrames / fps);
+            AnimationUtility.SetAnimationClipSettings(clip, settings);
+            EditorUtility.SetDirty(clip);
+            return clip;
+        }
+
         private static List<Sprite> LoadSpritesByPrefix(string prefix)
         {
             string[] guids = AssetDatabase.FindAssets($"t:Sprite {prefix}", new[] { MoveSpriteFolder });
@@ -322,60 +440,6 @@ namespace GeminiLab.EditorTools.Pet
             }
 
             return int.TryParse(match.Groups[1].Value, out int order) ? order : int.MaxValue;
-        }
-
-        private static AnimationClip CreateOrUpdateSpriteClipWithHeldEdges(
-            string assetPath,
-            IReadOnlyList<Sprite> sprites,
-            float fps,
-            int leadingHoldFrames,
-            int trailingHoldFrames)
-        {
-            AnimationClip? clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(assetPath);
-            if (clip is null)
-            {
-                clip = new AnimationClip
-                {
-                    frameRate = fps,
-                    name = Path.GetFileNameWithoutExtension(assetPath)
-                };
-                AssetDatabase.CreateAsset(clip, assetPath);
-            }
-
-            clip.frameRate = fps;
-
-            EditorCurveBinding binding = EditorCurveBinding.PPtrCurve(
-                string.Empty,
-                typeof(SpriteRenderer),
-                "m_Sprite");
-
-            ObjectReferenceKeyframe[] frames = new ObjectReferenceKeyframe[sprites.Count];
-            float currentTime = 0f;
-            for (int i = 0; i < sprites.Count; i++)
-            {
-                frames[i] = new ObjectReferenceKeyframe
-                {
-                    time = currentTime,
-                    value = sprites[i]
-                };
-
-                if (i == 0)
-                {
-                    currentTime += leadingHoldFrames / fps;
-                }
-                else if (i < sprites.Count - 1)
-                {
-                    currentTime += 1f / fps;
-                }
-            }
-
-            AnimationUtility.SetObjectReferenceCurve(clip, binding, frames);
-            AnimationClipSettings settings = AnimationUtility.GetAnimationClipSettings(clip);
-            settings.loopTime = true;
-            settings.stopTime = currentTime + (trailingHoldFrames / fps);
-            AnimationUtility.SetAnimationClipSettings(clip, settings);
-            EditorUtility.SetDirty(clip);
-            return clip;
         }
 
         private static void EnsureFolder(string folderPath)

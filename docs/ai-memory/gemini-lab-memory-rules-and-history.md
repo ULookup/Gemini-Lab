@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Rules And History
 
-Updated: 2026-05-07
+Updated: 2026-05-08
 
 ## 长期规则
 1. 所有中文文档、中文注释、中文说明都必须保持 UTF-8 正常显示。
@@ -24,6 +24,7 @@ Updated: 2026-05-07
 4. `DesktopOverlay` 模块已有运行时代码，但 `WindowModeAdapter` 还没有落真实原生透明窗口 / 点击穿透实现。
 5. 桌面相关文档目前同时存在“设计名 `Desktop`”和“运行时代码目录 `DesktopOverlay`”两套表述，阅读时要显式区分。
 6. 文档体系在 2026-04-21 建立时曾按“骨架阶段”描述仓库，后续若实现继续推进，必须持续刷新文档，避免再出现口径滞后。
+7. `Gateway`、`Travel` 与 AI 对话相关代码当前仍存在于仓库中，但 2026-05-08 起不再作为现阶段原型的默认开发入口；当前阶段应以玩家直接控制桌宠移动与场景交互为准。
 
 ## 最近进展
 
@@ -201,6 +202,29 @@ Updated: 2026-05-07
 - `Assets/_Project/Art/Sprites/Pet/README.md` 已改为更符合当前项目真实情况的命名规则：
   - `Move` 等方向型序列帧继续保留方向字段
   - `Interact_Read`、`Interact_BesideDoor` 这类非方向型交互帧允许使用“状态 + 变体 + 帧号”命名，不强行补虚假的方向字段
+
+### 2026-05-08
+- 新增 `Assets/_Project/Scripts/Modules/Pet/PetPlayerInputController.cs`，作为当前阶段桌宠的玩家输入组件。
+- 新增 `Assets/_Project/Scripts/Modules/Pet/PetPlayerFurnitureInteractionController.cs`，作为当前阶段玩家手动触发桌宠家具交互的入口组件。
+- 新增 `Assets/_Project/Scripts/Modules/Pet/PetClickReactionController.cs`，用于鼠标左键点击桌宠后的表情 Debug 输出与气泡回复。
+- 新增 `Assets/_Project/Scripts/Modules/Pet/PetClickResponseLibrary.cs`，提供当前阶段点击桌宠时使用的 10 句本地回复语料。
+- `Apartment_Main.unity` 中的 `Pet_Angel` 已挂载 `PetPlayerInputController`，当前支持 `WASD` 与方向键直接控制移动。
+- `Apartment_Main.unity` 中的 `Pet_Angel` 已挂载 `PetPlayerFurnitureInteractionController`，并预填了门边、盆栽、竖琴、书柜、天使床五组玩家手动交互配置。
+- `Apartment_Main.unity` 中的 `Pet_Angel` 已挂载 `PetClickReactionController`，当前支持点击桌宠后显示本地气泡回复。
+- `PetController` 已新增玩家控制分支：检测到玩家输入组件后，不再走自主移动 / 调试工作请求链路，而是改由玩家驱动 `Idle / Moving`。
+- 新增 `PetPlayerInputControllerTests.cs`，覆盖键盘输入向量的基础组合与归一化规则。
+- 新增 `PetPlayerFurnitureInteractionControllerTests.cs`，覆盖 self 交互变体名到目录名的映射规则。
+- 新增 `PetClickResponseLibraryTests.cs`，覆盖本地点击回复语料的数量与非空校验。
+- 文档口径已同步调整：当前阶段暂不接入大模型，桌宠主要由玩家直接控制移动；Gateway / Travel / AI 对话仍保留为后续规划能力。
+- 修正家具进入 Play 后“被清空 / 几乎全消失”的运行时根因：
+  - `FurnitureLayoutPersistence` 当前默认禁用自动恢复
+  - 家具布局存档当前只记录运行时摆放家具，`RestoreLayout` 不再销毁场景预摆家具
+  - `ApartmentSceneFurnitureBindings` 当前新增缺失引用自动找回逻辑，优先按 `SceneFurnitureDefinitionHint`、对象名、Sprite 名恢复 `_target`
+- 接入新增 `Idle` / `Sleep` 美术资源到桌宠状态机：
+  - `Idle` 三视图动画当前按“首帧保持 4 帧、尾帧保持 4 帧、整体循环”构建
+  - `Sleep` 动画当前按循环状态接入
+  - `PetController` 当前在静止时播放 `Idle_*`，在 `SleepingState` 时播放 `Sleep`
+  - `PetMoveAnimationSetupEditor` 当前已同步支持 `Idle` / `Sleep` 资源目录与对应 clip / state 重建
 
 ## 已确认决策
 

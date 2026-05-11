@@ -935,6 +935,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 483894545}
+  - component: {fileID: 483894548}
+  - component: {fileID: 483894549}
+  - component: {fileID: 483894550}
   - component: {fileID: 483894547}
   - component: {fileID: 483894546}
   m_Layer: 0
@@ -953,10 +956,11 @@ Transform:
   m_GameObject: {fileID: 483894544}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 8.51, y: -0.59, z: 0}
+  m_LocalPosition: {x: 12.95, y: 0.41, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 1066020256}
   m_Father: {fileID: 1549237633}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &483894546
@@ -1027,6 +1031,163 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!114 &483894548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 483894544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0ef7ac582fd3496d8f8b77d28d8e6fa3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _enableInput: 1
+  _acceptWasd: 1
+  _acceptArrowKeys: 1
+  _moveSpeed: 2.5
+--- !u!114 &483894549
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 483894544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2752e5847d124f0bb5d94220c6b6b3e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _enableInteraction: 1
+  _interactKey: 102
+  _bindings:
+  - _label: "\u95E8\u8FB9"
+    _target: {fileID: 0}
+    _fallbackTargetName: "\u4E2D\u592E\u5206\u9694\u9762"
+    _useFallbackWorldPoint: 1
+    _fallbackWorldPoint: {x: 0, y: 0}
+    _activationDistance: 2
+    _hideTargetWhileInteracting: 0
+    _usePetPoseOverride: 0
+    _petInteractionWorldPoint: {x: 0, y: 0}
+    _petInteractionScale: {x: 1, y: 1, z: 1}
+    _category: 4
+    _interactionType: 3
+    _animationVariant: 0
+    _interactionDurationSeconds: 1.5
+    _animationOptions:
+    - _label: "\u95E8\u8FB9_\u52A8\u753B"
+      _animatorStateName: Interact_BesideDoor
+      _variantKey: beside door
+  - _label: "\u76C6\u683D"
+    _target: {fileID: 0}
+    _fallbackTargetName: "\u5BB6\u5177_\u88C5\u9970_\u76C6\u683D_\u5929\u4F7F_02"
+    _useFallbackWorldPoint: 1
+    _fallbackWorldPoint: {x: 5.81, y: -6.07}
+    _activationDistance: 1.6
+    _hideTargetWhileInteracting: 0
+    _usePetPoseOverride: 0
+    _petInteractionWorldPoint: {x: 0, y: 0}
+    _petInteractionScale: {x: 1, y: 1, z: 1}
+    _category: 4
+    _interactionType: 13
+    _animationVariant: 1
+    _interactionDurationSeconds: 1.6
+    _animationOptions: []
+  - _label: "\u7AD6\u7434"
+    _target: {fileID: 0}
+    _fallbackTargetName: "\u5BB6\u5177_\u7AD6\u7434_\u5929\u4F7F_\u573A\u666F\u5C42_01"
+    _useFallbackWorldPoint: 1
+    _fallbackWorldPoint: {x: 13.87, y: -4.03}
+    _activationDistance: 1.8
+    _hideTargetWhileInteracting: 0
+    _usePetPoseOverride: 0
+    _petInteractionWorldPoint: {x: 0, y: 0}
+    _petInteractionScale: {x: 1, y: 1, z: 1}
+    _category: 3
+    _interactionType: 9
+    _animationVariant: 2
+    _interactionDurationSeconds: 2.2
+    _animationOptions: []
+  - _label: "\u4E66\u67DC"
+    _target: {fileID: 0}
+    _fallbackTargetName: "\u5BB6\u5177_\u88C5\u9970_\u4E66\u67DC_\u5929\u4F7F_01
+      (1)"
+    _useFallbackWorldPoint: 1
+    _fallbackWorldPoint: {x: 2.376638, y: 3.4349914}
+    _activationDistance: 1.8
+    _hideTargetWhileInteracting: 0
+    _usePetPoseOverride: 0
+    _petInteractionWorldPoint: {x: 0, y: 0}
+    _petInteractionScale: {x: 1, y: 1, z: 1}
+    _category: 4
+    _interactionType: 6
+    _animationVariant: 3
+    _interactionDurationSeconds: 2.2
+    _animationOptions: []
+  - _label: "\u5929\u4F7F\u5E8A"
+    _target: {fileID: 748356469}
+    _fallbackTargetName: "\u5BB6\u5177_\u5E8A_\u5929\u4F7F\u5E8A_\u573A\u666F\u5C42_01"
+    _useFallbackWorldPoint: 1
+    _fallbackWorldPoint: {x: 14.2, y: 0.65}
+    _activationDistance: 3.2
+    _hideTargetWhileInteracting: 1
+    _useTargetSortingWhileInteracting: 1
+    _usePetPoseOverride: 1
+    _petInteractionWorldPoint: {x: 15.38, y: 1.51}
+    _petInteractionScale: {x: 0.48, y: 0.48, z: 1}
+    _category: 2
+    _interactionType: 5
+    _animationVariant: 4
+    _interactionDurationSeconds: 2.8
+    _animationOptions:
+    - _label: "\u5929\u4F7F\u5E8A_\u52A8\u753B"
+      _animatorStateName: Sleep
+      _variantKey: sleep
+--- !u!114 &483894550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 483894544}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 790cfaf3c6494183873730f5f64cc34d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _enableClickReaction: 1
+  _bubbleDurationSeconds: 3
+  _bubbleLocalOffset: {x: 0, y: 2.8, z: 0}
+  _bubbleCharacterSize: 0.14
+  _bubbleFontSize: 44
+  _bubbleMinWidth: 3.6
+  _bubbleMaxWidth: 8.2
+  _bubbleMinHeight: 1.1
+  _bubbleLineHeight: 0.46
+  _bubbleHorizontalPadding: 0.6
+  _bubbleVerticalPadding: 0.4
+  _bubbleOutlineThickness: 0.12
+  _bubbleMaxCharactersPerLine: 9
+  _responseCorpus:
+  - "\u6211\u5728\u8FD9\u91CC\u5462\uFF0C\u8981\u4E00\u8D77\u770B\u770B\u623F\u95F4\u5417\uFF1F"
+  - "\u4ECA\u5929\u7684\u98CE\u597D\u50CF\u5F88\u6E29\u67D4\uFF0C\u6211\u6709\u70B9\u5F00\u5FC3\u3002"
+  - "\u88AB\u4F60\u70B9\u5230\u5566\uFF0C\u6211\u4F1A\u8BA4\u771F\u542C\u4F60\u8BF4\u8BDD\u7684\u3002"
+  - "\u6211\u521A\u521A\u5728\u53D1\u5446\uFF0C\u4E0D\u8FC7\u73B0\u5728\u6CE8\u610F\u5230\u4F60\u4E86\u3002"
+  - "\u5982\u679C\u4F60\u613F\u610F\uFF0C\u6211\u53EF\u4EE5\u7EE7\u7EED\u966A\u4F60\u5728\u516C\u5BD3\u91CC\u901B\u901B\u3002"
+  - "\u6211\u73B0\u5728\u5FC3\u60C5\u8FD8\u4E0D\u9519\uFF0C\u60F3\u548C\u4F60\u591A\u5F85\u4E00\u4F1A\u513F\u3002"
+  - "\u4F60\u4E00\u78B0\u6211\uFF0C\u6211\u5C31\u4F1A\u89C9\u5F97\u4ECA\u5929\u6CA1\u6709\u90A3\u4E48\u65E0\u804A\u3002"
+  - "\u6211\u8FD8\u5728\u6162\u6162\u719F\u6089\u8FD9\u91CC\uFF0C\u4E0D\u8FC7\u6709\u4F60\u5728\u5C31\u5B89\u5FC3\u4E00\u70B9\u3002"
+  - "\u4F60\u60F3\u8BA9\u6211\u53BB\u54EA\u91CC\u770B\u770B\uFF1F\u6211\u53EF\u4EE5\u8DDF\u7740\u4F60\u8D70\u3002"
+  - "\u867D\u7136\u73B0\u5728\u8FD8\u4E0D\u4F1A\u771F\u6B63\u8BF4\u5F88\u591A\u8BDD\uFF0C\u4F46\u6211\u5DF2\u7ECF\u60F3\u56DE\u5E94\u4F60\u4E86\u3002"
+  _expressionLabels:
+  - "\u5F00\u5FC3"
+  - "\u597D\u5947"
+  - "\u653E\u677E"
+  - "\u5BB3\u7F9E"
+  - "\u671F\u5F85"
+  _clickReactionAnimations: []
 --- !u!1001 &490600893
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1934,12 +2095,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1066020253}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -20}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 483894545}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1099752355
 PrefabInstance:
@@ -4055,7 +4216,6 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1066020256}
   - {fileID: 213810104}
   - {fileID: 1873992843}
   - {fileID: 2054950170}
