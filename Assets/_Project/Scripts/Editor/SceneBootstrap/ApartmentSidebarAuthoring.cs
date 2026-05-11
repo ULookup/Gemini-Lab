@@ -80,6 +80,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             var tarotBtn = MakeTab(sidebarGo, uiLayer, "Btn_Tarot", "Tarot");
             var collectionBtn = MakeTab(sidebarGo, uiLayer, "Btn_Collection", "Collection");
             var inventoryBtn = MakeTab(sidebarGo, uiLayer, "Btn_Inventory", "Inventory");
+            var gardenBtn = MakeTab(sidebarGo, uiLayer, "Btn_Garden", "Garden");
 
             var sidebar = sidebarGo.AddComponent<SidebarController>();
             var so = new SerializedObject(sidebar);
@@ -91,13 +92,15 @@ namespace GeminiLab.Editor.SceneBootstrap
             so.FindProperty("_tabTarot").objectReferenceValue = tarotBtn;
             so.FindProperty("_tabCollection").objectReferenceValue = collectionBtn;
             so.FindProperty("_tabInventory").objectReferenceValue = inventoryBtn;
+            so.FindProperty("_tabGarden").objectReferenceValue = gardenBtn;
             so.ApplyModifiedProperties();
 
-            // 4 stub panels (as disabled root nodes with a content child)
+            // 5 stub panels (as disabled root nodes with a content child)
             CreateStubPanel<PetStatusPanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Pet Status (WIP)");
             CreateStubPanel<TarotPanelStub>(canvasGo, uiLayer, "Panel_Tarot", "Tarot (WIP)");
             CreateStubPanel<CollectionPanelStub>(canvasGo, uiLayer, "Panel_Collection", "Collection (WIP)");
             CreateStubPanel<InventoryPanelStub>(canvasGo, uiLayer, "Panel_Inventory", "Inventory (WIP)");
+            CreateStubPanel<GardenPanelStub>(canvasGo, uiLayer, "Panel_Garden", "Garden (WIP)");
 
             // Portal to WorldMap
             var portalGo = GameObject.Find("UI_WorldMapPortal");
