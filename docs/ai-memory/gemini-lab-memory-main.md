@@ -96,6 +96,17 @@ Updated: 2026-05-11
   - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
   - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
   - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
+- `2026-05-11` 已落地「Phase F（P0 2.5 天）：宠物陈衰 + 每日重置 + 性格演化」：
+  - **F-1 状态真实衰减**：`PetStateValueSO` 新增 `SatietyDecayPerSecond / LowSatietyMoodPenaltyPerSecond / LowEnergyMoodPenaltyPerSecond / MoodRecoveryPenaltyFactor`；`StatTickService` 重写：饱食始终衰减（睡眠中也饿）、清醒时精力持续衰减、饱食或精力触底时心情反向扣除并把回复速度降到 `MoodRecoveryPenaltyFactor` 倍（默认 0.2）。同时新增 `ApplySatietyDelta` 静态入口供后续喂食流程调用。
+  - **F-2 DailyResetService**：`Core/Time/` 新增 `NewDayStartedEvent` + `IDailyResetService` + `DailyResetService`；实现 `IPersistentService`（Key=`daily_reset`），`LastRecordedDateIso` 进 SaveBundle，同时用 PlayerPrefs 兜底冷启动跨天。`GameBootstrap.RegisterCoreServices` 注册并登记到 Registry；`Start()` 每次入场先 `CheckAndReset` 一次。后续 `TarotService` / 花园 / 每日奖励订阅 `NewDayStartedEvent` 自行刷新。
+  - **F-3 PersonalityEvolutionService**：新程序集 `Modules/Pet/Personality/`（独立 asmdef `GeminiLab.Modules.Pet.Personality`，引用 Core + Pet + Furniture + Tarot，避免 Pet ↔ Tarot 循环）。
+    - `PersonalityVector`（7 维 -1..1，`FromSO` / `Clamp` / `+` 算子），`PersonalityEvolutionRulesSO`（塔罗规则 + 家具交互规则 + GlobalDeltaScale 默认 0.02）
+    - `IPersonalityEvolutionService` + `PersonalityEvolutionService`：订阅 `TarotDrawnEvent`（正位 → Angel 通常受益 / 逆位 → Devil；可按 CardId 特写）+ `PetInteractionCompletedEvent`（按 `FurnitureInteractionType`）+ `PetControllerInitializedEvent`（宠物初始化时以 PersonalityMatrixSO 作为初值）
+    - `PersonalityEvolutionBootstrap`（挂 Boot.BootstrapRoot）在 Awake 里创建 Service，注册到 `ServiceLocator` + `IPersistentServiceRegistry`（Key=`personality`）
+    - 为了避开 Pet → Tarot 反向依赖，`PetController.Awake` 不再直接调 Personality Service；改为广播 `PetControllerInitializedEvent`，由 Personality 子系统订阅回填初值。
+  - **F-4 IPersistentService 接入**：`PetRuntimeSaveService`（Key=`pet_runtime`）把双宠运行态 Mood / Energy / Satiety / runtimeTime / 最近交互 / CurrentState 写进 SaveBundle；`PetRuntimeBootstrap` 在 AfterSceneLoad 注册 IPetRoster（若缺省）并把 `PetRuntimeSaveService` 登记进 Registry；`PersonalityEvolutionService` 自身实现 `IPersistentService` 保存全部 PetId → PersonalityVector。
+  - **HubUI 接线**：`PetStatusPanelStub.RefreshRadar()` 优先读 `IPersonalityEvolutionService.GetMatrix(petId)`，缺失时回退到 `PersonalityMatrixSO`；`GeminiLab.Modules.HubUI.asmdef` 新增对 `GeminiLab.Modules.Pet.Personality` 的引用。
+  - **Editor 新增 authoring**：`Tools/Gemini-Lab/Author Personality Evolution Rules`（生成 `ScriptableObjects/PersonalityConfig/PersonalityEvolutionRules.asset`，预置 6 条塔罗规则 + 5 条家具交互规则）、`Author Boot Personality Bootstrap`（给 BootstrapRoot 挂 `PersonalityEvolutionBootstrap` 并绑定上面那份 Rules）。
 - `2026-05-11` 已落地「Phase E：C1 存档整合」：
   - **Core/Persistence 新增**：`IPersistentServiceRegistry` + `PersistentServiceRegistry`；GameBootstrap 注册默认实现；各业务 Bootstrap 在注册 Service 后调 `registry.Register(service)` 把自己挂进去。
   - **Persistence 模块新增**：`SaveBundle`（顶层容器 + SlotSummary）、`ISaveCoordinator` + `SaveCoordinator`（聚合 ISaveSystem + Registry + IGameClock + EventBus）；`ListSlotsAsync / SaveAsync / LoadAsync / DeleteAsync`；事件 `SaveSlotCommittedEvent / LoadedEvent / DeletedEvent`。

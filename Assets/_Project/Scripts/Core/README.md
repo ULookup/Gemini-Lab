@@ -23,6 +23,7 @@
 | `UI/IUIPanel.cs`、`IUIRouter.cs`、`UIRouter.cs` | 面板栈路由；面板 Prefab 在 Awake 时 Register，业务代码只通过 `Open(PanelId)` 发意图。 |
 | `UI/ToastKind.cs`、`ToastEvents.cs`、`IToastService.cs` | Toast 通知契约；运行时实现在 `Modules/HubUI/Toast/ToastOverlayController`，业务既可 `toast.Show(...)` 也可 `eventBus.Publish(new ToastRequestedEvent(...))`。 |
 | `Time/IGameClock.cs`、`SystemGameClock.cs`、`FakeGameClock.cs` | 全局时间源；塔罗每日限制、花园离线生长、宠物日夜判定**都必须**走这里，禁止业务侧直接 `DateTime.Now`。 |
+| `Time/IDailyResetService.cs`、`DailyResetService.cs`、`DailyResetEvents.cs` | 每日重置协调器。`CheckAndReset()` 与 `IGameClock.TodayIso` 比对，跨天时广播 `NewDayStartedEvent` 并写入 SaveBundle（Key=`daily_reset`）；PlayerPrefs 兜底冷启动。GameBootstrap.Start 每次入场先调一次。 |
 | `Persistence/IPersistentService.cs` | 存档契约（Key + CaptureJson + RestoreJson）；所有参与存档的业务服务必须实现并向 Registry 注册自身。 |
 | `Persistence/IPersistentServiceRegistry.cs` + `PersistentServiceRegistry.cs` | 按 Key 统一收口所有 IPersistentService 实例；SaveCoordinator 通过这里枚举参与存档的服务。GameBootstrap 注册默认实现。 |
 | `Utils/` | `CoroutineRunner`、`MainThreadDispatcher`、`ObjectPool<T>`、`Logger` 等工具。 |

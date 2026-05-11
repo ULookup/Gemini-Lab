@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-05-08
+# Updated: 2026-05-11
 
 AGENTS.md
 
@@ -58,6 +58,9 @@ Assets/_Project/Scripts/Core/UI/IToastService.cs
 Assets/_Project/Scripts/Core/Time/IGameClock.cs
 Assets/_Project/Scripts/Core/Time/SystemGameClock.cs
 Assets/_Project/Scripts/Core/Time/FakeGameClock.cs
+Assets/_Project/Scripts/Core/Time/IDailyResetService.cs
+Assets/_Project/Scripts/Core/Time/DailyResetService.cs
+Assets/_Project/Scripts/Core/Time/DailyResetEvents.cs
 Assets/_Project/Scripts/Core/Persistence/IPersistentService.cs
 Assets/_Project/Scripts/Core/Persistence/IPersistentServiceRegistry.cs
 Assets/_Project/Scripts/Core/Persistence/PersistentServiceRegistry.cs
@@ -104,6 +107,15 @@ Assets/_Project/Scripts/Modules/Desktop/README.md
 Assets/_Project/Scripts/Modules/Persistence/README.md
 Assets/_Project/Scripts/UI/README.md
 Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs
+Assets/_Project/Scripts/Modules/Pet/PetInteractionCompletedEvent.cs
+Assets/_Project/Scripts/Modules/Pet/PetControllerInitializedEvent.cs
+Assets/_Project/Scripts/Modules/Pet/PetRuntimeSaveService.cs
+Assets/_Project/Scripts/Modules/Pet/Personality/GeminiLab.Modules.Pet.Personality.asmdef
+Assets/_Project/Scripts/Modules/Pet/Personality/PersonalityVector.cs
+Assets/_Project/Scripts/Modules/Pet/Personality/PersonalityEvolutionRulesSO.cs
+Assets/_Project/Scripts/Modules/Pet/Personality/IPersonalityEvolutionService.cs
+Assets/_Project/Scripts/Modules/Pet/Personality/PersonalityEvolutionService.cs
+Assets/_Project/Scripts/Modules/Pet/Personality/PersonalityEvolutionBootstrap.cs
 Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs
 Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs
 Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs
