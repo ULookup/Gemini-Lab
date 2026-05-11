@@ -2,6 +2,7 @@
 using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
 using GeminiLab.Core.Time;
 using GeminiLab.Modules.Tarot;
 using UnityEngine;
@@ -28,6 +29,11 @@ namespace GeminiLab.Modules.Collection
 
             var service = new CollectionService(_eventBus);
             ServiceLocator.Register<ICollectionService>(service);
+
+            if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
+            {
+                registry.Register(service);
+            }
 
             if (_eventBus is not null)
             {

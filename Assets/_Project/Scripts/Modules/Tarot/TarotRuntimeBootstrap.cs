@@ -2,6 +2,7 @@
 using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Gateway;
 using UnityEngine;
@@ -43,7 +44,14 @@ namespace GeminiLab.Modules.Tarot
                 Debug.Log("[TarotBootstrap] 未发现 IGatewayClient，塔罗解读走本地 fallback");
             }
 
-            ServiceLocator.Register<ITarotService>(new TarotService(_deck, _eventBus, backend));
+            var service = new TarotService(_deck, _eventBus, backend);
+            ServiceLocator.Register<ITarotService>(service);
+
+            if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
+            {
+                registry.Register(service);
+            }
+
             Debug.Log("[TarotBootstrap] TarotService registered.");
 
             if (_eventBus is not null)
