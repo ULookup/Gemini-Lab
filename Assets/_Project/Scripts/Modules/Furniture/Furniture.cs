@@ -13,12 +13,15 @@ namespace GeminiLab.Modules.Furniture
         [SerializeField] private string _instanceId = Guid.NewGuid().ToString("N");
         [SerializeField] private FurnitureDefinitionSO? _definition;
         [SerializeField] private InteractionAnchor? _anchor;
+        [SerializeField] private bool _isSceneFurniture;
 
         public string InstanceId => _instanceId;
 
         public FurnitureDefinitionSO Definition => _definition!;
 
         public InteractionAnchor Anchor => _anchor!;
+
+        public bool IsSceneFurniture => _isSceneFurniture;
 
         private void Awake()
         {
@@ -55,17 +58,48 @@ namespace GeminiLab.Modules.Furniture
             EnsurePresentation();
         }
 
+        public void SetSceneFurniture(bool isSceneFurniture)
+        {
+            _isSceneFurniture = isSceneFurniture;
+        }
+
         private void EnsurePresentation()
         {
-            SortingGroup sortingGroup = gameObject.GetComponent<SortingGroup>() ?? gameObject.AddComponent<SortingGroup>();
+            if (ShouldPreserveScenePresentation())
+            {
+                return;
+            }
+
+            SortingGroup? sortingGroup = gameObject.GetComponent<SortingGroup>();
+            if (sortingGroup == null)
+            {
+                sortingGroup = gameObject.AddComponent<SortingGroup>();
+            }
+
+            if (sortingGroup == null)
+            {
+                Debug.LogWarning($"[Furniture] Failed to ensure SortingGroup on '{gameObject.name}'.", this);
+                return;
+            }
+
             sortingGroup.sortingLayerName = "Furniture";
 
-            if (TryGetComponent(out SpriteRenderer renderer) && renderer is not null)
+            if (TryGetComponent(out SpriteRenderer renderer) && renderer != null)
             {
                 renderer.sortingLayerName = "Furniture";
                 renderer.sortingOrder = CalculateSortingOrder(transform.position.y, _definition?.PlacementType ?? FurniturePlacementType.Floor);
                 sortingGroup.sortingOrder = renderer.sortingOrder;
             }
+        }
+
+        private bool ShouldPreserveScenePresentation()
+        {
+            if (_isSceneFurniture)
+            {
+                return true;
+            }
+
+            return TryGetComponent(out SceneFurnitureDefinitionHint hint) && hint.EnabledHint;
         }
 
         private static int CalculateSortingOrder(float y, FurniturePlacementType placementType)

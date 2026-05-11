@@ -17,10 +17,7 @@
 | `InteractionConfig/` | `InteractionTableSO`（家具 × 状态值影响表）。 |
 | `GatewayConfig/` | `GatewayConfigSO`（Endpoint、超时、重试）、`SystemPromptTemplateSO`（按性格渲染）。 |
 | `TravelConfig/` | 目的地池、奖励曲线、迷路超时配置。 |
-| `UIConfig/` | UI 主题、色板、本地化键。 |
-| `UIArt/` | `UIArtCatalog.asset`、`UIFontCatalog.asset`：静态 UI 图与 TMP 字体的 key→资源映射。美术替换只改这两个 `.asset`。 |
-| `TarotConfig/` | `TarotDeckSO`、`TarotCardSO`（22 张大阿卡那；正/逆位关键词） |
-| `GardenConfig/` | `CropDefSO`（种子/阶段/生长秒数/产出/图标） |
+| `UIConfig/` | UI 主题、色板、字体映射、本地化键。 |
 
 ## 依赖关系
 - **被依赖**：Prefabs、Scripts/Modules、Scripts/UI 均可只读引用。

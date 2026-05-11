@@ -12,9 +12,6 @@ namespace GeminiLab.Modules.Pet
     [Serializable]
     public sealed class PetRuntimeData
     {
-        /// <summary>该运行态数据属于哪只宠物。默认为 Angel，兼容单宠历史代码。</summary>
-        public PetId PetId = PetId.Angel;
-
         [Range(0f, 100f)]
         public float Mood = 60f;
 
@@ -75,5 +72,15 @@ namespace GeminiLab.Modules.Pet
         public string LastInteractionFurnitureId = string.Empty;
 
         public string LastInteractionSummary = string.Empty;
+
+        public bool IsPlayerInteractionActive;
+
+        public float PlayerInteractionRemainingSeconds;
+
+        public string PlayerInteractionAnimationVariant = string.Empty;
+
+        public string PlayerInteractionAnimatorStateName = string.Empty;
+
+        public string PlayerInteractionLabel = string.Empty;
     }
 }

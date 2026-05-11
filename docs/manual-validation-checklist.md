@@ -80,7 +80,7 @@ Updated: 2026-05-11
 | 长按 `V` 的建造模式可进入 / 退出 |  |  |
 | 家具能正确吸附地板或墙体 |  |  |
 | 家具放置合法性校验可用 |  |  |
-| 宠物可对家具发起自主交互 |  |  |
+| 当前阶段宠物可由玩家直接控制在场景中移动 |  |  |
 | 家具摆放后导航系统能正确更新 |  |  |
 | `Furniture/StaticFurnitureDecorOnly` 下的纯静态补景对象与现有可交互家具不会明显重叠或错位 |  |  |
 | `Furniture` 根上的 `ApartmentSceneFurnitureBindings` 已把当前主要可交互对象正确接入家具系统，且不存在重复或空 `_target` 绑定 |  | 当前至少应覆盖首批关键家具，并扩展到镜子、地毯、园地毯、沙发、凳子、椅子、纸张、耳机、音响、柜体、窗台、玩偶、枕头、小圆镜、羽翼边柜、左下小家具、左下窄家具、恶魔盆栽、照片板等对象 |
@@ -89,9 +89,10 @@ Updated: 2026-05-11
 | 镜子 / 地毯 / 沙发 / 凳子 / 椅子 / 画架 / 照片板 已进入对象级交互链路，且在场景中位置可达、不会明显错位 |  |  |
 | 窗台 / 床上玩偶 / 沙发上枕头 已使用更贴近对象语义的交互类型，而不是继续借用植物或沙发语义 |  |  |
 
-## D. Phase 3 Gateway 与 AI 交互
+## D. Phase 3 Gateway 与 AI 交互（后续规划）
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
+| 当前阶段已明确暂不接入大模型，本节默认可标记为 `未验证 / 暂缓` |  |  |
 | Gateway 配置资产已落地 |  |  |
 | 聊天模式请求链路可用 |  |  |
 | 工作模式请求链路可用 |  |  |
@@ -132,18 +133,19 @@ Updated: 2026-05-11
 适用范围：
 - 目标场景：`Assets/_Project/Scenes/Apartment/Apartment_Main.unity`
 - 只验证当前已有美术资源支撑的内容
-- 当前应至少覆盖：`Bed_Angel`、`Nightstand_Angel`、`Harp_Angel`、`WorkDesk_Angel`、`WorkDesk_Devil`
+- 当前阶段桌宠移动入口以玩家控制为准：`WASD` / 方向键
 - 暂不要求验证缺失美术资源对应的更完整交互动画或正式人格雷达美术
 
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
 | 打开 `Apartment_Main.unity` 后场景能正常进入 PlayMode |  |  |
 | 场景中的现成家具对象会被 `FurnitureService` 注册，而不是只有运行时新摆放家具才能交互 |  |  |
-| 宠物在空闲态会优先选择现有 `Leisure` / `Bed` 类家具发起自主交互 |  |  |
-| 未下发工作请求时，宠物不会把 `WorkDesk` 当作默认自主交互目标 |  |  |
-| 白天中等能量时，宠物会优先选择 `Leisure`，而不会过早跑向 `Bed` |  |  |
-| 夜间中等能量时，宠物比白天更容易把 `Bed` 当作自主目标 |  |  |
-| 宠物移动到家具后会进入 `Interacting`，并能在交互后回到 `Idle` |  |  |
+| `Pet_Angel` 挂载玩家输入组件后，可通过 `WASD` 控制移动 |  |  |
+| `Pet_Angel` 挂载玩家输入组件后，可通过方向键控制移动 |  |  |
+| 无输入时桌宠停留在 `Idle`，有输入时切换到 `Moving` |  |  |
+| 玩家控制移动时，桌宠不会再自行发起默认自主寻路 |  |  |
+| 玩家控制移动方向会正确驱动前 / 后 / 侧面动画切换 |  |  |
+| 鼠标左键点击 `Pet_Angel` 后，会输出当前表情的 Debug 文本并弹出本地语料气泡回复 |  |  |
 | 与床交互后，状态面板中的 `Energy` 有提升或符合预期变化 |  |  |
 | 与竖琴/休闲家具交互后，状态面板中的 `Mood` 有提升或符合预期变化 |  |  |
 | 最近一次交互结果会显示在左上角状态面板的 `Last Interaction` 文本中 |  |  |
@@ -178,14 +180,27 @@ Updated: 2026-05-11
 | `Pet_Angel_Move_Back.anim` 可对应 `背面` 6 帧移动序列 |  |  |
 | `Pet_Angel_Move_Side.anim` 可对应 `侧面` 6 帧移动序列 |  |  |
 | `Pet_Angel.controller` 当前只包含 `Move_Front / Move_Back / Move_Side` 三个状态 |  |  |
+| `Pet_Angel.controller` 已补入 `Idle_Front / Idle_Back / Idle_Side / Sleep` 四个状态 |  |  |
 | 当前 controller 参数与 `PetController` 驱动保持一致：`IsMoving / MoveX / MoveY / MoveDir` |  |  |
 | `PetController` 当前会用 `Move_Front / Move_Back / Move_Side` 实现四方向移动表现：前后分离、左右共用侧面并通过 `flipX` 翻转 |  |  |
+| `PetController` 当前会在非移动状态下按最后朝向切到 `Idle_Front / Idle_Back / Idle_Side` |  |  |
+| `PetController` 当前会在 `SleepingState` 下播放 `Sleep` 动画 |  |  |
 | `Apartment_Main.unity` 中的 `Pet_Angel` 已绑定 `Pet_Angel.controller` 引用 |  |  |
 | `Pet_Angel` 在进入 PlayMode 后会自动补 `Animator` 并使用现有 Move controller |  |  |
 | 使用现有资源可以直接进入补齐范围的内容：移动动画 clip 校验、controller 整理、场景 `Animator` 挂载与移动表现验证 |  |  |
 | 使用现有资源暂时不能直接完成的内容：独立 `Idle` 序列、独立 `Interact` 序列、独立 `Emotion` 序列 |  |  |
 | 若不新增美术，本轮不应把 `Idle / Interact / Emotion` 扩展成“正式完整资源交付” |  |  |
 | 后续若进入正式制作，优先顺序应为：先挂 `Animator` 并验证 Move，再补 `Idle`，最后补 `Interact / Emotion` |  |  |
+
+## K. Idle / Sleep 动画接线
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `Pet_Angel_Idle_Front.anim` 已接入新增正面待机帧并设置循环 |  |  |
+| `Pet_Angel_Idle_Back.anim` 已接入新增背面待机帧并设置循环 |  |  |
+| `Pet_Angel_Idle_Side.anim` 已接入新增侧面待机帧并设置循环 |  |  |
+| 三个 `Idle` clip 都满足首帧保持 4 帧、尾帧保持 4 帧 |  |  |
+| `Pet_Angel_Sleep.anim` 已接入睡觉帧并设置循环 |  |  |
+| `Pet_Angel.controller` 已包含 `Idle_Front / Idle_Back / Idle_Side / Sleep` 状态 |  |  |
 
 ## J. Pet 新增交互动画接线
 适用范围：

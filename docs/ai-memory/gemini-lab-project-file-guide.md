@@ -1,6 +1,6 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-05-07
+Updated: 2026-05-08
 
 ## 入口文件
 - `AGENTS.md`
@@ -44,6 +44,10 @@ Updated: 2026-05-07
 - `Assets/_Project/Scenes/Boot.unity`
 - `Assets/_Project/Scripts/Core/GameBootstrap.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetController.cs`
+- `Assets/_Project/Scripts/Modules/Pet/PetPlayerInputController.cs`
+- `Assets/_Project/Scripts/Modules/Pet/PetPlayerFurnitureInteractionController.cs`
+- `Assets/_Project/Scripts/Modules/Pet/PetClickReactionController.cs`
+- `Assets/_Project/Scripts/Modules/Pet/PetClickResponseLibrary.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs`
 - `Assets/_Project/Scripts/Editor/Pet/PetMoveAnimationSetupEditor.cs`
 - `Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs`
@@ -126,6 +130,11 @@ Updated: 2026-05-07
 12. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
    - 有些对象已经进入对象级交互类型，却未必已经摆进 `Apartment_Main.unity`
    - 场景绑定里的定义 ID、类别和交互类型需要持续与真实 Sprite 资源名保持一致，不能把 `WorkDesk` 类资源误绑成装饰类
+13. `Pet` 模块当前需要区分“长期规划”和“现阶段入口”：
+   - 长期规划仍保留 HFSM、自主行为、Gateway / Travel / AI 对话方向
+   - 当前 Apartment 原型里，`Pet_Angel` 的主要行动入口已经切换为 `PetPlayerInputController`，由玩家通过 `WASD` / 方向键直接控制移动
+   - 当前 Apartment 原型还新增了 `PetPlayerFurnitureInteractionController`，用于靠近特定家具或交互点时按 `F` 触发玩家手动交互
+   - 当前 Apartment 原型还新增了 `PetClickReactionController`，用于鼠标左键点击桌宠后输出表情 Debug，并显示本地语料气泡回复
 13. `Apartment_Main.unity` 当前会用 `StaticFurnitureDecorOnly` 承载一部分“已有独立 Sprite、但不直接走原始关卡对象”的静态家具；这类对象进入交互系统时，也要同步补进 `ApartmentSceneFurnitureBindings`，避免出现“场景有图但无交互绑定”或“绑定有定义但 `_target` 为空”。
 
 ## 模块 README 导航

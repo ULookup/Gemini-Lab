@@ -7,17 +7,14 @@ namespace GeminiLab.Modules.Pet
     /// </summary>
     public readonly struct PetStateChangedEvent
     {
-        public PetStateChangedEvent(string fromState, string toState, PetId petId = PetId.Angel)
+        public PetStateChangedEvent(string fromState, string toState)
         {
             FromState = fromState;
             ToState = toState;
-            PetId = petId;
         }
 
         public string FromState { get; }
 
         public string ToState { get; }
-
-        public PetId PetId { get; }
     }
 }
