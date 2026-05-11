@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-05-10
+Updated: 2026-05-11
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -56,6 +56,19 @@ Updated: 2026-05-10
 | 关闭 Panel 再打开，按钮保持"明天再来"状态（今日已抽过） |  |  |
 | 次日重启游戏，按钮恢复成"抽今日塔罗" |  |  |
 | Console 无 `TarotBootstrap` ERROR；看到 `[TarotBootstrap] TarotService registered.` |  |  |
+
+## B4. Phase C 底座 + PetStatus 面板（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| Boot → MainMenu / MainMenu → Apartment 切场景时能看到黑幕淡入淡出 |  |  |
+| 抽今日塔罗成功后，屏幕右下角弹出绿色 Toast 显示牌名 + 正/逆位 |  |  |
+| Toast 自动淡出，不阻塞点击 |  |  |
+| 打开任意面板后按 ESC 能关闭栈顶面板 |  |  |
+| 连续按 ESC 能把面板栈全部关空 |  |  |
+| 侧边栏点"宠物状态"，面板显示"天使/恶魔"两个 tab + 心情/精力/饱食三条进度条 + 7 维雷达图 |  |  |
+| 点"恶魔"页签切换后宠物名改为"恶魔"、雷达图按恶魔人格刷新 |  |  |
+| 宠物状态值变化时，面板数值实时更新（订阅 PetRuntimeSnapshotChangedEvent） |  |  |
+| Console 无 `GameClock` / `Toast` / `SceneFadeOverlay` / `UIInputRouter` 相关 ERROR |  |  |
 
 ## C. Phase 2 家具、建造与导航
 | 检查项 | 结果 | 备注 |
