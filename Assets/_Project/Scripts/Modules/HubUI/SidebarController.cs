@@ -24,6 +24,7 @@ namespace GeminiLab.Modules.HubUI
         [SerializeField] private Button? _tabTarot;
         [SerializeField] private Button? _tabCollection;
         [SerializeField] private Button? _tabInventory;
+        [SerializeField] private Button? _tabGarden;
 
         private IUIRouter? _router;
         private bool _expanded = true;
@@ -55,6 +56,11 @@ namespace GeminiLab.Modules.HubUI
             if (_tabInventory is not null)
             {
                 _tabInventory.onClick.AddListener(() => OpenPanel(PanelId.Inventory));
+            }
+
+            if (_tabGarden is not null)
+            {
+                _tabGarden.onClick.AddListener(() => OpenPanel(PanelId.Garden));
             }
 
             ApplyState(instant: true);
