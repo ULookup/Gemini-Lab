@@ -1,0 +1,20 @@
+{
+  "name": "GeminiLab.Modules.HubUI",
+  "rootNamespace": "GeminiLab.Modules.HubUI",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.UI",
+    "GeminiLab.Modules.Pet",
+    "GeminiLab.Modules.Tarot",
+    "Unity.TextMeshPro"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

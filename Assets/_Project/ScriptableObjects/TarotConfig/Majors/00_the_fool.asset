@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca33628aeb73e5742a66ce0c90fbd89a, type: 3}
+  m_Name: 00_the_fool
+  m_EditorClassIdentifier: 
+  _majorIndex: 0
+  _id: the_fool
+  _displayNameZh: "\u611A\u8005"
+  _displayNameEn: The Fool
+  _uprightKeywords:
+  - "\u65B0\u5F00\u59CB"
+  - "\u7EAF\u771F"
+  - "\u8DC3\u5165\u672A\u77E5"
+  _reversedKeywords:
+  - "\u9C81\u83BD"
+  - "\u8FDF\u7591"
+  - "\u9519\u5931\u5192\u9669"
+  _artwork: {fileID: 21300000, guid: 51753c17aa7e52b45acf70c01c0f98ae, type: 3}

@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca33628aeb73e5742a66ce0c90fbd89a, type: 3}
+  m_Name: 17_the_star
+  m_EditorClassIdentifier: 
+  _majorIndex: 17
+  _id: the_star
+  _displayNameZh: "\u661F\u661F"
+  _displayNameEn: The Star
+  _uprightKeywords:
+  - "\u5E0C\u671B"
+  - "\u5B81\u9759"
+  - "\u672A\u6765\u7684\u5149"
+  _reversedKeywords:
+  - "\u5931\u671B"
+  - "\u5FC3\u7070"
+  - "\u65AD\u5F00\u4FE1\u5FF5"
+  _artwork: {fileID: 21300000, guid: 64e88129ec3caba459c8161e6472214f, type: 3}

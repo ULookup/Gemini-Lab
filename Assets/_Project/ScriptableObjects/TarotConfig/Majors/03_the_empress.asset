@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ca33628aeb73e5742a66ce0c90fbd89a, type: 3}
+  m_Name: 03_the_empress
+  m_EditorClassIdentifier: 
+  _majorIndex: 3
+  _id: the_empress
+  _displayNameZh: "\u7687\u540E"
+  _displayNameEn: The Empress
+  _uprightKeywords:
+  - "\u4E30\u76DB"
+  - "\u6ECB\u517B"
+  - "\u611F\u5B98\u6EE1\u8DB3"
+  _reversedKeywords:
+  - "\u4F9D\u8D56"
+  - "\u8FC7\u5EA6\u6EBA\u7231"
+  - "\u521B\u9020\u529B\u53D7\u963B"
+  _artwork: {fileID: 21300000, guid: e989c778f28ead34b99c97d49b1e75b0, type: 3}
