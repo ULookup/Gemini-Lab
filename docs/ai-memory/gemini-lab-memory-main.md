@@ -96,6 +96,14 @@ Updated: 2026-05-11
   - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
   - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
   - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
+- `2026-05-11` 已落地「Phase D：面板全建 + Settings/Inventory/Collection 服务」：
+  - **Settings**：新模块 `Modules/Settings`，`ISettingsService` + `SettingsService`（实现 `IPersistentService`），包含主/BGM/SFX 音量、全屏、Overlay 开关、语言 ISO；PlayerPrefs 持久化 + `SettingsChangedEvent` 广播；MainMenu.Canvas 下新增 Panel_Settings（滑条 + 开关 + 重置 + 关闭）。
+  - **Inventory**：新模块 `Modules/Inventory`，`ItemCategory`、`ItemDefSO`、`ItemCatalogSO`、`IInventoryService` + `InventoryService`（实现 `IPersistentService`）、`ItemStack` / `InventoryChangedEvent`；已生成 10 个占位 `ItemDefSO`（种子/作物/塔罗券/旅行补给/纪念物/金币）+ `ItemCatalog.asset`；Apartment `Panel_Inventory` 升级为 Grid + Tooltip 真实面板。
+  - **Collection**：新模块 `Modules/Collection`，`CollectionCategory`、`CollectionEntry`、`ICollectionService` + `CollectionService`（实现 `IPersistentService`）；`CollectionRuntimeBootstrap` 订阅 `TarotDrawnEvent` 自动把抽卡记录归入 Tarot 类别；Apartment `Panel_Collection` 升级为 3 Tab（旅行 / 塔罗 / 花园）+ Grid。
+  - **SaveSlots 骨架**：MainMenu.Canvas 下新增 Panel_SaveSlots，3 个槽位读写 `Application.persistentDataPath/saves/slot_N.json`；仅槽位元数据，真正 SaveSystem 整合留给 Phase E。
+  - **Boot.BootstrapRoot** 新挂三件：`SettingsRuntimeBootstrap`、`InventoryRuntimeBootstrap`、`CollectionRuntimeBootstrap`。
+  - Editor 新增 authoring：`Tools/Gemini-Lab/Author Item Catalog (10 placeholders)`、`Author Boot Phase D Bootstraps`、`Author Settings + SaveSlots Panels (MainMenu)`、`Author Inventory + Collection Panels (Apartment)`。
+  - 顺手恢复：PR #3 merge 中被退回的 `PetRuntimeData.PetId` / `PetRuntimeSnapshotChangedEvent.PetId` / `PetController._petId + Roster 注册` 重新接上，使 Phase C PetStatus 面板的双宠页签继续正常工作。
 - `2026-05-11` 已落地「Phase C 第一轮：底座 + PetStatus Panel」：
   - **GameClock**：`Core/Time/IGameClock` + `SystemGameClock`（默认）+ `FakeGameClock`（测试用）；GameBootstrap 以 `IGameClock` 注册到 ServiceLocator，是业务侧取时间的**唯一入口**。
   - **塔罗每日限制迁移**：`TarotService` 从直接 `DateTime.Now` 改走 `IGameClock.TodayIso` / `IsToday`，构造参数里 `Func<DateTime>` 改为 `IGameClock?`；PlayerPrefs 仍作为临时载体，C1 存档整合时迁移到 SaveSlot。

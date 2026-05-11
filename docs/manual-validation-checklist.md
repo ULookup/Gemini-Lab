@@ -70,6 +70,20 @@ Updated: 2026-05-11
 | 宠物状态值变化时，面板数值实时更新（订阅 PetRuntimeSnapshotChangedEvent） |  |  |
 | Console 无 `GameClock` / `Toast` / `SceneFadeOverlay` / `UIInputRouter` 相关 ERROR |  |  |
 
+## B5. Phase D 面板全建（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 主菜单点"设置"打开 Panel_Settings，滑条拖动后立即生效（文本百分比同步） |  |  |
+| Settings 的"重置为默认"按钮可用，关闭按钮按下或 ESC 都可以退出 |  |  |
+| Settings 改动后重启游戏仍保留（PlayerPrefs） |  |  |
+| 主菜单点"存档"打开 Panel_SaveSlots，显示 3 个槽位（空槽位为"空槽位"） |  |  |
+| 对任一槽位点"新建 / 覆盖"后显示最后游玩时间，关闭重开仍可见 |  |  |
+| 侧边栏"物品栏"：初始为空 Grid，调试加道具（`inventory.Add(...)`）后网格刷新 |  |  |
+| 物品栏格子 hover 显示 tooltip（中文名 / 分类 / 说明） |  |  |
+| 侧边栏"收藏"：抽塔罗成功后切到"塔罗记录"标签能看到新条目 |  |  |
+| 收藏三个标签（旅行 / 塔罗 / 花园）切换空态提示正确 |  |  |
+| Console 无 `SettingsBootstrap` / `InventoryBootstrap` / `CollectionBootstrap` ERROR |  |  |
+
 ## C. Phase 2 家具、建造与导航
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |

@@ -229,6 +229,9 @@ GameObject:
   - component: {fileID: 1934747563}
   - component: {fileID: 1934747565}
   - component: {fileID: 1934747564}
+  - component: {fileID: 1934747568}
+  - component: {fileID: 1934747567}
+  - component: {fileID: 1934747566}
   m_Layer: 0
   m_Name: BootstrapRoot
   m_TagString: Untagged
@@ -335,6 +338,43 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _closeTopKey: 27
+--- !u!114 &1934747566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b6c24f719c93914b98c9f7976c12aa7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1934747567
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d82d263c92f7cd449435f286e535345, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _catalog: {fileID: 11400000, guid: bde5c9348fb02b44db8ca0951fc6a796, type: 2}
+--- !u!114 &1934747568
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0072b306d4e489840811edf23489c6c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
