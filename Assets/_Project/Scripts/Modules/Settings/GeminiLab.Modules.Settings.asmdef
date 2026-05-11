@@ -1,0 +1,16 @@
+{
+  "name": "GeminiLab.Modules.Settings",
+  "rootNamespace": "GeminiLab.Modules.Settings",
+  "references": [
+    "GeminiLab.Core"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

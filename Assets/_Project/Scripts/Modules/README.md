@@ -14,6 +14,9 @@
 | `Travel/` | 旅行指令、异步小记/照片拉取、回归奖励 | 旅行系统 |
 | `Desktop/` | 桌面透明 Overlay、系统级感知、跨屏陪伴 | 桌面场景 |
 | `Persistence/` | 存档/读档、JSON 序列化、云同步占位 | 持久化 |
+| `Settings/` | 全局游戏设置（音量 / 全屏 / Overlay / 语言）；IPersistentService 已实现；PlayerPrefs 持久化 | 设置 |
+| `Inventory/` | 物品栏：ItemDefSO / ItemCatalogSO / InventoryService（含堆叠策略）；IPersistentService 已实现 | 物品栏 |
+| `Collection/` | 收藏：旅行照片 / 塔罗记录 / 花园首次收获；订阅 TarotDrawnEvent 自动归档 | 收藏 |
 
 ## 依赖关系（允许的引用方向）
 
