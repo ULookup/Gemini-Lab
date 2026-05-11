@@ -1,0 +1,133 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a8c58d2f436516349a3d3f8a1663a4bb, type: 3}
+  m_Name: PersonalityEvolutionRules
+  m_EditorClassIdentifier: 
+  TarotRules:
+  - CardId: 
+    Filter: 1
+    TargetPet: 1
+    Delta:
+      Kindness: 1
+      Evilness: 0
+      Calmness: 0.3
+      Bravery: 0
+      Shyness: 0
+      Integrity: 0.5
+      Curiosity: 0
+  - CardId: 
+    Filter: 2
+    TargetPet: 2
+    Delta:
+      Kindness: 0
+      Evilness: 1
+      Calmness: 0
+      Bravery: 0.4
+      Shyness: 0
+      Integrity: 0
+      Curiosity: 0.4
+  - CardId: the_fool
+    Filter: 0
+    TargetPet: 0
+    Delta:
+      Kindness: 0
+      Evilness: 0
+      Calmness: 0
+      Bravery: 0.5
+      Shyness: 0
+      Integrity: 0
+      Curiosity: 1.5
+  - CardId: the_hermit
+    Filter: 1
+    TargetPet: 0
+    Delta:
+      Kindness: 0
+      Evilness: 0
+      Calmness: 1
+      Bravery: 0
+      Shyness: 0.5
+      Integrity: 0
+      Curiosity: 0
+  - CardId: strength
+    Filter: 1
+    TargetPet: 0
+    Delta:
+      Kindness: 0
+      Evilness: 0
+      Calmness: 0.5
+      Bravery: 1
+      Shyness: 0
+      Integrity: 0
+      Curiosity: 0
+  - CardId: the_devil
+    Filter: 1
+    TargetPet: 2
+    Delta:
+      Kindness: 0
+      Evilness: 1.5
+      Calmness: 0
+      Bravery: 0
+      Shyness: 0
+      Integrity: 0
+      Curiosity: 0.5
+  FurnitureRules:
+  - Type: 6
+    TargetPet: 0
+    Delta:
+      Kindness: 0
+      Evilness: 0
+      Calmness: 0.5
+      Bravery: 0
+      Shyness: 0
+      Integrity: 0.3
+      Curiosity: 0
+  - Type: 9
+    TargetPet: 1
+    Delta:
+      Kindness: 0.4
+      Evilness: 0
+      Calmness: 0.3
+      Bravery: 0
+      Shyness: 0
+      Integrity: 0
+      Curiosity: 0
+  - Type: 5
+    TargetPet: 0
+    Delta:
+      Kindness: 0
+      Evilness: 0
+      Calmness: 0.3
+      Bravery: 0
+      Shyness: 0.2
+      Integrity: 0
+      Curiosity: 0
+  - Type: 20
+    TargetPet: 0
+    Delta:
+      Kindness: 0
+      Evilness: 0
+      Calmness: 0
+      Bravery: 0
+      Shyness: 0
+      Integrity: 0
+      Curiosity: 0.5
+  - Type: 7
+    TargetPet: 0
+    Delta:
+      Kindness: 0
+      Evilness: 0.2
+      Calmness: 0
+      Bravery: 0
+      Shyness: 0.3
+      Integrity: 0
+      Curiosity: 0
+  GlobalDeltaScale: 0.02

@@ -5,6 +5,7 @@
     "GeminiLab.Core",
     "GeminiLab.Modules.UI",
     "GeminiLab.Modules.Pet",
+    "GeminiLab.Modules.Pet.Personality",
     "GeminiLab.Modules.Tarot",
     "GeminiLab.Modules.Settings",
     "GeminiLab.Modules.Inventory",

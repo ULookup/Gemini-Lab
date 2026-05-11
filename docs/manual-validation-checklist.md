@@ -96,6 +96,20 @@ Updated: 2026-05-11
 | 没有 SaveSlot 的 cold-start：TarotService 能从 PlayerPrefs 读到上次抽卡日期（兼容旧存档） |  |  |
 | Console 看到 `[PersistenceBootstrap] SaveCoordinator registered.` 与四条 `*Bootstrap registered.` |  |  |
 
+## B7. Phase F 宠物陈衰 / 每日重置 / 性格演化（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 公寓静置 3 分钟：`Satiety` 明显下降；`Energy` 持续下降；`Mood` 在两者正常时缓慢回升 |  |  |
+| `Satiety` <= 30 或 `Energy` <= 20 时：`Mood` 恢复速度变慢（默认 0.2×），并被扣分 |  |  |
+| 让宠物睡觉：`Energy` 上升 / `Mood` 少量回升；但 `Satiety` 仍然持续下降 |  |  |
+| 跨天后启动游戏：Console 看到 `NewDayStartedEvent` 广播；塔罗按钮重新变"抽今日塔罗" |  |  |
+| 同一天内反复重启：不会重复广播新一天事件 |  |  |
+| 抽塔罗正位后：天使雷达某维度（默认善良/正直/冷静等）微升；抽逆位后：恶魔雷达相应维度微升 |  |  |
+| 交互书柜：任一只当前宠物 Calmness / Integrity 微升；交互竖琴（天使）：Kindness / Calmness 微升 |  |  |
+| 存档 → 重启 → 读档：宠物 Mood / Energy / Satiety / 最近交互 / 性格向量全部恢复 |  |  |
+| Console 看到 `PersonalityEvolutionBootstrap` / `PetRuntimeBootstrap` / `DailyResetService` 注册日志 |  |  |
+| Boot.BootstrapRoot 上已挂 `PersonalityEvolutionBootstrap`，且 `_rules` 指向 `PersonalityEvolutionRules.asset` |  |  |
+
 ## C. Phase 2 家具、建造与导航
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
