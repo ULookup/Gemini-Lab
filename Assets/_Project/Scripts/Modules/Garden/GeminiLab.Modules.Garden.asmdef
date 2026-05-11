@@ -1,0 +1,18 @@
+{
+  "name": "GeminiLab.Modules.Garden",
+  "rootNamespace": "GeminiLab.Modules.Garden",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.Inventory",
+    "GeminiLab.Modules.Collection"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
