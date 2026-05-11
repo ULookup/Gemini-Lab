@@ -84,6 +84,18 @@ Updated: 2026-05-11
 | 收藏三个标签（旅行 / 塔罗 / 花园）切换空态提示正确 |  |  |
 | Console 无 `SettingsBootstrap` / `InventoryBootstrap` / `CollectionBootstrap` ERROR |  |  |
 
+## B6. Phase E 存档整合（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 启动后在主菜单打开"存档"面板显示 3 个槽位（默认均为"空槽位"） |  |  |
+| 对任一槽位点"新建 / 覆盖"，摘要改为真实时间戳 `yyyy-MM-dd HH:mm:ss` |  |  |
+| 调节音量 / 抽塔罗 / 调用 `InventoryService.Add` 后保存；重启游戏 → 同槽位"读取" → 状态全部恢复 |  |  |
+| 读档后自动跳回公寓场景 |  |  |
+| "删除"按钮能清掉槽位，摘要回到"空槽位" |  |  |
+| 同一槽位反复 Save / Load 无异常，Console 不出现 SaveBundle 序列化错误 |  |  |
+| 没有 SaveSlot 的 cold-start：TarotService 能从 PlayerPrefs 读到上次抽卡日期（兼容旧存档） |  |  |
+| Console 看到 `[PersistenceBootstrap] SaveCoordinator registered.` 与四条 `*Bootstrap registered.` |  |  |
+
 ## C. Phase 2 家具、建造与导航
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |

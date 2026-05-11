@@ -59,6 +59,11 @@ Assets/_Project/Scripts/Core/Time/IGameClock.cs
 Assets/_Project/Scripts/Core/Time/SystemGameClock.cs
 Assets/_Project/Scripts/Core/Time/FakeGameClock.cs
 Assets/_Project/Scripts/Core/Persistence/IPersistentService.cs
+Assets/_Project/Scripts/Core/Persistence/IPersistentServiceRegistry.cs
+Assets/_Project/Scripts/Core/Persistence/PersistentServiceRegistry.cs
+Assets/_Project/Scripts/Modules/Persistence/SaveBundle.cs
+Assets/_Project/Scripts/Modules/Persistence/ISaveCoordinator.cs
+Assets/_Project/Scripts/Modules/Persistence/SaveCoordinator.cs
 Assets/_Project/Scripts/Modules/HubUI/UIInputRouter.cs
 Assets/_Project/Scripts/Modules/HubUI/SceneFadeOverlay.cs
 Assets/_Project/Scripts/Modules/HubUI/Toast/ToastOverlayController.cs

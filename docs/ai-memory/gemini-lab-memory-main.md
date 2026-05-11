@@ -96,6 +96,12 @@ Updated: 2026-05-11
   - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
   - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
   - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
+- `2026-05-11` 已落地「Phase E：C1 存档整合」：
+  - **Core/Persistence 新增**：`IPersistentServiceRegistry` + `PersistentServiceRegistry`；GameBootstrap 注册默认实现；各业务 Bootstrap 在注册 Service 后调 `registry.Register(service)` 把自己挂进去。
+  - **Persistence 模块新增**：`SaveBundle`（顶层容器 + SlotSummary）、`ISaveCoordinator` + `SaveCoordinator`（聚合 ISaveSystem + Registry + IGameClock + EventBus）；`ListSlotsAsync / SaveAsync / LoadAsync / DeleteAsync`；事件 `SaveSlotCommittedEvent / LoadedEvent / DeletedEvent`。
+  - **PersistenceBootstrap** 升级：在 AfterSceneLoad 阶段依次注册 `ISaveSystem` + `ISaveCoordinator`。
+  - **Settings / Inventory / Collection / Tarot** 四件 Bootstrap 在注册 Service 后均 `Register` 进 Registry；`TarotService` 自己实现 `IPersistentService`（Key=`tarot`），lastDrawDate 走 SaveSlot，PlayerPrefs 保留为 cold-start 兜底；`SettingsService` / `InventoryService` / `CollectionService` 的 Phase D CaptureJson / RestoreJson 现在真正被 Coordinator 消费。
+  - **SaveSlotsPanel** 重构：从 mock JSON 改走 `ISaveCoordinator`；3 个默认槽位 slot_1..slot_3；读档成功后经 `ISceneFlowService` 切回 Apartment。
 - `2026-05-11` 已落地「Phase D：面板全建 + Settings/Inventory/Collection 服务」：
   - **Settings**：新模块 `Modules/Settings`，`ISettingsService` + `SettingsService`（实现 `IPersistentService`），包含主/BGM/SFX 音量、全屏、Overlay 开关、语言 ISO；PlayerPrefs 持久化 + `SettingsChangedEvent` 广播；MainMenu.Canvas 下新增 Panel_Settings（滑条 + 开关 + 重置 + 关闭）。
   - **Inventory**：新模块 `Modules/Inventory`，`ItemCategory`、`ItemDefSO`、`ItemCatalogSO`、`IInventoryService` + `InventoryService`（实现 `IPersistentService`）、`ItemStack` / `InventoryChangedEvent`；已生成 10 个占位 `ItemDefSO`（种子/作物/塔罗券/旅行补给/纪念物/金币）+ `ItemCatalog.asset`；Apartment `Panel_Inventory` 升级为 Grid + Tooltip 真实面板。
