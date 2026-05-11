@@ -12,6 +12,9 @@ namespace GeminiLab.Modules.Pet
     [Serializable]
     public sealed class PetRuntimeData
     {
+        /// <summary>该运行态数据属于哪只宠物。默认 Angel 兼容单宠历史代码。</summary>
+        public PetId PetId = PetId.Angel;
+
         [Range(0f, 100f)]
         public float Mood = 60f;
 

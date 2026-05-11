@@ -19,7 +19,8 @@ namespace GeminiLab.Modules.Pet
             FurnitureInteractionType targetFurnitureInteractionType,
             bool isTraveling,
             string lastInteractionFurnitureId,
-            string lastInteractionSummary)
+            string lastInteractionSummary,
+            PetId petId = PetId.Angel)
         {
             CurrentState = currentState;
             Mood = mood;
@@ -32,6 +33,7 @@ namespace GeminiLab.Modules.Pet
             IsTraveling = isTraveling;
             LastInteractionFurnitureId = lastInteractionFurnitureId;
             LastInteractionSummary = lastInteractionSummary;
+            PetId = petId;
         }
 
         public string CurrentState { get; }
@@ -55,5 +57,8 @@ namespace GeminiLab.Modules.Pet
         public string LastInteractionFurnitureId { get; }
 
         public string LastInteractionSummary { get; }
+
+        /// <summary>发布方所属宠物；默认 Angel 以兼容旧构造。</summary>
+        public PetId PetId { get; }
     }
 }
