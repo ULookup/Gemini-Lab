@@ -4,6 +4,7 @@
 AGENTS.md
 docs/current-task-card.md
 docs/workflow-context-packages.md
+docs/context-compression-and-knowledge-plan.md
 
 docs/ai-memory/gemini-lab-memory-main.md
 docs/ai-memory/gemini-lab-memory-architecture.md

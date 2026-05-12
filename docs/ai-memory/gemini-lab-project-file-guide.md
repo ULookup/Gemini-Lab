@@ -11,6 +11,8 @@ Updated: 2026-05-08
   - 当前主记忆总览与第二入口。
 - `docs/workflow-context-packages.md`
   - 不同任务类型应优先加载哪些上下文文件。
+- `docs/context-compression-and-knowledge-plan.md`
+  - 第二部分工作方式升级：上下文压缩、做梦整理、L2/L3 知识沉淀计划。
 - `README.md`
   - 项目总说明，面向产品、技术栈、整体架构和路线图。
 - `Assets/README.md`
@@ -26,6 +28,7 @@ Updated: 2026-05-08
 - `docs/ai-memory/gemini-lab-memory-main.md`
 - `docs/ai-memory/gemini-lab-memory-rules-and-history.md`
 - `docs/project-structure-overview.md`
+- `docs/context-compression-and-knowledge-plan.md`
 
 ### 想知道项目真正要做成什么
 - `docs/gameplay-spec.md`
@@ -95,6 +98,7 @@ Updated: 2026-05-08
 ### 想按任务类型加载最小必要上下文
 - `docs/workflow-context-packages.md`
 - `docs/current-task-card.md`
+- `docs/context-compression-and-knowledge-plan.md`
 
 ## 当前真实存在的重要目录
 
@@ -105,6 +109,8 @@ Updated: 2026-05-08
   - 当前轮任务的轻量任务卡
 - `docs/workflow-context-packages.md`
   - 当前项目推荐的上下文装配方式
+- `docs/context-compression-and-knowledge-plan.md`
+  - 当前项目第二部分工作方式升级计划
 - `docs/`
   - 项目文档根目录
 - `docs/ai-memory/`

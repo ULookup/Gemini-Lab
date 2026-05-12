@@ -23,6 +23,7 @@ Updated: 2026-05-08
 - [项目 Skill 清单](../project-skill-catalog.md)
 - [Skill 设计边界](../skill-design-boundary.md)
 - [方法论对齐审计](../ai-workspace-bootstrap-alignment.md)
+- [上下文压缩与知识沉淀计划](../context-compression-and-knowledge-plan.md)
 - [记忆索引](./memory-index.paths.txt)
 
 ## Workspace Identity
@@ -52,6 +53,8 @@ Updated: 2026-05-08
   - 规划：复述理解、列边界、等待确认
   - 行动：确认后才改文件、改场景、执行 git
 - 当前推荐按任务类型装配最小必要上下文，不默认把所有项目文档都当作当前任务上下文；具体见 `docs/workflow-context-packages.md`。
+- 渐进式上下文压缩已纳入设计，但当前默认不启用自动压缩；现阶段只保留人工分层方案。
+- 做梦整理、L2 技能手册、L3 知识库已纳入第二部分建设，当前以人工整理、skill 沉淀和索引增强为主。
 - 第一批 workflow skill 已开始落地：
   - `git-sync-upstream-main`
   - 用于安全同步本地 `main` 到 `ULookup:main`，并在同步后切回用户原来的工作分支
