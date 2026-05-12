@@ -263,3 +263,28 @@ Updated: 2026-05-08
 2. 把导航与桌面 Overlay 从占位实现推进到真实可验证实现。
 3. 在 Unity 中补跑 EditMode / PlayMode / 场景验证，并回写人工验证清单。
 4. 每次新增真实场景、Prefab、SO、关键脚本或 skill 结构变化后，及时刷新主记忆、文件指南、结构总览与索引。
+## 2026-05-12 工作方式升级
+- 开始把智能体协作方式收口为“硬协作契约 + 上下文包 + 轻量三级记忆”的组合。
+- `AGENTS.md` 已强化：
+  - 新需求先复述理解
+  - 用户确认后再执行
+  - 当前任务只处理当前任务边界
+  - 发现别的问题只提醒，不顺带处理
+  - 默认采用“探索 → 规划 → 行动”三段式
+  - 引入命令风险分类（安全 / 有风险 / 危险）
+- 新增：
+  - `docs/current-task-card.md` 作为 L1 当前任务卡
+  - `docs/workflow-context-packages.md` 作为任务上下文装配入口
+- `docs/ai-memory/` 继续作为 L2 常驻项目记忆主体，不整体推翻重做。
+- git 历史、PR 历史和长文档继续视作 L3 完整历史，仅按需搜索，不默认整段加载。
+- 同日开始落第一批 workflow skill：
+  - `git-sync-upstream-main`
+  - 目标是把高风险、重复使用的 upstream 同步操作收口成单用途流程，而不是继续依赖临时命令链。
+  - `unity-clear-generated-cache`
+  - 目标是把“只清缓存、不改源码”的高风险清理操作也收口成单用途流程。
+  - `apartment-scene-rollback-to-commit`
+  - 目标是把“精准回退公寓场景到指定 commit”的高风险 git 操作收口成单用途流程，防止回退范围失控。
+  - `pet-animation-reference-rebuild`
+  - 目标是把“只修复 Pet 动画引用链，不顺手改场景和交互逻辑”的高频动画修复操作收口成单用途流程。
+  - `furniture-binding-check`
+  - 目标是把“只读盘点家具绑定问题、先分类再决定修复”的高频排查操作收口成单用途流程。

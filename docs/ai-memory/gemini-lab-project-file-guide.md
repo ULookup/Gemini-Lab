@@ -5,8 +5,12 @@ Updated: 2026-05-08
 ## 入口文件
 - `AGENTS.md`
   - 当前项目总入口。任何智能体进入项目后都应先读它。
+- `docs/current-task-card.md`
+  - 当前这一轮任务的轻量任务卡（L1）。
 - `docs/ai-memory/gemini-lab-memory-main.md`
   - 当前主记忆总览与第二入口。
+- `docs/workflow-context-packages.md`
+  - 不同任务类型应优先加载哪些上下文文件。
 - `README.md`
   - 项目总说明，面向产品、技术栈、整体架构和路线图。
 - `Assets/README.md`
@@ -18,6 +22,7 @@ Updated: 2026-05-08
 
 ### 想知道项目现在处于什么状态
 - `AGENTS.md`
+- `docs/current-task-card.md`
 - `docs/ai-memory/gemini-lab-memory-main.md`
 - `docs/ai-memory/gemini-lab-memory-rules-and-history.md`
 - `docs/project-structure-overview.md`
@@ -77,16 +82,29 @@ Updated: 2026-05-08
 - `.agents/skills/`
 - `docs/project-skill-catalog.md`
 - `docs/skill-design-boundary.md`
+- `.agents/skills/git-sync-upstream-main/SKILL.md`
+- `.agents/skills/unity-clear-generated-cache/SKILL.md`
+- `.agents/skills/apartment-scene-rollback-to-commit/SKILL.md`
+- `.agents/skills/pet-animation-reference-rebuild/SKILL.md`
+- `.agents/skills/furniture-binding-check/SKILL.md`
 
 ### 想看版本控制与 PR 流程
 - `docs/git-fork-upstream-pr-workflow.md`
 - `AGENTS.md`
+
+### 想按任务类型加载最小必要上下文
+- `docs/workflow-context-packages.md`
+- `docs/current-task-card.md`
 
 ## 当前真实存在的重要目录
 
 ### 文档与协作
 - `AGENTS.md`
   - 当前项目总入口与执行规则入口
+- `docs/current-task-card.md`
+  - 当前轮任务的轻量任务卡
+- `docs/workflow-context-packages.md`
+  - 当前项目推荐的上下文装配方式
 - `docs/`
   - 项目文档根目录
 - `docs/ai-memory/`
@@ -95,6 +113,16 @@ Updated: 2026-05-08
   - 当前项目本地 skill 清单与分类说明
 - `docs/skill-design-boundary.md`
   - 当前项目 skill 的设计边界与组织方式
+- `.agents/skills/git-sync-upstream-main/`
+  - 第一批 workflow skill：安全同步本地 `main` 到 `ULookup:main`
+- `.agents/skills/unity-clear-generated-cache/`
+  - 第二批 workflow skill：只清理 Unity 生成缓存，不改源码
+- `.agents/skills/apartment-scene-rollback-to-commit/`
+  - 第三批 workflow skill：精准回退 `Apartment_Main.unity` 到指定 commit
+- `.agents/skills/pet-animation-reference-rebuild/`
+  - 第四批 workflow skill：重建 `Pet_Angel` 的动画资源与 controller 引用链
+- `.agents/skills/furniture-binding-check/`
+  - 第五批 workflow skill：只读巡检 Apartment 家具绑定状态
 - `docs/git-fork-upstream-pr-workflow.md`
   - 当前项目标准 fork / upstream / feature branch / PR 工作流
 
@@ -136,6 +164,11 @@ Updated: 2026-05-08
    - 当前 Apartment 原型还新增了 `PetPlayerFurnitureInteractionController`，用于靠近特定家具或交互点时按 `F` 触发玩家手动交互
    - 当前 Apartment 原型还新增了 `PetClickReactionController`，用于鼠标左键点击桌宠后输出表情 Debug，并显示本地语料气泡回复
 13. `Apartment_Main.unity` 当前会用 `StaticFurnitureDecorOnly` 承载一部分“已有独立 Sprite、但不直接走原始关卡对象”的静态家具；这类对象进入交互系统时，也要同步补进 `ApartmentSceneFurnitureBindings`，避免出现“场景有图但无交互绑定”或“绑定有定义但 `_target` 为空”。
+14. 当前工作流已开始显式区分三层记忆：
+   - `L1`：`docs/current-task-card.md`
+   - `L2`：`docs/ai-memory/`
+   - `L3`：git / PR / 长文档历史
+15. 当前工作流已开始显式区分任务上下文包，入口在 `docs/workflow-context-packages.md`。
 
 ## 模块 README 导航
 - `Assets/_Project/Scripts/Modules/Pet/README.md`

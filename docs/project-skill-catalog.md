@@ -13,9 +13,14 @@ Updated: 2026-04-27
 
 ## 当前状态
 - `.agents/skills/` 与 `.cursor/skills/` 当前仍是镜像关系。
-- 两边目录数都为 `72`。
+- 两边目录数都为 `77`。
 - 当前没有发现“只存在于一边”的 skill。
 - 相比早期清单，当前已新增动画与 Animator 相关 skill。
+- 当前工作流升级后，skill 的职责更明确地收口为：
+  - 固定流程
+  - 工具组合流程
+  - 高风险操作的标准化 workflow
+  - 不承载即时项目状态
 
 ## 存放位置
 
@@ -38,6 +43,19 @@ Updated: 2026-04-27
    - `docs/ai-memory/gemini-lab-project-file-guide.md`
    - `docs/skill-design-boundary.md`
    - 本文档
+4. 后续优先考虑新增“单用途 workflow skill”，而不是继续把高风险操作拼成长 shell 命令链。
+
+## 建议优先规划的 workflow skill
+- `同步 upstream/main`
+- `回退 Apartment 场景到指定 commit`
+- `重建 Pet 动画引用`
+- `检查家具绑定`
+- `清理 Unity 生成缓存`
+
+这些 workflow skill 的目标是：
+- 降低高风险命令链长度
+- 提高可审查性
+- 降低任务边界漂移导致的误操作概率
 
 ## 分类总览
 
@@ -145,6 +163,15 @@ Updated: 2026-04-27
 | `unity-skill-create` | 通过 C# 代码创建新的 Unity skill。 |
 | `unity-skill-generate` | 从项目现有 Tools 生成 skills。 |
 
+### 9. Workflow Skill
+| Skill | 用途 |
+| :--- | :--- |
+| `git-sync-upstream-main` | 安全同步本地 `main` 到 `ULookup:main`，并在完成后切回用户原来的工作分支。 |
+| `unity-clear-generated-cache` | 只清理 Unity 生成缓存（`Library/ScriptAssemblies`、`Library/Bee`、`Temp`），不改源码。 |
+| `apartment-scene-rollback-to-commit` | 精准把 `Apartment_Main.unity` 回退到指定 commit，不顺手扩大到整个项目。 |
+| `pet-animation-reference-rebuild` | 只修复 `Pet_Angel` 的动画资源、clip、controller 与场景绑定引用链。 |
+| `furniture-binding-check` | 只读盘点 Apartment 家具绑定状态，区分脚本层、场景层与资源层问题。 |
+
 ## 常见工作流组合
 
 ### 动画资产链
@@ -199,6 +226,46 @@ Updated: 2026-04-27
 
 适合：
 - 想隔离某次操作引发的问题日志
+
+### Git upstream 同步链
+`git-sync-upstream-main`
+
+适合：
+- 用户明确要求“把本地仓库和 `ULookup:main` upstream 一下”
+- 只同步本地 `main`
+- 不顺手改当前功能分支
+
+### Unity 生成缓存清理链
+`unity-clear-generated-cache`
+
+适合：
+- 用户明确要求“只清理 Unity 生成缓存”
+- 想让 Unity 在当前源码状态下重新完整编译
+- 不希望顺手修改源码或场景
+
+### Apartment 场景精准回退链
+`apartment-scene-rollback-to-commit`
+
+适合：
+- 用户明确要求“把公寓场景回退到某个 commit”
+- 默认只回退 `Apartment_Main.unity`
+- 不希望顺手回退整个项目
+
+### Pet 动画引用修复链
+`pet-animation-reference-rebuild`
+
+适合：
+- 用户明确要求“重建 Pet 动画引用”
+- 需要核对 `Move / Idle / Interact / Sleep`
+- 不希望顺手把动画修复扩大成场景或交互逻辑重构
+
+### 家具绑定巡检链
+`furniture-binding-check`
+
+适合：
+- 用户明确要求“检查家具绑定”
+- 需要核对 Apartment 家具对象是否真的接进了绑定链
+- 需要区分脚本问题、场景问题和资源问题
 
 ## 当前维护建议
 1. `.agents/skills/` 继续视为主工作区技能源，`.cursor/skills/` 继续作为镜像目录维护。

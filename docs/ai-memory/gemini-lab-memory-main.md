@@ -9,6 +9,8 @@ Updated: 2026-05-08
 
 ## 快速导航
 - [AGENTS.md](../../AGENTS.md)
+- [当前任务卡](../current-task-card.md)
+- [上下文包](../workflow-context-packages.md)
 - [架构记忆](./gemini-lab-memory-architecture.md)
 - [规则与历史](./gemini-lab-memory-rules-and-history.md)
 - [开发手册](./gemini-lab-agent-development-playbook.md)
@@ -29,6 +31,38 @@ Updated: 2026-05-08
 - Unity 版本：`2022.3.62f3c1`
 - 当前阶段目标体验：让宠物在公寓场景中完成基础移动、家具展示、交互与状态显示；现阶段暂不接入大模型，桌宠主要由玩家直接控制移动
 - 当前协作工具：Unity MCP、嵌入式 Unity Skills、`.cursor/skills/` 与 `.agents/skills/`
+
+## 记忆分层
+- L1 当前任务卡：`docs/current-task-card.md`
+  - 只保存当前这一轮任务目标、边界、完成标准和明确不做项。
+- L2 常驻项目记忆：`docs/ai-memory/`
+  - 保存长期稳定规则、结构、文件导航、历史决策。
+- L3 完整历史：
+  - git 历史、PR 历史、长文档与旧阶段记录。
+  - 仅支持搜索，不默认整段加载。
+
+## 当前工作方式升级
+- 当前项目已开始把智能体工作方式从“长会话自由推进”收口为：
+  - 新需求先复述理解
+  - 用户确认后再执行
+  - 当前任务只做当前任务
+  - 发现别的问题只提醒，不顺带处理
+- 当前默认使用“探索 → 规划 → 行动”三段式：
+  - 探索：只读检查，不改文件
+  - 规划：复述理解、列边界、等待确认
+  - 行动：确认后才改文件、改场景、执行 git
+- 当前推荐按任务类型装配最小必要上下文，不默认把所有项目文档都当作当前任务上下文；具体见 `docs/workflow-context-packages.md`。
+- 第一批 workflow skill 已开始落地：
+  - `git-sync-upstream-main`
+  - 用于安全同步本地 `main` 到 `ULookup:main`，并在同步后切回用户原来的工作分支
+  - `unity-clear-generated-cache`
+  - 用于只清理 `Library/ScriptAssemblies`、`Library/Bee`、`Temp`，让 Unity 在当前源码状态下重新完整编译
+  - `apartment-scene-rollback-to-commit`
+  - 用于只回退 `Apartment_Main.unity` 到指定 commit，避免把场景回退误扩大成整个项目回退
+  - `pet-animation-reference-rebuild`
+  - 用于只修复 `Pet_Angel` 的动画资源、clip、controller 与场景绑定引用链
+  - `furniture-binding-check`
+  - 用于只读盘点 Apartment 家具绑定状态，并明确区分脚本层、场景层与资源层问题
 
 ## 当前状态
 - 当前仓库已经从“文档与工程骨架先行”推进到“文档 + 原型实现并行”阶段。

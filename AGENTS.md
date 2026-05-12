@@ -39,8 +39,15 @@
 6. 在执行任何依赖路径、场景、Prefab、脚本的任务前，先确认对应文件真实存在。
 
 ## Operating Rules
-- 每次收到新需求，先复述理解，再执行。
-- 用户没有明确说“执行”“修改”“创建”“提交”前，不直接改文件；先给理解、检查结果或建议。
+- 每次收到新需求，先复述理解，再执行；未完成复述确认前，不进入文件修改、命令执行或提交阶段。
+- 用户没有明确说“执行”“修改”“创建”“提交”“push”前，不直接改文件；先给理解、检查结果或建议。
+- 当前任务只处理当前任务边界内的内容，不自动扩展到旧任务、相邻任务或顺手发现的问题。
+- 如果在执行当前任务时发现别的问题，只单独提醒，不顺带处理，除非用户重新确认并明确要求执行。
+- 每轮任务按“探索 → 规划 → 行动”三段式推进：
+  - 探索：只读检查、收集事实、确认文件真实存在，不改文件。
+  - 规划：复述理解、说明边界、列出拟执行动作，等待用户确认。
+  - 行动：仅在用户确认后执行修改、资源调整、git 操作或提交。
+- 小任务允许极简规划，但不能跳过“先复述理解、等确认再执行”。
 - 文档中文必须正常显示，脚本注释中文也必须正常显示。
 - 所有输出都要明确区分：
   - 仓库中已经存在的事实
@@ -84,6 +91,26 @@
 - 涉及 fork / upstream / main / feature 分支 / PR 的操作，遵循 `docs/git-fork-upstream-pr-workflow.md`。
 - `main` 默认只做同步原仓库，不作为日常功能开发分支。
 - 新开发任务默认从同步后的 `main` 创建新分支开始。
+
+### 命令风险分类
+- 安全：
+  - 读文件、查状态、搜索、日志读取、只读 git 查询。
+  - 默认可直接执行，但仍应先说明当前在做什么。
+- 有风险：
+  - 改文档、改脚本、改 `.meta`、切分支、普通提交、普通 push、场景内非破坏性修改。
+  - 必须完成“复述理解 + 用户确认执行”后再做。
+- 危险：
+  - `reset --hard`、大规模删除、场景整体覆盖、批量改资源、清理 `Library`、强推分支、改远程地址、批量回退。
+  - 必须单独说明影响范围，得到明确确认后才可执行。
+
+### 上下文装配
+- 根据任务类型，优先装配最小必要上下文，不默认把所有记忆文档全部当作当前任务上下文。
+- 推荐优先查阅：
+  - Git / PR / upstream：`docs/git-fork-upstream-pr-workflow.md`
+  - Apartment 场景：`docs/project-structure-overview.md`、`docs/ai-memory/gemini-lab-project-file-guide.md`
+  - Pet 动画：`Assets/_Project/Art/Sprites/Pet/README.md`、`Assets/_Project/Animations/Pet/`
+  - 家具交互：`Assets/_Project/Scripts/Modules/Furniture/README.md`、`docs/furniture-interaction-coverage-map.md`
+- 具体装配规则见 `docs/workflow-context-packages.md`。
 
 ### Skill 规则
 - skill 只承载可复用流程、工具配合流程和标准化操作步骤。
