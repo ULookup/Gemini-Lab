@@ -67,6 +67,7 @@ namespace GeminiLab.Modules.Furniture
         {
             if (ShouldPreserveScenePresentation())
             {
+                EnsureCollisionShape();
                 return;
             }
 
@@ -90,6 +91,8 @@ namespace GeminiLab.Modules.Furniture
                 renderer.sortingOrder = CalculateSortingOrder(transform.position.y, _definition?.PlacementType ?? FurniturePlacementType.Floor);
                 sortingGroup.sortingOrder = renderer.sortingOrder;
             }
+
+            EnsureCollisionShape();
         }
 
         private bool ShouldPreserveScenePresentation()
@@ -111,6 +114,30 @@ namespace GeminiLab.Modules.Furniture
             }
 
             return sortOrder;
+        }
+
+        private void EnsureCollisionShape()
+        {
+            BoxCollider2D? collider = gameObject.GetComponent<BoxCollider2D>();
+            if (collider != null)
+            {
+                return;
+            }
+
+            collider = gameObject.AddComponent<BoxCollider2D>();
+            if (collider == null)
+            {
+                return;
+            }
+
+            FurniturePlacementType placementType = _definition?.PlacementType ?? FurniturePlacementType.Floor;
+            collider.isTrigger = placementType == FurniturePlacementType.Wall;
+
+            Vector2Int occupiedCells = _definition?.OccupiedCells ?? Vector2Int.one;
+            collider.size = new Vector2(
+                Mathf.Max(0.5f, occupiedCells.x),
+                Mathf.Max(0.5f, occupiedCells.y));
+            collider.offset = Vector2.zero;
         }
     }
 }
