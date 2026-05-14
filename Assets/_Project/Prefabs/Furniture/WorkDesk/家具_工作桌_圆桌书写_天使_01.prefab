@@ -104,6 +104,7 @@ MonoBehaviour:
   _instanceId: 76ff385ac88e42178dd5843a82c05a43
   _definition: {fileID: 11400000, guid: 6298671b7fbbad04694a35d52f46dccc, type: 2}
   _anchor: {fileID: 6411441873573611270}
+  _isSceneFurniture: 0
 --- !u!114 &6411441873573611270
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -150,7 +151,7 @@ SortingGroup:
   m_Enabled: 1
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: -55
+  m_SortingOrder: 600
   m_SortAtRoot: 0
 --- !u!61 &5436532272934512937
 BoxCollider2D:
@@ -184,7 +185,7 @@ BoxCollider2D:
   m_IsTrigger: 0
   m_UsedByEffector: 0
   m_UsedByComposite: 0
-  m_Offset: {x: 0, y: 0}
+  m_Offset: {x: 0.009801626, y: 0.8163378}
   m_SpriteTilingProperty:
     border: {x: 0, y: 0, z: 0, w: 0}
     pivot: {x: 0.5, y: 0.5}
@@ -195,5 +196,5 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 2, y: 1}
+  m_Size: {x: 3.1173682, y: 0.5435014}
   m_EdgeRadius: 0

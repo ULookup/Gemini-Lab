@@ -2,6 +2,9 @@
 # Updated: 2026-05-11
 
 AGENTS.md
+docs/current-task-card.md
+docs/workflow-context-packages.md
+docs/context-compression-and-knowledge-plan.md
 
 docs/ai-memory/gemini-lab-memory-main.md
 docs/ai-memory/gemini-lab-memory-architecture.md
@@ -20,6 +23,11 @@ docs/git-fork-upstream-pr-workflow.md
 docs/project-skill-catalog.md
 docs/skill-design-boundary.md
 docs/ai-workspace-bootstrap-alignment.md
+.agents/skills/git-sync-upstream-main/SKILL.md
+.agents/skills/unity-clear-generated-cache/SKILL.md
+.agents/skills/apartment-scene-rollback-to-commit/SKILL.md
+.agents/skills/pet-animation-reference-rebuild/SKILL.md
+.agents/skills/furniture-binding-check/SKILL.md
 
 README.md
 Assets/README.md

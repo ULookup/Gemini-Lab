@@ -16,6 +16,16 @@ Updated: 2026-04-27
 - Cursor 镜像目录：`.cursor/skills/`
 - 当前两边目录仍为镜像关系，应持续保持同步
 - 每个 skill 至少应包含自己的 `SKILL.md`
+- 当前工作流升级后，skill 的首要目标是：
+  - 封装可复用流程
+  - 封装高风险操作的标准 workflow
+  - 减少临时命令链带来的误操作
+- 第一批已开始落地的 workflow skill：
+  - `git-sync-upstream-main`
+  - `unity-clear-generated-cache`
+  - `apartment-scene-rollback-to-commit`
+  - `pet-animation-reference-rebuild`
+  - `furniture-binding-check`
 
 ## 什么适合做 skill
 以下内容适合做 skill：
@@ -25,6 +35,8 @@ Updated: 2026-04-27
 - 场景打开、修改、保存的标准流程
 - Prefab 打开、修改、保存、关闭的标准流程
 - 日志清空后复现并读取错误的调试流程
+- Git / upstream / PR 同步流程
+- Unity 生成缓存清理与重编译流程
 
 ### 2. 明显需要工具链协同的标准化操作
 例如：
@@ -103,6 +115,8 @@ Updated: 2026-04-27
 - 动画 / Animator 资产操作流程
 - 测试与日志排查流程
 - 文档修复、索引刷新、验证清单回写流程
+- 高风险操作的单用途 workflow
+  - 例如 upstream 同步、场景精准回退、缓存清理、家具绑定巡检
 
 ### 不应该写成 skill 的方向
 - Gemini-Lab 当前阶段进度
@@ -123,3 +137,4 @@ Updated: 2026-04-27
 2. `.cursor/skills/` 作为镜像目录，应保持一致。
 3. skill 写流程，不写项目现状。
 4. skill 可以复用结构，但内容必须贴 Gemini-Lab 当前的真实玩法和工具链。
+5. 高风险流程优先做成“单用途 skill”，不要继续依赖过长的临时 shell 命令链。
