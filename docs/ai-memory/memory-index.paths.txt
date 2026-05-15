@@ -3,8 +3,10 @@
 
 AGENTS.md
 docs/current-task-card.md
+docs/current-task-card.json
 docs/workflow-context-packages.md
 docs/context-compression-and-knowledge-plan.md
+docs/dream-maintenance-checklist.md
 
 docs/ai-memory/gemini-lab-memory-main.md
 docs/ai-memory/gemini-lab-memory-architecture.md
@@ -81,3 +83,4 @@ Packages/manifest.json
 Packages/packages-lock.json
 ProjectSettings/ProjectVersion.txt
 .cursor/mcp.json
+tools/check-task-gate.ps1

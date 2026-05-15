@@ -28,6 +28,18 @@ Updated: 2026-05-08
 
 ## 最近进展
 
+### 2026-05-13 最小闭环任务闸门
+- 新增：
+  - `docs/current-task-card.json`
+  - `tools/check-task-gate.ps1`
+- 当前项目的写操作前置条件升级为：
+  1. 先更新 `current-task-card.md`
+  2. 再更新 `current-task-card.json`
+  3. 再通过 `check-task-gate.ps1`
+- 当前仍然属于最小闭环版：
+  - 先做任务卡机器检查
+  - 暂未做更深层的写后审计和自动拦截包装
+
 ### 2026-04-21
 - 浏览并梳理整个 Gemini-Lab 仓库。
 - 校验了项目当时的真实状态：

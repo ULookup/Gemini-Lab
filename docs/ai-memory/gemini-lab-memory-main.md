@@ -10,6 +10,7 @@ Updated: 2026-05-08
 ## 快速导航
 - [AGENTS.md](../../AGENTS.md)
 - [当前任务卡](../current-task-card.md)
+- [当前任务卡 JSON](../current-task-card.json)
 - [上下文包](../workflow-context-packages.md)
 - [架构记忆](./gemini-lab-memory-architecture.md)
 - [规则与历史](./gemini-lab-memory-rules-and-history.md)
@@ -24,6 +25,7 @@ Updated: 2026-05-08
 - [Skill 设计边界](../skill-design-boundary.md)
 - [方法论对齐审计](../ai-workspace-bootstrap-alignment.md)
 - [上下文压缩与知识沉淀计划](../context-compression-and-knowledge-plan.md)
+- [做梦整理清单](../dream-maintenance-checklist.md)
 - [记忆索引](./memory-index.paths.txt)
 
 ## Workspace Identity
@@ -53,6 +55,10 @@ Updated: 2026-05-08
   - 规划：复述理解、列边界、等待确认
   - 行动：确认后才改文件、改场景、执行 git
 - 当前推荐按任务类型装配最小必要上下文，不默认把所有项目文档都当作当前任务上下文；具体见 `docs/workflow-context-packages.md`。
+- 当前已启用最小闭环任务闸门：
+  - `docs/current-task-card.md`
+  - `docs/current-task-card.json`
+  - `tools/check-task-gate.ps1`
 - 渐进式上下文压缩已纳入设计，但当前默认不启用自动压缩；现阶段只保留人工分层方案。
 - 做梦整理、L2 技能手册、L3 知识库已纳入第二部分建设，当前以人工整理、skill 沉淀和索引增强为主。
 - 第一批 workflow skill 已开始落地：

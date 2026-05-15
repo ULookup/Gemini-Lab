@@ -7,12 +7,18 @@ Updated: 2026-05-08
   - 当前项目总入口。任何智能体进入项目后都应先读它。
 - `docs/current-task-card.md`
   - 当前这一轮任务的轻量任务卡（L1）。
+- `docs/current-task-card.json`
+  - 当前任务卡的机器可检查版本。
 - `docs/ai-memory/gemini-lab-memory-main.md`
   - 当前主记忆总览与第二入口。
 - `docs/workflow-context-packages.md`
   - 不同任务类型应优先加载哪些上下文文件。
 - `docs/context-compression-and-knowledge-plan.md`
   - 第二部分工作方式升级：上下文压缩、做梦整理、L2/L3 知识沉淀计划。
+- `docs/dream-maintenance-checklist.md`
+  - 当前人工版“做梦整理”执行清单。
+- `tools/check-task-gate.ps1`
+  - 当前最小闭环执行闸门脚本。
 - `README.md`
   - 项目总说明，面向产品、技术栈、整体架构和路线图。
 - `Assets/README.md`
@@ -29,6 +35,7 @@ Updated: 2026-05-08
 - `docs/ai-memory/gemini-lab-memory-rules-and-history.md`
 - `docs/project-structure-overview.md`
 - `docs/context-compression-and-knowledge-plan.md`
+- `docs/current-task-card.json`
 
 ### 想知道项目真正要做成什么
 - `docs/gameplay-spec.md`
@@ -107,10 +114,16 @@ Updated: 2026-05-08
   - 当前项目总入口与执行规则入口
 - `docs/current-task-card.md`
   - 当前轮任务的轻量任务卡
+- `docs/current-task-card.json`
+  - 当前轮任务卡的机器检查版
 - `docs/workflow-context-packages.md`
   - 当前项目推荐的上下文装配方式
 - `docs/context-compression-and-knowledge-plan.md`
   - 当前项目第二部分工作方式升级计划
+- `docs/dream-maintenance-checklist.md`
+  - 当前项目人工版做梦整理清单
+- `tools/check-task-gate.ps1`
+  - 当前项目最小闭环执行闸门
 - `docs/`
   - 项目文档根目录
 - `docs/ai-memory/`

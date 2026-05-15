@@ -36,6 +36,8 @@ namespace GeminiLab.Modules.Pet
             [SerializeField] private bool _hideTargetWhileInteracting;
             [SerializeField] private bool _useTargetSortingWhileInteracting;
             [SerializeField] private bool _usePetPoseOverride;
+            [SerializeField] private bool _useTargetPositionForPetPose;
+            [SerializeField] private Vector2 _petInteractionLocalOffset;
             [SerializeField] private Vector2 _petInteractionWorldPoint;
             [SerializeField] private Vector3 _petInteractionScale = Vector3.one;
             [SerializeField] private FurnitureCategory _category = FurnitureCategory.Decoration;
@@ -53,6 +55,8 @@ namespace GeminiLab.Modules.Pet
             public bool HideTargetWhileInteracting => _hideTargetWhileInteracting;
             public bool UseTargetSortingWhileInteracting => _useTargetSortingWhileInteracting;
             public bool UsePetPoseOverride => _usePetPoseOverride;
+            public bool UseTargetPositionForPetPose => _useTargetPositionForPetPose;
+            public Vector2 PetInteractionLocalOffset => _petInteractionLocalOffset;
             public Vector2 PetInteractionWorldPoint => _petInteractionWorldPoint;
             public Vector3 PetInteractionScale => _petInteractionScale;
             public FurnitureCategory Category => _category;
@@ -132,6 +136,8 @@ namespace GeminiLab.Modules.Pet
                 useTargetSortingWhileInteracting: binding.UseTargetSortingWhileInteracting,
                 visualSortingTarget: binding.UseTargetSortingWhileInteracting ? targetObject : null,
                 usePetPoseOverride: binding.UsePetPoseOverride,
+                useTargetPositionForPetPose: binding.UseTargetPositionForPetPose,
+                petInteractionLocalOffset: binding.PetInteractionLocalOffset,
                 petInteractionWorldPoint: binding.PetInteractionWorldPoint,
                 petInteractionScale: binding.PetInteractionScale,
                 interactionDurationSeconds: binding.InteractionDurationSeconds);
@@ -296,6 +302,8 @@ namespace GeminiLab.Modules.Pet
             bool useTargetSortingWhileInteracting,
             GameObject? visualSortingTarget,
             bool usePetPoseOverride,
+            bool useTargetPositionForPetPose,
+            Vector2 petInteractionLocalOffset,
             Vector2 petInteractionWorldPoint,
             Vector3 petInteractionScale,
             float interactionDurationSeconds)
@@ -310,6 +318,8 @@ namespace GeminiLab.Modules.Pet
             UseTargetSortingWhileInteracting = useTargetSortingWhileInteracting;
             VisualSortingTarget = visualSortingTarget;
             UsePetPoseOverride = usePetPoseOverride;
+            UseTargetPositionForPetPose = useTargetPositionForPetPose;
+            PetInteractionLocalOffset = petInteractionLocalOffset;
             PetInteractionWorldPoint = petInteractionWorldPoint;
             PetInteractionScale = petInteractionScale;
             InteractionDurationSeconds = interactionDurationSeconds;
@@ -325,6 +335,8 @@ namespace GeminiLab.Modules.Pet
         public bool UseTargetSortingWhileInteracting { get; }
         public GameObject? VisualSortingTarget { get; }
         public bool UsePetPoseOverride { get; }
+        public bool UseTargetPositionForPetPose { get; }
+        public Vector2 PetInteractionLocalOffset { get; }
         public Vector2 PetInteractionWorldPoint { get; }
         public Vector3 PetInteractionScale { get; }
         public float InteractionDurationSeconds { get; }
