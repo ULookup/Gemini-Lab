@@ -1,18 +1,18 @@
 ﻿{
   "status": "executing",
   "task_source": "user_latest_request",
-  "source_excerpt": "帮我完成这两个任务，不过在此之前先帮我push一次到我的分支，备注为处理天使场景细节前",
+  "source_excerpt": "帮我push一次到这个分支，备注为处理家具与桌宠的遮挡关系",
   "scope_do": [
-    "将当前项目状态提交到当前分支 更新天使动画资源",
-    "提交备注使用 处理天使场景细节前",
+    "将当前分支 更新天使动画资源 上与当前工作树相关的改动提交",
+    "提交备注使用 处理家具与桌宠的遮挡关系",
     "push 到当前远端分支"
   ],
   "scope_not_do": [
-    "本轮不开始修改遮挡排序系统",
-    "本轮不开始修改家具多段碰撞体"
+    "不开始新的功能修改",
+    "不把编辑器生成的 .lscache 临时文件混入提交"
   ],
   "completion_criteria": [
-    "当前项目状态已形成一次提交并成功 push 到分支 更新天使动画资源"
+    "当前改动已形成一次提交并成功 push 到分支 更新天使动画资源"
   ],
   "direct_files": [
     "Assets/_Project/**",
@@ -20,7 +20,7 @@
     "docs/current-task-card.md"
   ],
   "risks": [
-    "当前工作树包含大量动画资源替换和场景改动，提交前需避免把编辑器生成的 .lscache 临时文件混入"
+    "需要避免把未跟踪的 .lscache 临时文件加入提交"
   ],
   "approved": true
 }

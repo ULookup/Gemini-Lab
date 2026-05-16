@@ -131,6 +131,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _enabledHint: 1
   _includeInBuildPalette: 0
+  _useDynamicSortingRule: 1
   _definitionId: "\u5BB6\u5177_\u88C5\u9970_\u9AD8\u4E66\u67DC_\u5929\u4F7F_01"
   _category: 4
   _interactionType: 6

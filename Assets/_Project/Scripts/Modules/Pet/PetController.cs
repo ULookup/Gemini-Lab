@@ -15,6 +15,16 @@ namespace GeminiLab.Modules.Pet
     /// </summary>
     public sealed class PetController : MonoBehaviour
     {
+        private static readonly HashSet<string> DynamicOcclusionFurnitureDefinitionIds = new()
+        {
+            "家具_工作桌_圆桌书写_天使_01",
+            "家具_装饰_高书柜_天使_01",
+            "家具_竖琴_天使_01",
+            "家具_装饰_盆栽_天使_02",
+            "家具_装饰_凳子_天使_01",
+            "家具_装饰_桌面雕塑左_天使_01"
+        };
+
         private const string MoveFrontStateName = "Move_Front";
         private const string IdleFrontStateName = "Idle_Front";
         private const string IdleBackStateName = "Idle_Back";
@@ -33,12 +43,15 @@ namespace GeminiLab.Modules.Pet
         private static readonly int MoveDirHash = Animator.StringToHash("MoveDir");
         // Squared-distance threshold for movement direction updates.
         private const float DirectionEpsilonSqr = 0.000001f;
+        private const string SortingAnchorName = "SortingAnchor";
 
         [SerializeField] private PetStateValueSO? _config;
         [SerializeField] private PersonalityMatrixSO? _personality;
         [SerializeField] private RuntimeAnimatorController? _movementController;
         [SerializeField] private bool _sideFramesFaceLeft = true;
         [SerializeField] private BoxCollider2D? _movementBounds;
+        [SerializeField] private Transform? _sortingAnchor;
+        [SerializeField] private int _sortingOrderOffset;
 
         private PetContext? _context;
         private StateMachine<PetContext>? _stateMachine;
@@ -49,6 +62,8 @@ namespace GeminiLab.Modules.Pet
         private SpriteRenderer? _spriteRenderer;
         private Rigidbody2D? _rigidbody2D;
         private CapsuleCollider2D? _capsuleCollider2D;
+        private GeminiLab.Modules.Furniture.Furniture[]? _dynamicOcclusionFurniture;
+        private int _defaultSortingOrder;
         private Vector2 _lastAnimationPosition;
         private Vector2 _lastMoveDirection = Vector2.down;
         private Vector2 _playerAnimationDirection = Vector2.down;
@@ -83,9 +98,12 @@ namespace GeminiLab.Modules.Pet
             _rigidbody2D = GetComponent<Rigidbody2D>();
             _capsuleCollider2D = GetComponent<CapsuleCollider2D>();
             _playerInputController = GetComponent<PetPlayerInputController>();
+            TryAutoBindSortingAnchor();
             EnsureAnimatorBinding();
             EnsurePhysicsBinding();
             _lastAnimationPosition = transform.position;
+            _defaultSortingOrder = _spriteRenderer != null ? _spriteRenderer.sortingOrder : 0;
+            RefreshDynamicOcclusionFurnitureCache();
 
             PetStateValueSO config = _config ?? ScriptableObject.CreateInstance<PetStateValueSO>();
             _ = _personality; // Reserved for Phase 3 prompt adaptation.
@@ -166,6 +184,11 @@ namespace GeminiLab.Modules.Pet
             _stateMachine?.FixedTick(Time.fixedDeltaTime);
         }
 
+        private void LateUpdate()
+        {
+            UpdateDynamicSortingOrder();
+        }
+
         private void OnDestroy()
         {
             RestoreHiddenInteractionVisuals();
@@ -179,6 +202,172 @@ namespace GeminiLab.Modules.Pet
             if (_sleepInteractionVisualObject != null)
             {
                 Destroy(_sleepInteractionVisualObject);
+            }
+        }
+
+        private void UpdateDynamicSortingOrder()
+        {
+            if (_spriteRenderer == null || _hasStoredInteractionSorting)
+            {
+                return;
+            }
+
+            int resolvedSortingOrder = _defaultSortingOrder + _sortingOrderOffset;
+            if (TryGetDynamicOcclusionFurniture(out GeminiLab.Modules.Furniture.Furniture? furniture))
+            {
+                float petAnchorY = ResolveSortingAnchorY();
+                int furnitureSortingOrder = furniture.CurrentSortingOrder;
+                resolvedSortingOrder = petAnchorY <= furniture.SortingAnchorY
+                    ? furnitureSortingOrder + 1
+                    : furnitureSortingOrder - 1;
+            }
+
+            _spriteRenderer.sortingOrder = resolvedSortingOrder;
+        }
+
+        private float ResolveSortingAnchorY()
+        {
+            if (_sortingAnchor != null)
+            {
+                return _sortingAnchor.position.y;
+            }
+
+            if (_capsuleCollider2D != null && _capsuleCollider2D.enabled)
+            {
+                return _capsuleCollider2D.bounds.min.y;
+            }
+
+            if (_spriteRenderer != null)
+            {
+                return _spriteRenderer.bounds.min.y;
+            }
+
+            return transform.position.y;
+        }
+
+        private static int CalculateDynamicSortingOrder(float y)
+        {
+            return -(int)(y * 100f);
+        }
+
+        private void RefreshDynamicOcclusionFurnitureCache()
+        {
+            _dynamicOcclusionFurniture = Object.FindObjectsByType<GeminiLab.Modules.Furniture.Furniture>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+        }
+
+        private bool TryGetDynamicOcclusionFurniture(out GeminiLab.Modules.Furniture.Furniture? bestFurniture)
+        {
+            bestFurniture = null;
+
+            if (_dynamicOcclusionFurniture == null || _dynamicOcclusionFurniture.Length == 0)
+            {
+                RefreshDynamicOcclusionFurnitureCache();
+            }
+
+            if (_dynamicOcclusionFurniture == null || _dynamicOcclusionFurniture.Length == 0)
+            {
+                return false;
+            }
+
+            Bounds petBounds = ResolveSortingBounds();
+            Vector2 petCenter = petBounds.center;
+            float petAnchorY = ResolveSortingAnchorY();
+            float bestScore = float.PositiveInfinity;
+
+            for (int i = 0; i < _dynamicOcclusionFurniture.Length; i++)
+            {
+                GeminiLab.Modules.Furniture.Furniture furniture = _dynamicOcclusionFurniture[i];
+                if (furniture == null || !furniture.isActiveAndEnabled || !ShouldUseDynamicOcclusionFurniture(furniture))
+                {
+                    continue;
+                }
+
+                if (!furniture.TryGetOcclusionBounds(out Bounds furnitureBounds))
+                {
+                    continue;
+                }
+
+                bool overlapsHorizontally =
+                    petBounds.max.x >= furnitureBounds.min.x - 0.2f &&
+                    petBounds.min.x <= furnitureBounds.max.x + 0.2f;
+                if (!overlapsHorizontally)
+                {
+                    continue;
+                }
+
+                float furnitureAnchorY = furniture.SortingAnchorY;
+                float verticalDistance = Mathf.Abs(petAnchorY - furnitureAnchorY);
+                float maxVerticalDistance = petBounds.extents.y + furnitureBounds.extents.y + 0.8f;
+                if (verticalDistance > maxVerticalDistance)
+                {
+                    continue;
+                }
+
+                Vector2 closestPoint = furnitureBounds.ClosestPoint(petCenter);
+                float distanceScore = Vector2.SqrMagnitude(petCenter - closestPoint);
+
+                if (distanceScore < bestScore)
+                {
+                    bestScore = distanceScore;
+                    bestFurniture = furniture;
+                }
+            }
+
+            return bestFurniture != null;
+        }
+
+        private Bounds ResolveSortingBounds()
+        {
+            if (_capsuleCollider2D != null && _capsuleCollider2D.enabled)
+            {
+                return _capsuleCollider2D.bounds;
+            }
+
+            if (_spriteRenderer != null)
+            {
+                return _spriteRenderer.bounds;
+            }
+
+            return new Bounds(transform.position, Vector3.zero);
+        }
+
+        private static bool ShouldUseDynamicOcclusionFurniture(GeminiLab.Modules.Furniture.Furniture furniture)
+        {
+            if (furniture.UseDynamicSortingRule)
+            {
+                return true;
+            }
+
+            string definitionId = furniture.DefinitionId;
+            return !string.IsNullOrWhiteSpace(definitionId) &&
+                   DynamicOcclusionFurnitureDefinitionIds.Contains(definitionId);
+        }
+
+        private void TryAutoBindSortingAnchor()
+        {
+            if (_sortingAnchor != null)
+            {
+                return;
+            }
+
+            Transform[] transforms = GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform candidate = transforms[i];
+                if (candidate == transform)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(candidate.name, SortingAnchorName, System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _sortingAnchor = candidate;
+                return;
             }
         }
 
