@@ -672,10 +672,6 @@ PrefabInstance:
       propertyPath: m_Offset.y
       value: -0.5586839
       objectReference: {fileID: 0}
-    - target: {fileID: 9171775605070950278, guid: e932275b731ffb248aa448a396a81b29, type: 3}
-      propertyPath: m_Name
-      value: "\u5BB6\u5177_\u88C5\u9970_\u76C6\u683D_\u5929\u4F7F_02"
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -1137,7 +1133,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 1000
-  m_Sprite: {fileID: 21300000, guid: 74ef4f3a2a4302f4a88cb11ecd3891d1, type: 3}
+  m_Sprite: {fileID: 21300000, guid: d27e8a1d91de943479607e3c32a01287, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -1186,6 +1182,7 @@ MonoBehaviour:
     _fallbackWorldPoint: {x: 0, y: 0}
     _activationDistance: 2
     _hideTargetWhileInteracting: 0
+    _additionalHideTargets: []
     _useTargetSortingWhileInteracting: 0
     _usePetPoseOverride: 0
     _useTargetPositionForPetPose: 0
@@ -1204,38 +1201,69 @@ MonoBehaviour:
     _target: {fileID: 0}
     _fallbackTargetName: "\u5BB6\u5177_\u88C5\u9970_\u76C6\u683D_\u5929\u4F7F_02"
     _useFallbackWorldPoint: 1
-    _fallbackWorldPoint: {x: 5.81, y: -6.07}
-    _activationDistance: 1.6
-    _hideTargetWhileInteracting: 0
-    _useTargetSortingWhileInteracting: 0
-    _usePetPoseOverride: 0
-    _useTargetPositionForPetPose: 0
-    _petInteractionLocalOffset: {x: 0, y: 0}
+    _fallbackWorldPoint: {x: 6.75, y: -6.05}
+    _activationDistance: 2
+    _hideTargetWhileInteracting: 1
+    _additionalHideTargets: []
+    _useTargetSortingWhileInteracting: 1
+    _usePetPoseOverride: 1
+    _useTargetPositionForPetPose: 1
+    _petInteractionLocalOffset: {x: 0.35, y: 1.8}
     _petInteractionWorldPoint: {x: 0, y: 0}
-    _petInteractionScale: {x: 1, y: 1, z: 1}
+    _petInteractionScale: {x: 0.5, y: 0.5, z: 1}
     _category: 4
     _interactionType: 13
     _animationVariant: 1
-    _interactionDurationSeconds: 1.6
-    _animationOptions: []
+    _interactionDurationSeconds: 2.4
+    _animationOptions:
+    - _label: "\u76C6\u683D_\u52A8\u753B"
+      _animatorStateName: Interact_Flower
+      _variantKey: flower
   - _label: "\u7AD6\u7434"
     _target: {fileID: 118566507}
     _fallbackTargetName: "\u5BB6\u5177_\u7AD6\u7434_\u5929\u4F7F_\u573A\u666F\u5C42_01"
     _useFallbackWorldPoint: 1
     _fallbackWorldPoint: {x: 13.87, y: -4.03}
     _activationDistance: 1.8
-    _hideTargetWhileInteracting: 0
-    _useTargetSortingWhileInteracting: 0
-    _usePetPoseOverride: 0
-    _useTargetPositionForPetPose: 0
-    _petInteractionLocalOffset: {x: 0, y: 0}
+    _hideTargetWhileInteracting: 1
+    _additionalHideTargets:
+    - {fileID: 1665582120}
+    _useTargetSortingWhileInteracting: 1
+    _usePetPoseOverride: 1
+    _useTargetPositionForPetPose: 1
+    _petInteractionLocalOffset: {x: -0.89, y: -0.15}
     _petInteractionWorldPoint: {x: 0, y: 0}
-    _petInteractionScale: {x: 1, y: 1, z: 1}
+    _petInteractionScale: {x: 0.425, y: 0.425, z: 1}
     _category: 3
     _interactionType: 9
     _animationVariant: 2
-    _interactionDurationSeconds: 2.2
-    _animationOptions: []
+    _interactionDurationSeconds: 2
+    _animationOptions:
+    - _label: "\u7AD6\u7434_\u52A8\u753B"
+      _animatorStateName: Interact_PlayingMusic
+      _variantKey: playing music
+  - _label: "\u5199\u5B57"
+    _target: {fileID: 0}
+    _fallbackTargetName: "\u5BB6\u5177_\u5DE5\u4F5C\u684C_\u5706\u684C\u4E66\u5199_\u5929\u4F7F_01"
+    _useFallbackWorldPoint: 1
+    _fallbackWorldPoint: {x: 5.24, y: 0.63}
+    _activationDistance: 2
+    _hideTargetWhileInteracting: 1
+    _additionalHideTargets: []
+    _useTargetSortingWhileInteracting: 1
+    _usePetPoseOverride: 1
+    _useTargetPositionForPetPose: 1
+    _petInteractionLocalOffset: {x: -0.17, y: 1.1}
+    _petInteractionWorldPoint: {x: 0, y: 0}
+    _petInteractionScale: {x: 0.5, y: 0.5, z: 1}
+    _category: 1
+    _interactionType: 1
+    _animationVariant: 3
+    _interactionDurationSeconds: 6.9
+    _animationOptions:
+    - _label: "\u5199\u5B57_\u52A8\u753B"
+      _animatorStateName: Interact_Write
+      _variantKey: write
   - _label: "\u4E66\u67DC"
     _target: {fileID: 0}
     _fallbackTargetName: "\u5BB6\u5177_\u88C5\u9970_\u4E66\u67DC_\u5929\u4F7F_01
@@ -1244,6 +1272,7 @@ MonoBehaviour:
     _fallbackWorldPoint: {x: 2.376638, y: 3.4349914}
     _activationDistance: 1.8
     _hideTargetWhileInteracting: 0
+    _additionalHideTargets: []
     _useTargetSortingWhileInteracting: 0
     _usePetPoseOverride: 0
     _useTargetPositionForPetPose: 0
@@ -1262,6 +1291,7 @@ MonoBehaviour:
     _fallbackWorldPoint: {x: 14.2, y: 0.65}
     _activationDistance: 3.2
     _hideTargetWhileInteracting: 1
+    _additionalHideTargets: []
     _useTargetSortingWhileInteracting: 1
     _usePetPoseOverride: 1
     _useTargetPositionForPetPose: 1
@@ -1292,7 +1322,7 @@ MonoBehaviour:
   _bubbleDurationSeconds: 3
   _bubbleLocalOffset: {x: 0, y: 2.8, z: 0}
   _bubbleCharacterSize: 0.14
-  _bubbleFontSize: 44
+  _bubbleFontSize: 37
   _bubbleMinWidth: 3.6
   _bubbleMaxWidth: 8.2
   _bubbleMinHeight: 1.1
@@ -3926,6 +3956,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1751a65e7c0ee544783ee6e08a398947, type: 3}
+--- !u!1 &1665582120 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2866147090205651314, guid: 1751a65e7c0ee544783ee6e08a398947, type: 3}
+  m_PrefabInstance: {fileID: 1665582119}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1736034744
 PrefabInstance:
   m_ObjectHideFlags: 0

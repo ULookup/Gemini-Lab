@@ -23,6 +23,9 @@ namespace GeminiLab.Modules.Pet
         private const string SleepPoseAnchorName = "SleepPoseAnchor";
         private const string InteractReadStateName = "Interact_Read";
         private const string InteractBesideDoorStateName = "Interact_BesideDoor";
+        private const string InteractFlowerStateName = "Interact_Flower";
+        private const string InteractPlayingMusicStateName = "Interact_PlayingMusic";
+        private const string InteractWriteStateName = "Interact_Write";
 
         private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
         private static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -375,7 +378,7 @@ namespace GeminiLab.Modules.Pet
             ApplyInteractionVisualOverride(request);
             ApplyInteractionSortingOverride(request);
             ApplyInteractionPoseOverride(request);
-            ApplySleepInteractionVisualOverride(request);
+            ApplySpecialInteractionVisualOverride(request);
             Debug.Log($"[PetInteraction] Triggered player interaction target='{request.TargetName}' variant='{request.AnimationVariant}'.");
             return true;
         }
@@ -464,13 +467,16 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
-            SpriteRenderer[] renderers = request.VisualHideTarget.GetComponentsInChildren<SpriteRenderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
+            HideInteractionRenderers(request.VisualHideTarget);
+            for (int i = 0; i < request.AdditionalVisualHideTargets.Length; i++)
             {
-                SpriteRenderer renderer = renderers[i];
-                _hiddenInteractionRenderers.Add(renderer);
-                _hiddenInteractionRendererStates.Add(renderer.enabled);
-                renderer.enabled = false;
+                GameObject extraTarget = request.AdditionalVisualHideTargets[i];
+                if (extraTarget == null)
+                {
+                    continue;
+                }
+
+                HideInteractionRenderers(extraTarget);
             }
         }
 
@@ -491,10 +497,22 @@ namespace GeminiLab.Modules.Pet
             _hiddenInteractionRendererStates.Clear();
         }
 
-        private void ApplySleepInteractionVisualOverride(PetPlayerInteractionRequest request)
+        private void HideInteractionRenderers(GameObject target)
+        {
+            SpriteRenderer[] renderers = target.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                SpriteRenderer renderer = renderers[i];
+                _hiddenInteractionRenderers.Add(renderer);
+                _hiddenInteractionRendererStates.Add(renderer.enabled);
+                renderer.enabled = false;
+            }
+        }
+
+        private void ApplySpecialInteractionVisualOverride(PetPlayerInteractionRequest request)
         {
             RestoreSleepInteractionVisual();
-            if (!string.Equals(request.AnimationVariant, "sleep", System.StringComparison.Ordinal) ||
+            if (!RequiresDetachedInteractionVisual(request.AnimationVariant) ||
                 request.VisualHideTarget == null)
             {
                 return;
@@ -519,7 +537,10 @@ namespace GeminiLab.Modules.Pet
             _sleepInteractionVisualTransform.localScale = request.PetInteractionScale;
             ApplySleepInteractionVisualSorting(request.VisualHideTarget);
             _sleepInteractionVisualSpriteRenderer.enabled = true;
-            _sleepInteractionVisualAnimator.Play(SleepStateName, 0, 0f);
+            _sleepInteractionVisualAnimator.Play(
+                ResolvePlayerInteractionStateName(request.AnimationVariant),
+                0,
+                0f);
 
             if (_spriteRenderer != null)
             {
@@ -614,7 +635,7 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
-            if (string.Equals(request.AnimationVariant, "sleep", System.StringComparison.Ordinal))
+            if (RequiresDetachedInteractionVisual(request.AnimationVariant))
             {
                 return;
             }
@@ -880,11 +901,24 @@ namespace GeminiLab.Modules.Pet
             return variant switch
             {
                 "beside door" => InteractBesideDoorStateName,
-                "flower" => InteractBesideDoorStateName,
-                "playing music" => InteractReadStateName,
+                "flower" => InteractFlowerStateName,
+                "playing music" => InteractPlayingMusicStateName,
                 "read" => InteractReadStateName,
+                "write" => InteractWriteStateName,
                 "sleep" => SleepStateName,
                 _ => MoveFrontStateName
+            };
+        }
+
+        private static bool RequiresDetachedInteractionVisual(string variant)
+        {
+            return variant switch
+            {
+                "sleep" => true,
+                "flower" => true,
+                "playing music" => true,
+                "write" => true,
+                _ => false
             };
         }
 
