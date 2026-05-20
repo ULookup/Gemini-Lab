@@ -1,6 +1,6 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-05-08
+Updated: 2026-05-20
 
 ## 入口文件
 - `AGENTS.md`
@@ -188,6 +188,11 @@ Updated: 2026-05-08
    - `L2`：`docs/ai-memory/`
    - `L3`：git / PR / 长文档历史
 15. 当前工作流已开始显式区分任务上下文包，入口在 `docs/workflow-context-packages.md`。
+16. 涉及视觉、布局、UI、相机、装饰层的任务时，默认要求：
+   - `Scene` 视图可直接看到
+   - `Inspector` 可直接调整
+   - `Play` 视图与 `Scene` 视图效果一致
+   - 不依赖运行时脚本临时拼出最终视觉
 
 ## 模块 README 导航
 - `Assets/_Project/Scripts/Modules/Pet/README.md`

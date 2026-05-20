@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-05-08
+# Updated: 2026-05-20
 
 AGENTS.md
 docs/current-task-card.md

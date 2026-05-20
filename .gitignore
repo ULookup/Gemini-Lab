@@ -38,6 +38,10 @@
 .vscode/tasks.json
 .vscode/extensions.json
 
+# 本地任务卡（保留本地使用，不进入 PR）
+docs/current-task-card.md
+docs/current-task-card.json
+
 # Gradle 缓存目录
 .gradle/
 
