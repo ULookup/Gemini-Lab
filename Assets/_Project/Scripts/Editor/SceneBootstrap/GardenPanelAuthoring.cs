@@ -52,12 +52,12 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             // 左侧 3×3 地块
             var gridHolder = CreateChild(content, layer, "GridHolder",
-                new Vector2(0, 0), new Vector2(0.6f, 1), new Vector2(32, 32), new Vector2(-12, -76));
+                new Vector2(0, 0), new Vector2(0.6f, 1), new Vector2(104, 32), new Vector2(-12, -76));
             var gridBg = gridHolder.AddComponent<Image>();
             gridBg.color = new Color(0f, 0f, 0f, 0.25f);
 
             var gridRoot = CreateChild(gridHolder, layer, "Grid",
-                Vector2.zero, Vector2.one, new Vector2(16, 16), new Vector2(-16, -16));
+                Vector2.zero, Vector2.one, new Vector2(88, 16), new Vector2(-16, -16));
             var grid = gridRoot.AddComponent<GridLayoutGroup>();
             grid.cellSize = new Vector2(128, 128);
             grid.spacing = new Vector2(10, 10);
@@ -69,19 +69,19 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             // 右侧：种子条 + 提示
             var rightHolder = CreateChild(content, layer, "SeedHolder",
-                new Vector2(0.6f, 0), new Vector2(1, 1), new Vector2(12, 32), new Vector2(-32, -76));
+                new Vector2(0.6f, 0), new Vector2(1, 1), new Vector2(84, 32), new Vector2(-32, -76));
             var rightBg = rightHolder.AddComponent<Image>();
             rightBg.color = new Color(0f, 0f, 0f, 0.25f);
 
             var seedTitle = AddText(rightHolder, layer, "SeedTitle", 22,
                 new Vector2(0, 1), new Vector2(1, 1),
-                new Vector2(16, -48), new Vector2(-16, -8), TextAlignmentOptions.Center);
+                new Vector2(88, -48), new Vector2(-16, -8), TextAlignmentOptions.Center);
             seedTitle.text = "种子";
             seedTitle.color = new Color(0.95f, 0.9f, 0.7f, 1f);
 
             var seedBar = CreateChild(rightHolder, layer, "SeedBar",
                 new Vector2(0, 1), new Vector2(1, 1),
-                new Vector2(12, -180), new Vector2(-12, -52));
+                new Vector2(84, -180), new Vector2(-12, -52));
             var hlg = seedBar.AddComponent<GridLayoutGroup>();
             hlg.cellSize = new Vector2(72, 72);
             hlg.spacing = new Vector2(8, 8);
@@ -91,7 +91,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             var hint = AddText(rightHolder, layer, "Hint", 14,
                 new Vector2(0, 0), new Vector2(1, 1),
-                new Vector2(12, 16), new Vector2(-12, -192), TextAlignmentOptions.TopLeft);
+                new Vector2(84, 16), new Vector2(-12, -192), TextAlignmentOptions.TopLeft);
             hint.enableWordWrapping = true;
             hint.color = new Color(1f, 1f, 1f, 0.75f);
             hint.text = "点地块种下；成熟后点收获";
