@@ -54,6 +54,10 @@ namespace GeminiLab.Editor.SceneBootstrap
             var overlayGo = new GameObject("SidebarOverlay");
             overlayGo.transform.SetParent(canvasGo.transform, false);
             overlayGo.layer = uiLayer;
+            var overlayRt = overlayGo.AddComponent<RectTransform>();
+            overlayRt.anchorMin = Vector2.zero;
+            overlayRt.anchorMax = Vector2.one;
+            overlayRt.sizeDelta = Vector2.zero;
             var overlayCanvas = overlayGo.AddComponent<Canvas>();
             overlayCanvas.overrideSorting = true;
             overlayCanvas.sortingOrder = 101;
