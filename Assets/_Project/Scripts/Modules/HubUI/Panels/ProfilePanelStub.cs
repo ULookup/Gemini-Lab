@@ -4,6 +4,7 @@ using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Pet;
 using GeminiLab.Modules.Pet.Personality;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -42,13 +43,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Image? _evilPetImage;
 
         private IPetRoster? _roster;
-        private IPersonalityEvolutionService? _evolution;
         private IDisposable? _snapshotSub;
-
-        protected override void Awake()
-        {
-            base.Awake();
-        }
 
         protected override void OnDestroy()
         {
@@ -74,7 +69,6 @@ namespace GeminiLab.Modules.HubUI.Panels
         private void ResolveServicesIfNeeded()
         {
             if (_roster == null) ServiceLocator.TryResolve(out _roster);
-            if (_evolution == null) ServiceLocator.TryResolve(out _evolution);
         }
 
         private void SubscribeSnapshotIfNeeded()
@@ -86,7 +80,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
         }
 
-        private void OnSnapshotChanged(PetRuntimeSnapshotChangedEvent evt)
+        private void OnSnapshotChanged(PetRuntimeSnapshotChangedEvent _)
         {
             RefreshAll();
         }
@@ -111,10 +105,10 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
             if (relationText != null) relationText.text = "--";
 
-            if (radar != null && _evolution != null)
+            if (radar != null && ServiceLocator.TryResolve(out IPersonalityEvolutionService? evolution) && evolution != null)
             {
-                var matrix = _evolution.GetMatrix(id);
-                var values = new System.Collections.Generic.List<float>(7)
+                var matrix = evolution.GetMatrix(id);
+                var values = new List<float>(7)
                 {
                     matrix.Kindness, matrix.Evilness, matrix.Calmness,
                     matrix.Bravery, matrix.Shyness, matrix.Integrity, matrix.Curiosity
