@@ -139,11 +139,11 @@ namespace GeminiLab.Editor.SceneBootstrap
             go.transform.SetParent(parent.transform, false);
             go.layer = uiLayer;
             var rt = go.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.5f, 0.5f);
-            rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.pivot = new Vector2(0f, 0f);
             rt.anchoredPosition = Vector2.zero;
-            rt.sizeDelta = new Vector2(900, 620);
+            rt.sizeDelta = Vector2.zero;
 
             var contentGo = new GameObject("Content");
             contentGo.transform.SetParent(go.transform, false);
@@ -166,14 +166,37 @@ namespace GeminiLab.Editor.SceneBootstrap
             tmp.fontSize = 48;
             tmp.color = Color.white;
 
+            // Close button (top-right)
+            var closeBtnGo = new GameObject("Btn_Close");
+            closeBtnGo.transform.SetParent(contentGo.transform, false);
+            closeBtnGo.layer = uiLayer;
+            var cbrt = closeBtnGo.AddComponent<RectTransform>();
+            cbrt.anchorMin = new Vector2(1f, 1f);
+            cbrt.anchorMax = new Vector2(1f, 1f);
+            cbrt.pivot = new Vector2(1f, 1f);
+            cbrt.anchoredPosition = new Vector2(-24, -24);
+            cbrt.sizeDelta = new Vector2(40, 40);
+            var cbImg = closeBtnGo.AddComponent<Image>();
+            cbImg.color = new Color(1f, 1f, 1f, 0.15f);
+            var closeBtn = closeBtnGo.AddComponent<Button>();
+
+            var xLabelGo = new GameObject("X");
+            xLabelGo.transform.SetParent(closeBtnGo.transform, false);
+            xLabelGo.layer = uiLayer;
+            var xrt = xLabelGo.AddComponent<RectTransform>();
+            xrt.anchorMin = Vector2.zero; xrt.anchorMax = Vector2.one;
+            xrt.offsetMin = Vector2.zero; xrt.offsetMax = Vector2.zero;
+            var xtmp = xLabelGo.AddComponent<TextMeshProUGUI>();
+            xtmp.text = "✕";
+            xtmp.alignment = TextAlignmentOptions.Center;
+            xtmp.fontSize = 22;
+            xtmp.color = Color.white;
+
             var stub = go.AddComponent<T>();
             var so = new SerializedObject(stub);
-            var contentProp = so.FindProperty("_content");
-            if (contentProp != null)
-            {
-                contentProp.objectReferenceValue = contentGo;
-                so.ApplyModifiedProperties();
-            }
+            so.FindProperty("_content").objectReferenceValue = contentGo;
+            so.FindProperty("_closeButton").objectReferenceValue = closeBtn;
+            so.ApplyModifiedProperties();
 
             contentGo.SetActive(false);
             return go;
