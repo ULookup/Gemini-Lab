@@ -19,6 +19,7 @@ namespace GeminiLab.Core.UI
         Collection = 22,
         Inventory = 23,
         Garden = 24,
+        SpaceSys = 25,
 
         // 通用
         ConfirmDialog = 90
