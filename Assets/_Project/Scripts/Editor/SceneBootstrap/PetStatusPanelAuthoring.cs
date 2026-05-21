@@ -77,7 +77,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             var nameTmp = AddTmp(nameGo, "天使", 26, TextAlignmentOptions.Center, Color.white);
 
             // 左侧 3 条状态值
-            var barsGo = CreateChild(content, uiLayer, "StatBars", new Vector2(0, 0), new Vector2(0.5f, 1), new Vector2(32, 60), new Vector2(-16, -180));
+            var barsGo = CreateChild(content, uiLayer, "StatBars", new Vector2(0, 0), new Vector2(0.5f, 1), new Vector2(104, 60), new Vector2(-16, -180));
             var barsVlg = barsGo.AddComponent<VerticalLayoutGroup>();
             barsVlg.spacing = 14;
             barsVlg.childAlignment = TextAnchor.UpperLeft;
@@ -92,7 +92,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             var (satietyTmp, satietyFill) = MakeStatBar(barsGo, uiLayer, "Satiety", "饱食", new Color(0.95f, 0.8f, 0.35f, 1f));
 
             // 当前状态
-            var stateGo = CreateChild(content, uiLayer, "CurrentState", new Vector2(0, 0), new Vector2(0.5f, 0), new Vector2(32, 24), new Vector2(-16, 60));
+            var stateGo = CreateChild(content, uiLayer, "CurrentState", new Vector2(0, 0), new Vector2(0.5f, 0), new Vector2(104, 24), new Vector2(-16, 60));
             var stateTmp = AddTmp(stateGo, "状态：Idle", 20, TextAlignmentOptions.MidlineLeft, new Color(0.85f, 0.9f, 1f, 0.85f));
 
             // 右侧雷达图
