@@ -57,7 +57,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             // Grid
             var gridGo = CreateChild(content, layer, "Grid",
-                new Vector2(0, 0), new Vector2(0.65f, 1), new Vector2(16, 16), new Vector2(-8, -76));
+                new Vector2(0, 0), new Vector2(0.65f, 1), new Vector2(88, 16), new Vector2(-8, -76));
             var grid = gridGo.AddComponent<GridLayoutGroup>();
             grid.cellSize = new Vector2(96, 96);
             grid.spacing = new Vector2(8, 8);
@@ -67,7 +67,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             // Tooltip panel
             var tip = CreateChild(content, layer, "Tooltip",
-                new Vector2(0.66f, 0), new Vector2(1, 1), new Vector2(8, 16), new Vector2(-16, -76));
+                new Vector2(0.66f, 0), new Vector2(1, 1), new Vector2(80, 16), new Vector2(-16, -76));
             var tipBg = tip.AddComponent<Image>();
             tipBg.color = new Color(0, 0, 0, 0.35f);
 
@@ -120,7 +120,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             // Tabs
             var tabsGo = CreateChild(content, layer, "Tabs",
-                new Vector2(0, 1), new Vector2(1, 1), new Vector2(32, -116), new Vector2(-32, -64));
+                new Vector2(0, 1), new Vector2(1, 1), new Vector2(104, -116), new Vector2(-32, -64));
             var hlg = tabsGo.AddComponent<HorizontalLayoutGroup>();
             hlg.childAlignment = TextAnchor.MiddleCenter;
             hlg.spacing = 12;
@@ -133,7 +133,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             // Grid
             var gridHolder = CreateChild(content, layer, "GridHolder",
-                new Vector2(0, 0), new Vector2(1, 1), new Vector2(32, 32), new Vector2(-32, -128));
+                new Vector2(0, 0), new Vector2(1, 1), new Vector2(104, 32), new Vector2(-32, -128));
             var gridBg = gridHolder.AddComponent<Image>();
             gridBg.color = new Color(0, 0, 0, 0.25f);
             var gridRoot = CreateChild(gridHolder, layer, "Grid",
