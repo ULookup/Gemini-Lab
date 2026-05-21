@@ -76,7 +76,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             cardRt.anchorMin = new Vector2(0.05f, 0.2f);
             cardRt.anchorMax = new Vector2(0.05f, 0.2f);
             cardRt.pivot = new Vector2(0, 0);
-            cardRt.anchoredPosition = new Vector2(24, 40);
+            cardRt.anchoredPosition = new Vector2(96, 40);
             cardRt.sizeDelta = new Vector2(256, 384);
             var cardImg = cardRoot.AddComponent<Image>();
             cardImg.color = new Color(0.25f, 0.15f, 0.35f, 1f);
@@ -116,7 +116,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             dbRt.anchorMin = new Vector2(0.05f, 0.1f);
             dbRt.anchorMax = new Vector2(0.05f, 0.1f);
             dbRt.pivot = new Vector2(0, 1);
-            dbRt.anchoredPosition = new Vector2(24, 0);
+            dbRt.anchoredPosition = new Vector2(96, 0);
             dbRt.sizeDelta = new Vector2(256, 56);
             var dbImg = drawBtnGo.AddComponent<Image>();
             dbImg.color = new Color(0.3f, 0.35f, 0.55f, 1f);
