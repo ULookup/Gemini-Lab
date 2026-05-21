@@ -105,7 +105,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             so.ApplyModifiedProperties();
 
             // 5 panels — stretch fullscreen (anchor 0,0→1,1)
-            CreateStubPanel<PetStatusPanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Pet Status (WIP)");
+            CreateStubPanel<ProfilePanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Profile");
             CreateStubPanel<TarotPanelStub>(canvasGo, uiLayer, "Panel_Tarot", "Tarot (WIP)");
             CreateStubPanel<CollectionPanelStub>(canvasGo, uiLayer, "Panel_Collection", "Collection (WIP)");
             CreateStubPanel<InventoryPanelStub>(canvasGo, uiLayer, "Panel_Inventory", "Inventory (WIP)");
