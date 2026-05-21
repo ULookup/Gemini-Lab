@@ -1,0 +1,103 @@
+<h2>当前布局 vs 全屏布局</h2>
+<p class="subtitle">左侧：现在的样子 | 右侧：你要的全屏效果</p>
+
+<div class="split">
+  <div class="mockup">
+    <div class="mockup-header">当前：面板居中叠加</div>
+    <div class="mockup-body">
+      <div style="position: relative; width: 100%; height: 450px; background: #1a1a2e; border-radius: 8px; overflow: hidden;">
+        <!-- Sidebar -->
+        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 60px; background: rgba(20,22,35,0.95); display: flex; flex-direction: column; gap: 4px; padding: 12px 4px; z-index: 10; border-right: 1px solid rgba(255,255,255,0.08);">
+          <div style="background: rgba(255,255,255,0.1); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">&lt;&lt;</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Status</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Tarot</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Collect</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Inven</div>
+          <div style="background: rgba(180,160,100,0.3); color: #ffd700; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Garden</div>
+        </div>
+        <!-- Panel overlay centered -->
+        <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 55%; height: 55%; background: rgba(18,20,35,0.97); border-radius: 12px; border: 1px solid rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center; z-index: 5;">
+          <div style="color: rgba(255,255,255,0.3); font-size: 14px;">Garden Panel (900×620)</div>
+        </div>
+        <!-- Sidebar still visible beside it -->
+        <div style="position: absolute; right: 16px; bottom: 16px; background: rgba(255,0,0,0.15); color: rgba(255,100,100,0.6); padding: 4px 12px; border-radius: 4px; font-size: 9px;">侧边栏 + 面板同时可见</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mockup">
+    <div class="mockup-header">目标：面板全屏，侧边栏最上层</div>
+    <div class="mockup-body">
+      <div style="position: relative; width: 100%; height: 450px; background: #1a1a2e; border-radius: 8px; overflow: hidden;">
+        <!-- Fullscreen panel BEHIND sidebar -->
+        <div style="position: absolute; left: 0; top: 0; right: 0; bottom: 0; background: rgba(18,20,35,0.98); z-index: 1;">
+          <!-- Panel title bar -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 20px 12px 80px; background: rgba(0,0,0,0.3); border-bottom: 1px solid rgba(255,255,255,0.06);">
+            <span style="color: #ffd700; font-size: 14px; font-weight: bold;">花园</span>
+            <span style="background: rgba(255,255,255,0.1); color: white; width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 16px;">✕</span>
+          </div>
+          <!-- Panel content area -->
+          <div style="padding: 20px 20px 20px 80px; display: grid; grid-template-columns: 2fr 1fr; gap: 16px; height: calc(100% - 62px);">
+            <div style="background: rgba(255,255,255,0.03); border-radius: 8px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 16px;">
+              <div style="background: rgba(255,255,255,0.06); border-radius: 6px; aspect-ratio: 1;"></div>
+              <div style="background: rgba(255,255,255,0.06); border-radius: 6px; aspect-ratio: 1;"></div>
+              <div style="background: rgba(255,255,255,0.06); border-radius: 6px; aspect-ratio: 1;"></div>
+              <div style="background: rgba(255,255,255,0.06); border-radius: 6px; aspect-ratio: 1;"></div>
+              <div style="background: rgba(255,255,255,0.06); border-radius: 6px; aspect-ratio: 1;"></div>
+              <div style="background: rgba(255,255,255,0.06); border-radius: 6px; aspect-ratio: 1;"></div>
+            </div>
+            <div style="background: rgba(255,255,255,0.03); border-radius: 8px; padding: 16px;">
+              <div style="color: rgba(255,255,255,0.2); font-size: 11px;">种子选择条</div>
+            </div>
+          </div>
+        </div>
+        <!-- Sidebar ON TOP -->
+        <div style="position: absolute; left: 0; top: 0; bottom: 0; width: 64px; background: rgba(20,22,35,0.95); display: flex; flex-direction: column; gap: 4px; padding: 12px 4px; z-index: 10; border-right: 1px solid rgba(255,255,255,0.08);">
+          <div style="background: rgba(255,255,255,0.1); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">&lt;&lt;</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Status</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Tarot</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Collect</div>
+          <div style="background: rgba(255,255,255,0.08); color: white; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px;">Inven</div>
+          <div style="background: rgba(180,160,100,0.3); color: #ffd700; padding: 8px 4px; border-radius: 6px; text-align: center; font-size: 10px; box-shadow: 0 0 8px rgba(255,215,0,0.3);">Garden</div>
+        </div>
+        <div style="position: absolute; right: 16px; bottom: 16px; background: rgba(0,255,0,0.1); color: rgba(100,255,100,0.6); padding: 4px 12px; border-radius: 4px; font-size: 9px; z-index: 20;">面板撑满全屏，侧边栏浮在最上层</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top: 32px;">核心变化</h3>
+<div class="section">
+  <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+    <tr style="border-bottom: 1px solid rgba(255,255,255,0.08);">
+      <th style="text-align: left; padding: 8px; color: rgba(255,255,255,0.5); width: 20%;"></th>
+      <th style="text-align: left; padding: 8px; color: rgba(255,255,255,0.5); width: 40%;">当前</th>
+      <th style="text-align: left; padding: 8px; color: #ffd700; width: 40%;">目标</th>
+    </tr>
+    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <td style="padding: 8px; color: rgba(255,255,255,0.5);">面板尺寸</td>
+      <td style="padding: 8px; color: white;">900×620（居中）</td>
+      <td style="padding: 8px; color: #ffd700;">撑满整个屏幕</td>
+    </tr>
+    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <td style="padding: 8px; color: rgba(255,255,255,0.5);">面板锚点</td>
+      <td style="padding: 8px; color: white;">Center (0.5, 0.5)</td>
+      <td style="padding: 8px; color: #ffd700;">Stretch (0,0) → (1,1)</td>
+    </tr>
+    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <td style="padding: 8px; color: rgba(255,255,255,0.5);">层级关系</td>
+      <td style="padding: 8px; color: white;">面板和侧边栏同级</td>
+      <td style="padding: 8px; color: #ffd700;">侧边栏 sortingOrder 高于面板</td>
+    </tr>
+    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <td style="padding: 8px; color: rgba(255,255,255,0.5);">关闭方式</td>
+      <td style="padding: 8px; color: white;">打开其他面板自动提升栈顶</td>
+      <td style="padding: 8px; color: #ffd700;">面板右上 ✕ + 侧边栏再次点 Tab 关闭</td>
+    </tr>
+    <tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+      <td style="padding: 8px; color: rgba(255,255,255,0.5);">面板内容</td>
+      <td style="padding: 8px; color: white;">内容区域不变</td>
+      <td style="padding: 8px; color: #ffd700;">内容区留出左侧安全区域，避免被侧边栏遮挡</td>
+    </tr>
+  </table>
+</div>

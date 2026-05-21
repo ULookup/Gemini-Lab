@@ -1,0 +1,103 @@
+<h2>Profile 页面布局 v4</h2>
+<p class="subtitle">中心双立绘 + 两侧雷达环绕 + 底部状态</p>
+
+<div class="mockup">
+  <div class="mockup-header">Profile Panel 最终布局</div>
+  <div class="mockup-body">
+    <div style="position:relative; background:#1a1c2e; border-radius:8px; overflow:hidden;">
+
+      <!-- 标题 -->
+      <div style="position:absolute; top:12px; left:16px; z-index:10;">
+        <div class="placeholder" style="width:60px;height:24px;background:rgba(230,200,120,0.3);line-height:24px;font-size:11px;">Title</div>
+      </div>
+
+      <div style="display:flex; height:460px; position:relative;">
+
+        <!-- ===== Angel 左半区 ===== -->
+        <div style="flex:1; position:relative; background:linear-gradient(135deg, #252840 0%, #1e2240 100%);">
+          <!-- ProfileBackground -->
+          <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border-radius:50%; background:rgba(60,100,180,0.15); border:1px dashed rgba(80,140,220,0.25);">
+            <div style="text-align:center;margin-top:85px;font-size:12px;color:rgba(80,140,220,0.4);">Bg</div>
+          </div>
+          <!-- 雷达图 -->
+          <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:160px; height:160px; border-radius:50%; background:rgba(80,140,220,0.08); border:2px dashed rgba(80,140,220,0.45);">
+            <div style="text-align:center;margin-top:65px;font-size:11px;color:rgba(80,140,220,0.5);">Angel 雷达</div>
+          </div>
+
+          <!-- 状态面板 -->
+          <div style="position:absolute; bottom:16px; left:20px; right:20px; background:rgba(0,0,0,0.6); border-radius:8px; padding:10px;">
+            <div style="display:flex; justify-content:space-around; text-align:center;">
+              <div>
+                <div style="font-size:18px;">⚡</div>
+                <div style="color:#ccc;font-size:13px;">Mood</div>
+                <div style="color:#f0cc58;font-weight:bold;">60</div>
+              </div>
+              <div>
+                <div style="font-size:18px;">🔋</div>
+                <div style="color:#ccc;font-size:13px;">Energy</div>
+                <div style="color:#7ad98c;font-weight:bold;">80</div>
+              </div>
+              <div>
+                <div style="font-size:18px;">❤️</div>
+                <div style="color:#ccc;font-size:13px;">Relation</div>
+                <div style="color:#f08a66;font-weight:bold;">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ===== 中心双立绘（叠在分界线上） ===== -->
+        <div style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); display:flex; gap:0px; z-index:5;">
+          <div class="placeholder" style="width:70px;height:140px;background:rgba(100,160,255,0.08);border:1px solid rgba(100,160,255,0.3);border-right:none;border-radius:8px 0 0 8px;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(100,160,255,0.5);">
+            Angel<br>立绘
+          </div>
+          <div class="placeholder" style="width:70px;height:140px;background:rgba(220,100,130,0.08);border:1px solid rgba(220,100,130,0.3);border-left:none;border-radius:0 8px 8px 0;display:flex;align-items:center;justify-content:center;font-size:11px;color:rgba(220,100,130,0.5);">
+            Evil<br>立绘
+          </div>
+        </div>
+
+        <!-- ===== Evil 右半区 ===== -->
+        <div style="flex:1; position:relative; background:linear-gradient(225deg, #301e28 0%, #2a1a24 100%);">
+          <!-- ProfileBackground -->
+          <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:200px; height:200px; border-radius:50%; background:rgba(180,60,90,0.15); border:1px dashed rgba(200,80,110,0.25);">
+            <div style="text-align:center;margin-top:85px;font-size:12px;color:rgba(200,80,110,0.4);">Bg</div>
+          </div>
+          <!-- 雷达图 -->
+          <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:160px; height:160px; border-radius:50%; background:rgba(200,80,110,0.08); border:2px dashed rgba(200,80,110,0.45);">
+            <div style="text-align:center;margin-top:65px;font-size:11px;color:rgba(200,80,110,0.5);">Evil 雷达</div>
+          </div>
+
+          <!-- 状态面板 -->
+          <div style="position:absolute; bottom:16px; left:20px; right:20px; background:rgba(0,0,0,0.6); border-radius:8px; padding:10px;">
+            <div style="display:flex; justify-content:space-around; text-align:center;">
+              <div>
+                <div style="font-size:18px;">⚡</div>
+                <div style="color:#ccc;font-size:13px;">Mood</div>
+                <div style="color:#f0cc58;font-weight:bold;">45</div>
+              </div>
+              <div>
+                <div style="font-size:18px;">🔋</div>
+                <div style="color:#ccc;font-size:13px;">Energy</div>
+                <div style="color:#7ad98c;font-weight:bold;">55</div>
+              </div>
+              <div>
+                <div style="font-size:18px;">❤️</div>
+                <div style="color:#ccc;font-size:13px;">Relation</div>
+                <div style="color:#f08a66;font-weight:bold;">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+  <h3>额外确认</h3>
+  <p style="color:#ccc;font-size:14px;">
+    ✔ 侧边栏按钮（Collection / Tarot / SpaceSys / onProfile）归属侧边栏替换，不在此面板内<br>
+    ✔ Profile 面板聚焦：双雷达 + 中心立绘 + 状态面板
+  </p>
+</div>

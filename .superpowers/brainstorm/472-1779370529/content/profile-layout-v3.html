@@ -1,0 +1,105 @@
+<h2>Profile 页面布局 v3</h2>
+<p class="subtitle">双宠并排 + 雷达中心立绘 + 顶部标题 + 底部状态</p>
+
+<div class="mockup">
+  <div class="mockup-header">Profile Panel 布局</div>
+  <div class="mockup-body">
+    <div style="position:relative; background:#1a1c2e; border-radius:8px; overflow:hidden;">
+
+      <!-- 标题 -->
+      <div style="position:absolute; top:12px; left:16px; z-index:10;">
+        <div class="placeholder" style="width:60px;height:24px;background:rgba(230,200,120,0.3);line-height:24px;font-size:11px;">Title</div>
+      </div>
+
+      <div style="display:flex; height:440px;">
+
+        <!-- Angel 左半 -->
+        <div style="flex:1; position:relative; border-right:1px solid #333; background:linear-gradient(135deg, #252840 0%, #1e2240 100%);">
+          <!-- ProfileBackground -->
+          <div class="placeholder" style="position:absolute; top:60px; left:50%; transform:translateX(-50%); width:240px; height:240px; border-radius:50%; background:rgba(60,100,180,0.18); border:1px dashed rgba(80,140,220,0.3);">
+            <div style="text-align:center;margin-top:100px;font-size:12px;color:rgba(80,140,220,0.5);">ProfileBg</div>
+          </div>
+          <!-- 雷达图环 -->
+          <div class="placeholder" style="position:absolute; top:60px; left:50%; transform:translateX(-50%); width:200px; height:200px; border-radius:50%; background:rgba(80,140,220,0.1); border:2px dashed rgba(80,140,220,0.5);">
+            <div style="text-align:center;margin-top:80px;font-size:11px;color:rgba(80,140,220,0.6);">雷达图</div>
+          </div>
+          <!-- 宠物立绘（雷达中心） -->
+          <div class="placeholder" style="position:absolute; top:60px; left:50%; transform:translateX(-50%); width:100px; height:120px; border-radius:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); margin-top:50px;">
+            <div style="text-align:center;margin-top:50px;font-size:10px;color:rgba(255,255,255,0.4);">Angel<br>立绘</div>
+          </div>
+
+          <!-- Angel 状态面板 -->
+          <div style="position:absolute; bottom:12px; left:16px; right:16px; background:rgba(0,0,0,0.55); border-radius:8px; padding:12px;">
+            <div style="display:flex; justify-content:space-around; align-items:center;">
+              <div style="text-align:center;">
+                <div style="font-size:20px;">⚡</div>
+                <div style="font-size:14px;color:#ccc;">Mood</div>
+                <div style="font-size:18px;color:#f0cc58;font-weight:bold;">60</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:20px;">🔋</div>
+                <div style="font-size:14px;color:#ccc;">Energy</div>
+                <div style="font-size:18px;color:#7ad98c;font-weight:bold;">80</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:20px;">❤️</div>
+                <div style="font-size:14px;color:#ccc;">Relation</div>
+                <div style="font-size:18px;color:#f08a66;font-weight:bold;">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Evil 右半 -->
+        <div style="flex:1; position:relative; background:linear-gradient(225deg, #301e28 0%, #2a1a24 100%);">
+          <!-- ProfileBackground -->
+          <div class="placeholder" style="position:absolute; top:60px; left:50%; transform:translateX(-50%); width:240px; height:240px; border-radius:50%; background:rgba(180,60,90,0.18); border:1px dashed rgba(200,80,110,0.3);">
+            <div style="text-align:center;margin-top:100px;font-size:12px;color:rgba(200,80,110,0.5);">ProfileBg</div>
+          </div>
+          <!-- 雷达图环 -->
+          <div class="placeholder" style="position:absolute; top:60px; left:50%; transform:translateX(-50%); width:200px; height:200px; border-radius:50%; background:rgba(200,80,110,0.1); border:2px dashed rgba(200,80,110,0.5);">
+            <div style="text-align:center;margin-top:80px;font-size:11px;color:rgba(200,80,110,0.6);">雷达图</div>
+          </div>
+          <!-- 宠物立绘（雷达中心） -->
+          <div class="placeholder" style="position:absolute; top:60px; left:50%; transform:translateX(-50%); width:100px; height:120px; border-radius:4px; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.15); margin-top:50px;">
+            <div style="text-align:center;margin-top:50px;font-size:10px;color:rgba(255,255,255,0.4);">Evil<br>立绘</div>
+          </div>
+
+          <!-- Evil 状态面板 -->
+          <div style="position:absolute; bottom:12px; left:16px; right:16px; background:rgba(0,0,0,0.55); border-radius:8px; padding:12px;">
+            <div style="display:flex; justify-content:space-around; align-items:center;">
+              <div style="text-align:center;">
+                <div style="font-size:20px;">⚡</div>
+                <div style="font-size:14px;color:#ccc;">Mood</div>
+                <div style="font-size:18px;color:#f0cc58;font-weight:bold;">45</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:20px;">🔋</div>
+                <div style="font-size:14px;color:#ccc;">Energy</div>
+                <div style="font-size:18px;color:#7ad98c;font-weight:bold;">55</div>
+              </div>
+              <div style="text-align:center;">
+                <div style="font-size:20px;">❤️</div>
+                <div style="font-size:14px;color:#ccc;">Relation</div>
+                <div style="font-size:18px;color:#f08a66;font-weight:bold;">--</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section" style="margin-top:16px;">
+  <h3>确认要点</h3>
+  <ul style="color:#ccc;">
+    <li>✔ Title 在左上角</li>
+    <li>✔ 双宠左右并排：Angel ← | → Evil</li>
+    <li>✔ ProfileBackground 作为雷达图底层背景</li>
+    <li>✔ 雷达图覆盖在 Background 之上，中心留宠物立绘区域</li>
+    <li>✔ 下方状态面板：Mood / Energy / Relation（Relation 占位）</li>
+    <li>✔ 4 个按钮归属侧边栏，非 Profile 面板内</li>
+  </ul>
+</div>

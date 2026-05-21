@@ -116,6 +116,10 @@ namespace GeminiLab.Modules.HubUI.Panels
                 };
                 radar.SetValues(values);
             }
+            else if (radar != null)
+            {
+                radar.SetValues(new List<float> { 0f, 0f, 0f, 0f, 0f, 0f, 0f });
+            }
         }
     }
 }
