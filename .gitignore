@@ -90,3 +90,6 @@ Thumbs.db
 
 # Claude Code 本地工作目录（session 数据、skill 配置、task 状态等本地产物，不跨机器共享）
 /.claude/
+
+# Superpowers brainstorming session data
+.superpowers/

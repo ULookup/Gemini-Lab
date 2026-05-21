@@ -11,6 +11,9 @@ namespace GeminiLab.Modules.Tarot
     /// </summary>
     public interface ITarotService
     {
+        /// <summary>塔罗牌堆，供图鉴等 UI 遍历展示。</summary>
+        TarotDeckSO Deck { get; }
+
         /// <summary>今日是否还能抽卡（基于本地日期）。</summary>
         bool CanDrawToday();
 

@@ -43,6 +43,8 @@ namespace GeminiLab.Modules.Tarot
 
         public string Key => "tarot";
 
+        public TarotDeckSO Deck => _deck;
+
         public string LastDrawDateIso => _lastDrawDateIso;
 
         public bool CanDrawToday()
