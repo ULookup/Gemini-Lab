@@ -168,6 +168,12 @@ Updated: 2026-05-20
     - 新增 `Pet_Angel_Sleep.anim`
     - `Pet_Angel.controller` 新增 `Idle_Front / Idle_Back / Idle_Side / Sleep`
     - `PetController` 当前会在静止时切到 `Idle_*`，在 `SleepingState` 时切到 `Sleep`
+- `2026-05-21` 已清理 `Apartment_Main.unity` 中旧的占位 UI：
+  - 已移除 `TopLeft_StatusPanel`
+  - 已移除 `Right_InventoryPanel`
+  - 已移除 `BottomRight_PersonalityRadar`
+  - 已移除旧的 `SpaceSystemPrototypeRoot` 原型 UI
+  - 后续 UI 制作改用 `Assets/_Project/Art/UI/` 下的新美术资源重新搭建
 - `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 现在都不再是完全空目录，且 `Furniture` / `FurnitureConfig` 这条线已覆盖当前全部家具 Sprite 资源；其他模块仍未完成资产作者化。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。
@@ -194,6 +200,7 @@ Updated: 2026-05-20
 7. 当前最明显的资源层缺口仍是：
    - `Furniture` 之外的大部分 `Prefab` / `ScriptableObject` 资产仍未作者化
    - 真实人格雷达、美术更完整的交互动画与更正式的 UI 资源仍未补齐
+   - `Assets/_Project/Art/UI/` 当前已经开始承载新的 UI 美术资源输入，但 Apartment 场景内对应的新 UI 还未重新作者化落地
    - `Pet_Angel` 当前已有 `Move_Front / Move_Back / Move_Side / Interact_Read / Interact_BesideDoor`
    - 但 `Idle` 与更完整的 `Emotion` 仍缺少正式资源与状态链路
 8. 当前工作树不是干净状态，执行任何修改前都要先看 `git status`，避免覆盖用户现有改动。
