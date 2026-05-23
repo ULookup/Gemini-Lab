@@ -2,17 +2,16 @@
 using GeminiLab.Core;
 using GeminiLab.Core.UI;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GeminiLab.Modules.HubUI.Panels
 {
-    /// <summary>
-    /// 占位面板基类：负责 Register/Unregister 到 UIRouter、统一开/关显示。
-    /// 真实内容由具体子类在美术资源到位后填充。
-    /// </summary>
     public abstract class StubPanelBase : MonoBehaviour, IUIPanel
     {
         [SerializeField] private GameObject? _content;
+        [SerializeField] private Button? _closeButton;
 
+        private IUIRouter? _router;
         public abstract PanelId Id { get; }
 
         protected virtual void Awake()
@@ -24,7 +23,13 @@ namespace GeminiLab.Modules.HubUI.Panels
 
             if (ServiceLocator.TryResolve(out IUIRouter? router))
             {
-                router!.Register(this);
+                _router = router;
+                _router.Register(this);
+            }
+
+            if (_closeButton is not null)
+            {
+                _closeButton.onClick.AddListener(CloseSelf);
             }
         }
 
@@ -32,7 +37,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         {
             if (ServiceLocator.TryResolve(out IUIRouter? router))
             {
-                router!.Unregister(Id);
+                router.Unregister(Id);
             }
         }
 
@@ -50,6 +55,11 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 _content.SetActive(false);
             }
+        }
+
+        protected void CloseSelf()
+        {
+            _router?.Close(Id);
         }
     }
 }

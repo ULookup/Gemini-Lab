@@ -52,6 +52,9 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private BoxCollider2D? _movementBounds;
         [SerializeField] private Transform? _sortingAnchor;
         [SerializeField] private int _sortingOrderOffset;
+        [SerializeField] private PetId _petId = PetId.Angel;
+
+        public PetId PetId => _petId;
 
         private PetContext? _context;
         private StateMachine<PetContext>? _stateMachine;
@@ -106,19 +109,29 @@ namespace GeminiLab.Modules.Pet
             RefreshDynamicOcclusionFurnitureCache();
 
             PetStateValueSO config = _config ?? ScriptableObject.CreateInstance<PetStateValueSO>();
-            _ = _personality; // Reserved for Phase 3 prompt adaptation.
 
             PetRuntimeData runtime = new()
             {
+                PetId = _petId,
                 Mood = config.InitialMood,
                 Energy = config.InitialEnergy,
                 Satiety = config.InitialSatiety,
                 Position = transform.position
             };
 
+            if (ServiceLocator.TryResolve(out IPetRoster? roster) && roster is not null)
+            {
+                roster.Register(_petId, runtime);
+            }
+
             if (!ServiceLocator.TryResolve(out EventBus? eventBus))
             {
                 eventBus = null;
+            }
+            else
+            {
+                // 广播 PetController 初始化完成，供外部（如 PersonalityEvolutionService）观察
+                eventBus.Publish(new PetControllerInitializedEvent(_petId, _personality));
             }
 
             if (!ServiceLocator.TryResolve(out INavigationService? navigationService))
@@ -215,6 +228,10 @@ namespace GeminiLab.Modules.Pet
             if (_sleepInteractionVisualObject != null)
             {
                 Destroy(_sleepInteractionVisualObject);
+            }
+            if (ServiceLocator.TryResolve(out IPetRoster? roster) && roster is not null)
+            {
+                roster.Unregister(_petId);
             }
         }
 
@@ -1210,7 +1227,8 @@ namespace GeminiLab.Modules.Pet
                 runtime.TargetFurnitureInteractionType,
                 runtime.IsTraveling,
                 runtime.LastInteractionFurnitureId,
-                runtime.LastInteractionSummary);
+                runtime.LastInteractionSummary,
+                petId: runtime.PetId);
 
             if (_lastPublishedSnapshot.HasValue && AreSnapshotsEquivalent(_lastPublishedSnapshot.Value, snapshot))
             {
@@ -1223,7 +1241,8 @@ namespace GeminiLab.Modules.Pet
 
         private static bool AreSnapshotsEquivalent(PetRuntimeSnapshotChangedEvent previous, PetRuntimeSnapshotChangedEvent current)
         {
-            return previous.CurrentState == current.CurrentState &&
+            return previous.PetId == current.PetId &&
+                   previous.CurrentState == current.CurrentState &&
                    Mathf.Abs(previous.Mood - current.Mood) < 0.01f &&
                    Mathf.Abs(previous.Energy - current.Energy) < 0.01f &&
                    Mathf.Abs(previous.Satiety - current.Satiety) < 0.01f &&

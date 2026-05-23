@@ -1,0 +1,60 @@
+<h2>Profile 页面布局 —— 双宠并排</h2>
+<p class="subtitle">全屏面板，Angel 左 / Evil 右</p>
+
+<div class="mockup">
+  <div class="mockup-header">Profile 面板布局（根据你的描述）</div>
+  <div class="mockup-body">
+    <div style="display:flex; height:420px; background:#1a1c2e; border-radius:8px; overflow:hidden;">
+
+      <!-- Angel 左半 -->
+      <div style="flex:1; position:relative; border-right:1px solid #333; background:linear-gradient(135deg, #252840 0%, #1e2240 100%);">
+        <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:220px; height:220px; border-radius:50%; background:rgba(60,100,180,0.2); text-align:center; line-height:220px; font-size:14px;">
+          Angel<br>Background
+        </div>
+        <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:180px; height:180px; border-radius:50%; background:rgba(80,140,220,0.15); text-align:center; line-height:180px; font-size:12px; border:2px dashed rgba(80,140,220,0.4);">
+          性格雷达图
+        </div>
+        <!-- Angel 状态面板 -->
+        <div style="position:absolute; bottom:12px; left:16px; right:16px; background:rgba(0,0,0,0.5); border-radius:6px; padding:10px;">
+          <div style="display:flex; justify-content:space-around; text-align:center;">
+            <div><span style="color:#f0cc58;">⚡</span><br><span style="color:#ccc;">Mood</span></div>
+            <div><span style="color:#7ad98c;">🔋</span><br><span style="color:#ccc;">Energy</span></div>
+            <div><span style="color:#f08a66;">❤️</span><br><span style="color:#ccc;">Relation</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Evil 右半 -->
+      <div style="flex:1; position:relative; background:linear-gradient(225deg, #301e28 0%, #2a1a24 100%);">
+        <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:220px; height:220px; border-radius:50%; background:rgba(180,60,90,0.2); text-align:center; line-height:220px; font-size:14px;">
+          Evil<br>Background
+        </div>
+        <div class="placeholder" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:180px; height:180px; border-radius:50%; background:rgba(200,80,110,0.15); text-align:center; line-height:180px; font-size:12px; border:2px dashed rgba(200,80,110,0.4);">
+          性格雷达图
+        </div>
+        <!-- Evil 状态面板 -->
+        <div style="position:absolute; bottom:12px; left:16px; right:16px; background:rgba(0,0,0,0.5); border-radius:6px; padding:10px;">
+          <div style="display:flex; justify-content:space-around; text-align:center;">
+            <div><span style="color:#f0cc58;">⚡</span><br><span style="color:#ccc;">Mood</span></div>
+            <div><span style="color:#7ad98c;">🔋</span><br><span style="color:#ccc;">Energy</span></div>
+            <div><span style="color:#f08a66;">❤️</span><br><span style="color:#ccc;">Relation</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top:24px;">还有几个问题需要确认：</p>
+
+<div class="mockup" style="margin-top:12px;">
+  <div class="mockup-header">剩余素材的用途 —— 你怎么看？</div>
+  <div class="mockup-body">
+    <table style="width:100%;color:#ccc;">
+      <tr><td style="padding:6px;">UI_Icon_Title.png</td><td style="padding:6px;color:#888;">→ 顶部标题？每个半区各一个？</td></tr>
+      <tr><td style="padding:6px;">UI_Button_Collection.png<br>UI_Button_Tarot.png<br>UI_Button_SpaceSys.png</td><td style="padding:6px;color:#888;">→ 底部导航栏，跳转到其他面板？</td></tr>
+      <tr><td style="padding:6px;">UI_Button_onProfile.png</td><td style="padding:6px;color:#888;">→ 当前页高亮态？</td></tr>
+    </table>
+  </div>
+</div>

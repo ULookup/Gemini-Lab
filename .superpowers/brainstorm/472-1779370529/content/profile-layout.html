@@ -1,0 +1,58 @@
+<h2>Profile 页面布局方案</h2>
+<p class="subtitle">PetStatus 面板升级 —— 素材包括：背景图、状态图标、导航按钮</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>卡片式</h3>
+      <p>顶部：背景图区域（Angel/Devil 切换），前景叠加宠物名 + Title 图标<br>
+      中部：3 个状态项（Energy / Mood / Relationship），图标 + 数值<br>
+      底部：4 个导航按钮（Collection | onProfile | SpaceSys | Tarot）</p>
+    </div>
+  </div>
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>全幅背景式</h3>
+      <p>整面板填充背景图，所有内容叠加在背景之上<br>
+      状态指标散布在宠物形象周围，导航按钮透明叠加在底部</p>
+    </div>
+  </div>
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>混合式（保留雷达图）</h3>
+      <p>左侧：背景图 Profile 卡片<br>
+      右侧：保留现有的 7 维性格雷达图<br>
+      底部：导航按钮<br>
+      状态图标嵌入左侧卡片中</p>
+    </div>
+  </div>
+</div>
+
+<hr>
+
+<h3>参考：当前 PetStatus 面板结构</h3>
+<div class="mockup">
+  <div class="mockup-header">现有 PetStatusPanel</div>
+  <div class="mockup-body">
+    <div style="background:#1e2030; padding:20px; border-radius:8px; max-width:400px; margin:0 auto;">
+      <div style="text-align:center;color:#e8d9a0;font-size:24px;margin-bottom:12px;">宠物状态</div>
+      <div style="display:flex;gap:12px;justify-content:center;margin-bottom:16px;">
+        <div class="mock-button" style="background:#3a5a9f;">天使</div>
+        <div class="mock-button" style="background:#8f4a5e;">恶魔</div>
+      </div>
+      <div style="color:white;text-align:center;margin-bottom:12px;">天使</div>
+      <div style="display:flex;gap:16px;">
+        <div style="flex:1;">
+          <div style="margin-bottom:12px;"><span style="color:#f08a66;">心情 60</span><div style="background:#333;height:8px;border-radius:4px;"><div style="background:#f08a66;width:60%;height:8px;border-radius:4px;"></div></div></div>
+          <div style="margin-bottom:12px;"><span style="color:#7ad98c;">精力 80</span><div style="background:#333;height:8px;border-radius:4px;"><div style="background:#7ad98c;width:80%;height:8px;border-radius:4px;"></div></div></div>
+          <div style="margin-bottom:12px;"><span style="color:#f0cc58;">饱食 45</span><div style="background:#333;height:8px;border-radius:4px;"><div style="background:#f0cc58;width:45%;height:8px;border-radius:4px;"></div></div></div>
+          <div style="color:#bbb;">状态：Idle</div>
+        </div>
+        <div class="placeholder" style="width:160px;height:160px;text-align:center;line-height:160px;">雷达图</div>
+      </div>
+    </div>
+  </div>
+</div>

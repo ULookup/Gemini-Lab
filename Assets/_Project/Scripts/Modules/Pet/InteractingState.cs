@@ -24,6 +24,12 @@ namespace GeminiLab.Modules.Pet
                 context.RuntimeData.LastInteractionFurnitureId = context.RuntimeData.TargetFurnitureId;
                 context.RuntimeData.LastInteractionSummary =
                     $"{context.RuntimeData.TargetFurnitureInteractionType.ToDisplayLabel()} / {context.RuntimeData.TargetFurnitureCategory} (Mood {FormatSigned(buff.MoodDelta)}, Energy {FormatSigned(buff.EnergyDelta)})";
+
+                context.EventBus?.Publish(new PetInteractionCompletedEvent(
+                    context.RuntimeData.PetId,
+                    context.RuntimeData.TargetFurnitureId,
+                    context.RuntimeData.TargetFurnitureCategory,
+                    context.RuntimeData.TargetFurnitureInteractionType));
             }
         }
 

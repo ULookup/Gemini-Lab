@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-05-08
+Updated: 2026-05-11
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -29,6 +29,101 @@ Updated: 2026-05-08
 | FSM 核心类已实现并可编译 |  |  |
 | 宠物能在空场景中完成基本状态切换 |  |  |
 | EditMode 测试可以运行 |  |  |
+
+## B2. 框架 + 场景切换（P0 2026-05-10 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 从 `Boot.unity` 点 Play 后自动跳到 `MainMenu` |  |  |
+| `MainMenu` 的"开始"按钮点击后进入 `Apartment_Main` |  |  |
+| `MainMenu` 的"存档"按钮打开 SaveSlots 面板（当前骨架尚未注册可见 Panel 属正常） |  |  |
+| `MainMenu` 的"设置"按钮打开 Settings 面板（同上） |  |  |
+| `Apartment_Main` 的右上 `UI_WorldMapPortal` 按钮可切到 `WorldMap_Main` |  |  |
+| `WorldMap_Main` 的左上 `Return` 按钮可切回 `Apartment_Main` |  |  |
+| `WorldMap_Main` 中 `A` / `D` 键可左右平移摄像头；鼠标右键拖拽同理 |  |  |
+| 在任意场景按 `F10` 可在公寓与 Desktop Overlay 之间切换（`DesktopOverlayManager`） |  |  |
+| 跨场景 `F10` 不再丢失 manager（切回 Apartment 后 F10 仍响应） |  |  |
+| EditorBuildSettings 顺序为 `Boot(0) / MainMenu / Apartment_Main / WorldMap_Main / Desktop_Overlay` |  |  |
+| `DesktopOverlayManagerEditModeTests` 通过 |  |  |
+| Console 无 `CS` 编译错误（CJK 字形 □ 警告在补 CJK 字体前可接受） |  |  |
+
+## B3. 塔罗垂直切片（B1 2026-05-10 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 打开 Apartment → 侧边栏点"每日塔罗"，面板显示"抽今日塔罗"按钮 |  |  |
+| 点按钮后卡面刷新、显示牌名 + 正/逆位、按钮变"今天已抽过，明天再来" |  |  |
+| 右侧 AngelBubble 显示"（天使视角）… 愿光照亮你…" 或 Gateway 真实回复 |  |  |
+| 右侧 DevilBubble 显示"（恶魔视角）… 别被光晃得太舒服…" 或 Gateway 真实回复 |  |  |
+| 关闭 Panel 再打开，按钮保持"明天再来"状态（今日已抽过） |  |  |
+| 次日重启游戏，按钮恢复成"抽今日塔罗" |  |  |
+| Console 无 `TarotBootstrap` ERROR；看到 `[TarotBootstrap] TarotService registered.` |  |  |
+
+## B4. Phase C 底座 + PetStatus 面板（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| Boot → MainMenu / MainMenu → Apartment 切场景时能看到黑幕淡入淡出 |  |  |
+| 抽今日塔罗成功后，屏幕右下角弹出绿色 Toast 显示牌名 + 正/逆位 |  |  |
+| Toast 自动淡出，不阻塞点击 |  |  |
+| 打开任意面板后按 ESC 能关闭栈顶面板 |  |  |
+| 连续按 ESC 能把面板栈全部关空 |  |  |
+| 侧边栏点"宠物状态"，面板显示"天使/恶魔"两个 tab + 心情/精力/饱食三条进度条 + 7 维雷达图 |  |  |
+| 点"恶魔"页签切换后宠物名改为"恶魔"、雷达图按恶魔人格刷新 |  |  |
+| 宠物状态值变化时，面板数值实时更新（订阅 PetRuntimeSnapshotChangedEvent） |  |  |
+| Console 无 `GameClock` / `Toast` / `SceneFadeOverlay` / `UIInputRouter` 相关 ERROR |  |  |
+
+## B5. Phase D 面板全建（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 主菜单点"设置"打开 Panel_Settings，滑条拖动后立即生效（文本百分比同步） |  |  |
+| Settings 的"重置为默认"按钮可用，关闭按钮按下或 ESC 都可以退出 |  |  |
+| Settings 改动后重启游戏仍保留（PlayerPrefs） |  |  |
+| 主菜单点"存档"打开 Panel_SaveSlots，显示 3 个槽位（空槽位为"空槽位"） |  |  |
+| 对任一槽位点"新建 / 覆盖"后显示最后游玩时间，关闭重开仍可见 |  |  |
+| 侧边栏"物品栏"：初始为空 Grid，调试加道具（`inventory.Add(...)`）后网格刷新 |  |  |
+| 物品栏格子 hover 显示 tooltip（中文名 / 分类 / 说明） |  |  |
+| 侧边栏"收藏"：抽塔罗成功后切到"塔罗记录"标签能看到新条目 |  |  |
+| 收藏三个标签（旅行 / 塔罗 / 花园）切换空态提示正确 |  |  |
+| Console 无 `SettingsBootstrap` / `InventoryBootstrap` / `CollectionBootstrap` ERROR |  |  |
+
+## B6. Phase E 存档整合（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 启动后在主菜单打开"存档"面板显示 3 个槽位（默认均为"空槽位"） |  |  |
+| 对任一槽位点"新建 / 覆盖"，摘要改为真实时间戳 `yyyy-MM-dd HH:mm:ss` |  |  |
+| 调节音量 / 抽塔罗 / 调用 `InventoryService.Add` 后保存；重启游戏 → 同槽位"读取" → 状态全部恢复 |  |  |
+| 读档后自动跳回公寓场景 |  |  |
+| "删除"按钮能清掉槽位，摘要回到"空槽位" |  |  |
+| 同一槽位反复 Save / Load 无异常，Console 不出现 SaveBundle 序列化错误 |  |  |
+| 没有 SaveSlot 的 cold-start：TarotService 能从 PlayerPrefs 读到上次抽卡日期（兼容旧存档） |  |  |
+| Console 看到 `[PersistenceBootstrap] SaveCoordinator registered.` 与四条 `*Bootstrap registered.` |  |  |
+
+## B7. Phase F 宠物陈衰 / 每日重置 / 性格演化（2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 公寓静置 3 分钟：`Satiety` 明显下降；`Energy` 持续下降；`Mood` 在两者正常时缓慢回升 |  |  |
+| `Satiety` <= 30 或 `Energy` <= 20 时：`Mood` 恢复速度变慢（默认 0.2×），并被扣分 |  |  |
+| 让宠物睡觉：`Energy` 上升 / `Mood` 少量回升；但 `Satiety` 仍然持续下降 |  |  |
+| 跨天后启动游戏：Console 看到 `NewDayStartedEvent` 广播；塔罗按钮重新变"抽今日塔罗" |  |  |
+| 同一天内反复重启：不会重复广播新一天事件 |  |  |
+| 抽塔罗正位后：天使雷达某维度（默认善良/正直/冷静等）微升；抽逆位后：恶魔雷达相应维度微升 |  |  |
+| 交互书柜：任一只当前宠物 Calmness / Integrity 微升；交互竖琴（天使）：Kindness / Calmness 微升 |  |  |
+| 存档 → 重启 → 读档：宠物 Mood / Energy / Satiety / 最近交互 / 性格向量全部恢复 |  |  |
+| Console 看到 `PersonalityEvolutionBootstrap` / `PetRuntimeBootstrap` / `DailyResetService` 注册日志 |  |  |
+| Boot.BootstrapRoot 上已挂 `PersonalityEvolutionBootstrap`，且 `_rules` 指向 `PersonalityEvolutionRules.asset` |  |  |
+
+## B8. Phase G 花园（实时 2 小时，2026-05-11 新增）
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 启动新存档后打开侧边栏，看到第 5 个入口"Garden" |  |  |
+| 打开 Garden 面板，看到 3×3 空地块 + 右侧 3 种种子（胡萝卜/番茄/小麦 各 ×5） |  |  |
+| 点击种子选中（出现高亮），再点空地块 → 地块变成 Seeded；种子 -1 |  |  |
+| 地块显示倒计时（格式 `MM:SS`） |  |  |
+| 等过 Growing 阈值（默认 40 分钟，调试时可改 SeedDef 为 60 秒）→ 外观变亮 |  |  |
+| 等到 TotalGrowSeconds → 格子切到 Ready，点击可收获 |  |  |
+| 收获后：Inventory 增加对应 crop_*；Collection 的"花园收获"分类新增一条（首次） |  |  |
+| 种后存档 → 退出 → 过 10 分钟 → 读档：倒计时按真实秒差已推进（离线补算生效） |  |  |
+| Boot.BootstrapRoot 上 GardenRuntimeBootstrap 的 `_seedCatalog` 指向 `SeedCatalog.asset` |  |  |
+| InventoryRuntimeBootstrap 的 `_starterItems` 配置了 3 种种子各 5 |  |  |
+| Console 看到 `[InventoryBootstrap]` / `[GardenBootstrap]` 注册日志，无 ERROR |  |  |
 
 ## C. Phase 2 家具、建造与导航
 | 检查项 | 结果 | 备注 |

@@ -11,10 +11,6 @@ using UnityEngine.UI;
 
 namespace GeminiLab.Editor.SceneBootstrap
 {
-    /// <summary>
-    /// 往 Apartment_Main.unity 里增量注入侧边栏 + 4 个占位面板 + 通往 WorldMap 的按钮。
-    /// 幂等：重复执行会先清除旧的 SidebarRoot 节点再重建。
-    /// </summary>
     public static class ApartmentSidebarAuthoring
     {
         private const string ScenePath = "Assets/_Project/Scenes/Apartment/Apartment_Main.unity";
@@ -54,9 +50,22 @@ namespace GeminiLab.Editor.SceneBootstrap
             // Build Canvas host (or reuse existing)
             GameObject canvasGo = BuildOrGetSidebarCanvas(uiLayer);
 
-            // Sidebar panel + tabs
+            // --- SidebarOverlay sub-Canvas (higher sortingOrder, stays on top of panels) ---
+            var overlayGo = new GameObject("SidebarOverlay");
+            overlayGo.transform.SetParent(canvasGo.transform, false);
+            overlayGo.layer = uiLayer;
+            var overlayCanvas = overlayGo.AddComponent<Canvas>();
+            overlayCanvas.overrideSorting = true;
+            overlayCanvas.sortingOrder = 101;
+            overlayGo.AddComponent<GraphicRaycaster>();
+            var overlayRt = overlayGo.GetComponent<RectTransform>();
+            overlayRt.anchorMin = Vector2.zero;
+            overlayRt.anchorMax = Vector2.one;
+            overlayRt.sizeDelta = Vector2.zero;
+
+            // Sidebar panel + tabs (inside overlay)
             var sidebarGo = new GameObject("Sidebar");
-            sidebarGo.transform.SetParent(canvasGo.transform, false);
+            sidebarGo.transform.SetParent(overlayGo.transform, false);
             sidebarGo.layer = uiLayer;
             var sidebarRt = sidebarGo.AddComponent<RectTransform>();
             sidebarRt.anchorMin = new Vector2(0f, 0f);
@@ -80,6 +89,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             var tarotBtn = MakeTab(sidebarGo, uiLayer, "Btn_Tarot", "Tarot");
             var collectionBtn = MakeTab(sidebarGo, uiLayer, "Btn_Collection", "Collection");
             var inventoryBtn = MakeTab(sidebarGo, uiLayer, "Btn_Inventory", "Inventory");
+            var gardenBtn = MakeTab(sidebarGo, uiLayer, "Btn_Garden", "Garden");
 
             var sidebar = sidebarGo.AddComponent<SidebarController>();
             var so = new SerializedObject(sidebar);
@@ -91,19 +101,21 @@ namespace GeminiLab.Editor.SceneBootstrap
             so.FindProperty("_tabTarot").objectReferenceValue = tarotBtn;
             so.FindProperty("_tabCollection").objectReferenceValue = collectionBtn;
             so.FindProperty("_tabInventory").objectReferenceValue = inventoryBtn;
+            so.FindProperty("_tabGarden").objectReferenceValue = gardenBtn;
             so.ApplyModifiedProperties();
 
-            // 4 stub panels (as disabled root nodes with a content child)
-            CreateStubPanel<PetStatusPanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Pet Status (WIP)");
+            // 5 panels — stretch fullscreen (anchor 0,0→1,1)
+            CreateStubPanel<ProfilePanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Profile");
             CreateStubPanel<TarotPanelStub>(canvasGo, uiLayer, "Panel_Tarot", "Tarot (WIP)");
             CreateStubPanel<CollectionPanelStub>(canvasGo, uiLayer, "Panel_Collection", "Collection (WIP)");
             CreateStubPanel<InventoryPanelStub>(canvasGo, uiLayer, "Panel_Inventory", "Inventory (WIP)");
+            CreateStubPanel<GardenPanelStub>(canvasGo, uiLayer, "Panel_Garden", "Garden (WIP)");
 
-            // Portal to WorldMap
+            // Portal to WorldMap (inside overlay, stays on top)
             var portalGo = GameObject.Find("UI_WorldMapPortal");
             if (portalGo != null) Object.DestroyImmediate(portalGo);
             portalGo = new GameObject("UI_WorldMapPortal");
-            portalGo.transform.SetParent(canvasGo.transform, false);
+            portalGo.transform.SetParent(overlayGo.transform, false);
             portalGo.layer = uiLayer;
             var portalRt = portalGo.AddComponent<RectTransform>();
             portalRt.anchorMin = new Vector2(1f, 1f);
@@ -132,7 +144,9 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[ApartmentSidebarAuthoring] Sidebar + panels + portal 已注入");
+            Debug.LogWarning("[ApartmentSidebarAuthoring] Sidebar + 5 panels + portal 已重建（全屏面板 + 子 Canvas 分层）。" +
+                             "各 Panel 现为占位 stub，如需恢复真实 UI 请依次重跑 " +
+                             "Author Inventory + Collection Panels / Author Garden Panel。");
         }
 
         private static GameObject BuildOrGetSidebarCanvas(int uiLayer)
@@ -159,11 +173,12 @@ namespace GeminiLab.Editor.SceneBootstrap
             go.transform.SetParent(parentCanvas.transform, false);
             go.layer = uiLayer;
             var rt = go.AddComponent<RectTransform>();
-            rt.anchorMin = new Vector2(0.5f, 0.5f);
-            rt.anchorMax = new Vector2(0.5f, 0.5f);
-            rt.pivot = new Vector2(0.5f, 0.5f);
+            // stretch fullscreen
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.pivot = new Vector2(0f, 0f);
             rt.anchoredPosition = Vector2.zero;
-            rt.sizeDelta = new Vector2(900, 620);
+            rt.sizeDelta = Vector2.zero;
 
             var contentGo = new GameObject("Content");
             contentGo.transform.SetParent(go.transform, false);
@@ -186,14 +201,37 @@ namespace GeminiLab.Editor.SceneBootstrap
             tmp.fontSize = 48;
             tmp.color = Color.white;
 
+            // Close button (top-right, avoid sidebar area)
+            var closeBtnGo = new GameObject("Btn_Close");
+            closeBtnGo.transform.SetParent(contentGo.transform, false);
+            closeBtnGo.layer = uiLayer;
+            var cbrt = closeBtnGo.AddComponent<RectTransform>();
+            cbrt.anchorMin = new Vector2(1f, 1f);
+            cbrt.anchorMax = new Vector2(1f, 1f);
+            cbrt.pivot = new Vector2(1f, 1f);
+            cbrt.anchoredPosition = new Vector2(-24, -24);
+            cbrt.sizeDelta = new Vector2(40, 40);
+            var cbImg = closeBtnGo.AddComponent<Image>();
+            cbImg.color = new Color(1f, 1f, 1f, 0.15f);
+            var closeBtn = closeBtnGo.AddComponent<Button>();
+
+            var xLabelGo = new GameObject("X");
+            xLabelGo.transform.SetParent(closeBtnGo.transform, false);
+            xLabelGo.layer = uiLayer;
+            var xrt = xLabelGo.AddComponent<RectTransform>();
+            xrt.anchorMin = Vector2.zero; xrt.anchorMax = Vector2.one;
+            xrt.offsetMin = Vector2.zero; xrt.offsetMax = Vector2.zero;
+            var xtmp = xLabelGo.AddComponent<TextMeshProUGUI>();
+            xtmp.text = "✕";
+            xtmp.alignment = TextAlignmentOptions.Center;
+            xtmp.fontSize = 22;
+            xtmp.color = Color.white;
+
             var stub = go.AddComponent<T>();
             var so = new SerializedObject(stub);
-            var contentProp = so.FindProperty("_content");
-            if (contentProp != null)
-            {
-                contentProp.objectReferenceValue = contentGo;
-                so.ApplyModifiedProperties();
-            }
+            so.FindProperty("_content").objectReferenceValue = contentGo;
+            so.FindProperty("_closeButton").objectReferenceValue = closeBtn;
+            so.ApplyModifiedProperties();
 
             contentGo.SetActive(false);
         }
