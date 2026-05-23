@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Rules And History
 
-Updated: 2026-05-08
+Updated: 2026-05-20
 
 ## 长期规则
 1. 所有中文文档、中文注释、中文说明都必须保持 UTF-8 正常显示。
@@ -16,6 +16,8 @@ Updated: 2026-05-08
    - 项目结构总览
    - 主记忆
 9. 手工验证结果要落到 `docs/manual-validation-checklist.md`，不能只停留在聊天记录里。
+10. 所有视觉类开发都必须保证 `Play` 视图与 `Scene` 视图效果一致；不要让运行时脚本覆盖 `Scene` 中已经调好的视觉结果。
+11. 对视觉有影响的结果，优先作者化到 `Scene / Prefab / Inspector`，而不是依赖运行时临时生成。
 
 ## 当前已知问题
 1. `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 已开始落地真实作者化资源，其中 `Furniture` / `FurnitureConfig` 已覆盖当前全部家具 Sprite 资源；`Pet`、`UI`、`Gateway`、`Travel` 等模块仍未完成同等程度的资产化。
@@ -27,6 +29,25 @@ Updated: 2026-05-08
 7. `Gateway`、`Travel` 与 AI 对话相关代码当前仍存在于仓库中，但 2026-05-08 起不再作为现阶段原型的默认开发入口；当前阶段应以玩家直接控制桌宠移动与场景交互为准。
 
 ## 最近进展
+
+### 2026-05-20
+- 新增视觉一致性硬规则：
+  - `Play` 视图与 `Scene` 视图必须一致
+  - 视觉结果必须优先作者化到 `Scene / Prefab / Inspector`
+  - 运行时脚本不得让 `Scene` 中已调好的视觉结果进入 `Play` 后失效
+- 这条规则当前视为长期协作底线，后续涉及 UI、相机、场景展示、装饰层和布局任务时默认生效。
+
+### 2026-05-13 最小闭环任务闸门
+- 新增：
+  - `docs/current-task-card.json`
+  - `tools/check-task-gate.ps1`
+- 当前项目的写操作前置条件升级为：
+  1. 先更新 `current-task-card.md`
+  2. 再更新 `current-task-card.json`
+  3. 再通过 `check-task-gate.ps1`
+- 当前仍然属于最小闭环版：
+  - 先做任务卡机器检查
+  - 暂未做更深层的写后审计和自动拦截包装
 
 ### 2026-04-21
 - 浏览并梳理整个 Gemini-Lab 仓库。

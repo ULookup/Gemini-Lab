@@ -9,14 +9,55 @@ namespace GeminiLab.Modules.Pet
     [DisallowMultipleComponent]
     public sealed class PetPlayerInputController : MonoBehaviour
     {
+        private static PetPlayerInputController? s_activeController;
+
         [SerializeField] private bool _enableInput = true;
+        [SerializeField] private bool _preferControlOnEnable;
         [SerializeField] private bool _acceptWasd = true;
         [SerializeField] private bool _acceptArrowKeys = true;
         [SerializeField, Min(0f)] private float _moveSpeed = 2.5f;
 
-        public bool InputEnabled => _enableInput && isActiveAndEnabled;
+        public bool InputEnabled => _enableInput && isActiveAndEnabled && ReferenceEquals(s_activeController, this);
 
         public float MoveSpeed => _moveSpeed;
+
+        public bool IsActiveController => ReferenceEquals(s_activeController, this);
+
+        public void TakeControl()
+        {
+            if (!_enableInput || !isActiveAndEnabled)
+            {
+                return;
+            }
+
+            s_activeController = this;
+        }
+
+        private void Awake()
+        {
+            TryBecomeActiveController();
+        }
+
+        private void OnEnable()
+        {
+            TryBecomeActiveController();
+        }
+
+        private void OnDisable()
+        {
+            if (!ReferenceEquals(s_activeController, this))
+            {
+                return;
+            }
+
+            s_activeController = null;
+            PromoteFallbackController();
+        }
+
+        private void OnMouseDown()
+        {
+            TakeControl();
+        }
 
         public bool TryGetMovementInput(out Vector2 movement)
         {
@@ -79,6 +120,35 @@ namespace GeminiLab.Modules.Pet
             bool up = (acceptWasd && Input.GetKey(KeyCode.W)) || (acceptArrowKeys && Input.GetKey(KeyCode.UpArrow));
             bool down = (acceptWasd && Input.GetKey(KeyCode.S)) || (acceptArrowKeys && Input.GetKey(KeyCode.DownArrow));
             return ComposeRawInputVector(left, right, up, down);
+        }
+
+        private void TryBecomeActiveController()
+        {
+            if (!_enableInput || !isActiveAndEnabled)
+            {
+                return;
+            }
+
+            if (s_activeController == null || _preferControlOnEnable)
+            {
+                s_activeController = this;
+            }
+        }
+
+        private static void PromoteFallbackController()
+        {
+            PetPlayerInputController[] controllers = FindObjectsByType<PetPlayerInputController>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < controllers.Length; i++)
+            {
+                PetPlayerInputController controller = controllers[i];
+                if (controller == null || !controller._enableInput || !controller.isActiveAndEnabled)
+                {
+                    continue;
+                }
+
+                s_activeController = controller;
+                return;
+            }
         }
     }
 }

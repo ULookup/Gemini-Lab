@@ -15,13 +15,27 @@ namespace GeminiLab.Modules.Pet
     /// </summary>
     public sealed class PetController : MonoBehaviour
     {
+        private static readonly HashSet<string> DynamicOcclusionFurnitureDefinitionIds = new()
+        {
+            "家具_工作桌_圆桌书写_天使_01",
+            "家具_装饰_高书柜_天使_01",
+            "家具_竖琴_天使_01",
+            "家具_装饰_盆栽_天使_02",
+            "家具_装饰_凳子_天使_01",
+            "家具_装饰_桌面雕塑左_天使_01"
+        };
+
         private const string MoveFrontStateName = "Move_Front";
         private const string IdleFrontStateName = "Idle_Front";
         private const string IdleBackStateName = "Idle_Back";
         private const string IdleSideStateName = "Idle_Side";
         private const string SleepStateName = "Sleep";
+        private const string SleepPoseAnchorName = "SleepPoseAnchor";
         private const string InteractReadStateName = "Interact_Read";
         private const string InteractBesideDoorStateName = "Interact_BesideDoor";
+        private const string InteractFlowerStateName = "Interact_Flower";
+        private const string InteractPlayingMusicStateName = "Interact_PlayingMusic";
+        private const string InteractWriteStateName = "Interact_Write";
 
         private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
         private static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -29,11 +43,15 @@ namespace GeminiLab.Modules.Pet
         private static readonly int MoveDirHash = Animator.StringToHash("MoveDir");
         // Squared-distance threshold for movement direction updates.
         private const float DirectionEpsilonSqr = 0.000001f;
+        private const string SortingAnchorName = "SortingAnchor";
 
         [SerializeField] private PetStateValueSO? _config;
         [SerializeField] private PersonalityMatrixSO? _personality;
         [SerializeField] private RuntimeAnimatorController? _movementController;
         [SerializeField] private bool _sideFramesFaceLeft = true;
+        [SerializeField] private BoxCollider2D? _movementBounds;
+        [SerializeField] private Transform? _sortingAnchor;
+        [SerializeField] private int _sortingOrderOffset;
         [SerializeField] private PetId _petId = PetId.Angel;
 
         public PetId PetId => _petId;
@@ -45,6 +63,10 @@ namespace GeminiLab.Modules.Pet
         private PetPlayerInputController? _playerInputController;
         private Animator? _animator;
         private SpriteRenderer? _spriteRenderer;
+        private Rigidbody2D? _rigidbody2D;
+        private CapsuleCollider2D? _capsuleCollider2D;
+        private GeminiLab.Modules.Furniture.Furniture[]? _dynamicOcclusionFurniture;
+        private int _defaultSortingOrder;
         private Vector2 _lastAnimationPosition;
         private Vector2 _lastMoveDirection = Vector2.down;
         private Vector2 _playerAnimationDirection = Vector2.down;
@@ -59,6 +81,12 @@ namespace GeminiLab.Modules.Pet
         private bool _hasStoredInteractionSorting;
         private int _storedInteractionSortingLayerId;
         private int _storedInteractionSortingOrder;
+        private GameObject? _sleepInteractionVisualObject;
+        private Transform? _sleepInteractionVisualTransform;
+        private Animator? _sleepInteractionVisualAnimator;
+        private SpriteRenderer? _sleepInteractionVisualSpriteRenderer;
+        private bool _hasStoredPetSpriteVisible;
+        private bool _storedPetSpriteVisible;
 
         public string CurrentState => _context?.RuntimeData.CurrentState ?? "None";
 
@@ -70,9 +98,15 @@ namespace GeminiLab.Modules.Pet
         {
             _animator = GetComponent<Animator>();
             _spriteRenderer = GetComponent<SpriteRenderer>();
+            _rigidbody2D = GetComponent<Rigidbody2D>();
+            _capsuleCollider2D = GetComponent<CapsuleCollider2D>();
             _playerInputController = GetComponent<PetPlayerInputController>();
+            TryAutoBindSortingAnchor();
             EnsureAnimatorBinding();
+            EnsurePhysicsBinding();
             _lastAnimationPosition = transform.position;
+            _defaultSortingOrder = _spriteRenderer != null ? _spriteRenderer.sortingOrder : 0;
+            RefreshDynamicOcclusionFurnitureCache();
 
             PetStateValueSO config = _config ?? ScriptableObject.CreateInstance<PetStateValueSO>();
 
@@ -120,7 +154,7 @@ namespace GeminiLab.Modules.Pet
             {
                 ApplyPosition = position =>
                 {
-                    transform.position = new Vector3(position.x, position.y, transform.position.z);
+                    ApplyRuntimePosition(position);
                 }
             };
             _tickService = new StatTickService();
@@ -135,12 +169,19 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
-            _context.RuntimeData.Position = transform.position;
+            _context.RuntimeData.Position = GetCurrentWorldPosition();
             RefreshLateBoundServices(_context);
+            if (IsInactivePlayerPet())
+            {
+                TickInactivePlayerControlled(_context, Time.deltaTime);
+                UpdateMovementAnimation();
+                PublishSnapshotIfChanged(_context);
+                return;
+            }
+
             if (IsPlayerControlled())
             {
                 TickPlayerControlled(_context, Time.deltaTime);
-                _context.ApplyPosition?.Invoke(_context.RuntimeData.Position);
                 UpdateMovementAnimation();
                 PublishSnapshotIfChanged(_context);
                 return;
@@ -150,27 +191,213 @@ namespace GeminiLab.Modules.Pet
             ProcessCommands(_context, _stateMachine);
             _tickService.Tick(_context, Time.deltaTime);
             _stateMachine.Tick(Time.deltaTime);
-            _context.ApplyPosition?.Invoke(_context.RuntimeData.Position);
             UpdateMovementAnimation();
             PublishSnapshotIfChanged(_context);
         }
 
         private void FixedUpdate()
         {
+            if (_context is not null)
+            {
+                ApplyRuntimePosition(_context.RuntimeData.Position);
+            }
+
+            if (IsInactivePlayerPet())
+            {
+                return;
+            }
+
             _stateMachine?.FixedTick(Time.fixedDeltaTime);
+        }
+
+        private void LateUpdate()
+        {
+            UpdateDynamicSortingOrder();
         }
 
         private void OnDestroy()
         {
             RestoreHiddenInteractionVisuals();
+            RestoreSleepInteractionVisual();
             RestoreInteractionSorting();
             if (_stateMachine is not null)
             {
                 _stateMachine.StateChanged -= PublishStateChanged;
             }
+
+            if (_sleepInteractionVisualObject != null)
+            {
+                Destroy(_sleepInteractionVisualObject);
+            }
             if (ServiceLocator.TryResolve(out IPetRoster? roster) && roster is not null)
             {
                 roster.Unregister(_petId);
+            }
+        }
+
+        private void UpdateDynamicSortingOrder()
+        {
+            if (_spriteRenderer == null || _hasStoredInteractionSorting)
+            {
+                return;
+            }
+
+            int resolvedSortingOrder = _defaultSortingOrder + _sortingOrderOffset;
+            if (TryGetDynamicOcclusionFurniture(out GeminiLab.Modules.Furniture.Furniture? furniture))
+            {
+                float petAnchorY = ResolveSortingAnchorY();
+                int furnitureSortingOrder = furniture.CurrentSortingOrder;
+                resolvedSortingOrder = petAnchorY <= furniture.SortingAnchorY
+                    ? furnitureSortingOrder + 1
+                    : furnitureSortingOrder - 1;
+            }
+
+            _spriteRenderer.sortingOrder = resolvedSortingOrder;
+        }
+
+        private float ResolveSortingAnchorY()
+        {
+            if (_sortingAnchor != null)
+            {
+                return _sortingAnchor.position.y;
+            }
+
+            if (_capsuleCollider2D != null && _capsuleCollider2D.enabled)
+            {
+                return _capsuleCollider2D.bounds.min.y;
+            }
+
+            if (_spriteRenderer != null)
+            {
+                return _spriteRenderer.bounds.min.y;
+            }
+
+            return transform.position.y;
+        }
+
+        private static int CalculateDynamicSortingOrder(float y)
+        {
+            return -(int)(y * 100f);
+        }
+
+        private void RefreshDynamicOcclusionFurnitureCache()
+        {
+            _dynamicOcclusionFurniture = Object.FindObjectsByType<GeminiLab.Modules.Furniture.Furniture>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+        }
+
+        private bool TryGetDynamicOcclusionFurniture(out GeminiLab.Modules.Furniture.Furniture? bestFurniture)
+        {
+            bestFurniture = null;
+
+            if (_dynamicOcclusionFurniture == null || _dynamicOcclusionFurniture.Length == 0)
+            {
+                RefreshDynamicOcclusionFurnitureCache();
+            }
+
+            if (_dynamicOcclusionFurniture == null || _dynamicOcclusionFurniture.Length == 0)
+            {
+                return false;
+            }
+
+            Bounds petBounds = ResolveSortingBounds();
+            Vector2 petCenter = petBounds.center;
+            float petAnchorY = ResolveSortingAnchorY();
+            float bestScore = float.PositiveInfinity;
+
+            for (int i = 0; i < _dynamicOcclusionFurniture.Length; i++)
+            {
+                GeminiLab.Modules.Furniture.Furniture furniture = _dynamicOcclusionFurniture[i];
+                if (furniture == null || !furniture.isActiveAndEnabled || !ShouldUseDynamicOcclusionFurniture(furniture))
+                {
+                    continue;
+                }
+
+                if (!furniture.TryGetOcclusionBounds(out Bounds furnitureBounds))
+                {
+                    continue;
+                }
+
+                bool overlapsHorizontally =
+                    petBounds.max.x >= furnitureBounds.min.x - 0.2f &&
+                    petBounds.min.x <= furnitureBounds.max.x + 0.2f;
+                if (!overlapsHorizontally)
+                {
+                    continue;
+                }
+
+                float furnitureAnchorY = furniture.SortingAnchorY;
+                float verticalDistance = Mathf.Abs(petAnchorY - furnitureAnchorY);
+                float maxVerticalDistance = petBounds.extents.y + furnitureBounds.extents.y + 0.8f;
+                if (verticalDistance > maxVerticalDistance)
+                {
+                    continue;
+                }
+
+                Vector2 closestPoint = furnitureBounds.ClosestPoint(petCenter);
+                float distanceScore = Vector2.SqrMagnitude(petCenter - closestPoint);
+
+                if (distanceScore < bestScore)
+                {
+                    bestScore = distanceScore;
+                    bestFurniture = furniture;
+                }
+            }
+
+            return bestFurniture != null;
+        }
+
+        private Bounds ResolveSortingBounds()
+        {
+            if (_capsuleCollider2D != null && _capsuleCollider2D.enabled)
+            {
+                return _capsuleCollider2D.bounds;
+            }
+
+            if (_spriteRenderer != null)
+            {
+                return _spriteRenderer.bounds;
+            }
+
+            return new Bounds(transform.position, Vector3.zero);
+        }
+
+        private static bool ShouldUseDynamicOcclusionFurniture(GeminiLab.Modules.Furniture.Furniture furniture)
+        {
+            if (furniture.UseDynamicSortingRule)
+            {
+                return true;
+            }
+
+            string definitionId = furniture.DefinitionId;
+            return !string.IsNullOrWhiteSpace(definitionId) &&
+                   DynamicOcclusionFurnitureDefinitionIds.Contains(definitionId);
+        }
+
+        private void TryAutoBindSortingAnchor()
+        {
+            if (_sortingAnchor != null)
+            {
+                return;
+            }
+
+            Transform[] transforms = GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform candidate = transforms[i];
+                if (candidate == transform)
+                {
+                    continue;
+                }
+
+                if (!string.Equals(candidate.name, SortingAnchorName, System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                _sortingAnchor = candidate;
+                return;
             }
         }
 
@@ -305,12 +532,22 @@ namespace GeminiLab.Modules.Pet
 
         private bool IsPlayerControlled()
         {
+            return HasPlayerInputController() && _playerInputController!.InputEnabled;
+        }
+
+        private bool IsInactivePlayerPet()
+        {
+            return HasPlayerInputController() && !_playerInputController!.InputEnabled;
+        }
+
+        private bool HasPlayerInputController()
+        {
             if (_playerInputController == null)
             {
                 _playerInputController = GetComponent<PetPlayerInputController>();
             }
 
-            return _playerInputController != null && _playerInputController.InputEnabled;
+            return _playerInputController != null;
         }
 
         private void TickPlayerControlled(PetContext context, float deltaTime)
@@ -343,6 +580,19 @@ namespace GeminiLab.Modules.Pet
             }
 
             context.RuntimeData.Position += movementInput * _playerInputController.MoveSpeed * deltaTime;
+            context.RuntimeData.Position = ClampToMovementBounds(context.RuntimeData.Position);
+            context.RuntimeData.TargetPosition = context.RuntimeData.Position;
+            context.RuntimeData.TargetReached = true;
+        }
+
+        private void TickInactivePlayerControlled(PetContext context, float deltaTime)
+        {
+            CancelPlayerInteraction(context);
+            _hasPlayerAnimationDirection = false;
+            SetPlayerControlledState(context, IdleState.StateName);
+            context.Advance(deltaTime);
+            _tickService?.Tick(context, deltaTime);
+            ResetPlayerControlledRuntime(context);
             context.RuntimeData.TargetPosition = context.RuntimeData.Position;
             context.RuntimeData.TargetReached = true;
         }
@@ -369,6 +619,7 @@ namespace GeminiLab.Modules.Pet
             ApplyInteractionVisualOverride(request);
             ApplyInteractionSortingOverride(request);
             ApplyInteractionPoseOverride(request);
+            ApplySpecialInteractionVisualOverride(request);
             Debug.Log($"[PetInteraction] Triggered player interaction target='{request.TargetName}' variant='{request.AnimationVariant}'.");
             return true;
         }
@@ -403,6 +654,7 @@ namespace GeminiLab.Modules.Pet
             context.RuntimeData.PlayerInteractionAnimationVariant = string.Empty;
             context.RuntimeData.PlayerInteractionLabel = string.Empty;
             RestoreHiddenInteractionVisuals();
+            RestoreSleepInteractionVisual();
             RestoreInteractionSorting();
             RestoreInteractionPose();
             return true;
@@ -438,6 +690,24 @@ namespace GeminiLab.Modules.Pet
             }
         }
 
+        private void CancelPlayerInteraction(PetContext context)
+        {
+            if (!context.RuntimeData.IsPlayerInteractionActive)
+            {
+                return;
+            }
+
+            context.RuntimeData.IsPlayerInteractionActive = false;
+            context.RuntimeData.PlayerInteractionRemainingSeconds = 0f;
+            context.RuntimeData.PlayerInteractionAnimatorStateName = string.Empty;
+            context.RuntimeData.PlayerInteractionAnimationVariant = string.Empty;
+            context.RuntimeData.PlayerInteractionLabel = string.Empty;
+            RestoreHiddenInteractionVisuals();
+            RestoreSleepInteractionVisual();
+            RestoreInteractionSorting();
+            RestoreInteractionPose();
+        }
+
         private static void SetPlayerControlledState(PetContext context, string stateName)
         {
             if (string.Equals(context.RuntimeData.CurrentState, stateName, System.StringComparison.Ordinal))
@@ -456,13 +726,16 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
-            SpriteRenderer[] renderers = request.VisualHideTarget.GetComponentsInChildren<SpriteRenderer>(true);
-            for (int i = 0; i < renderers.Length; i++)
+            HideInteractionRenderers(request.VisualHideTarget);
+            for (int i = 0; i < request.AdditionalVisualHideTargets.Length; i++)
             {
-                SpriteRenderer renderer = renderers[i];
-                _hiddenInteractionRenderers.Add(renderer);
-                _hiddenInteractionRendererStates.Add(renderer.enabled);
-                renderer.enabled = false;
+                GameObject extraTarget = request.AdditionalVisualHideTargets[i];
+                if (extraTarget == null)
+                {
+                    continue;
+                }
+
+                HideInteractionRenderers(extraTarget);
             }
         }
 
@@ -483,6 +756,136 @@ namespace GeminiLab.Modules.Pet
             _hiddenInteractionRendererStates.Clear();
         }
 
+        private void HideInteractionRenderers(GameObject target)
+        {
+            SpriteRenderer[] renderers = target.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                SpriteRenderer renderer = renderers[i];
+                _hiddenInteractionRenderers.Add(renderer);
+                _hiddenInteractionRendererStates.Add(renderer.enabled);
+                renderer.enabled = false;
+            }
+        }
+
+        private void ApplySpecialInteractionVisualOverride(PetPlayerInteractionRequest request)
+        {
+            RestoreSleepInteractionVisual();
+            if (!RequiresDetachedInteractionVisual(request.AnimationVariant) ||
+                request.VisualHideTarget == null)
+            {
+                return;
+            }
+
+            EnsureSleepInteractionVisual();
+            if (_sleepInteractionVisualTransform == null ||
+                _sleepInteractionVisualAnimator == null ||
+                _sleepInteractionVisualSpriteRenderer == null)
+            {
+                return;
+            }
+
+            Vector2 posePoint = request.UseTargetPositionForPetPose
+                ? ResolveInteractionPosePoint(request.VisualHideTarget.transform, request.PetInteractionLocalOffset)
+                : request.PetInteractionWorldPoint;
+
+            _sleepInteractionVisualTransform.position = new Vector3(
+                posePoint.x,
+                posePoint.y,
+                transform.position.z);
+            _sleepInteractionVisualTransform.localScale = request.PetInteractionScale;
+            ApplySleepInteractionVisualSorting(request.VisualHideTarget);
+            _sleepInteractionVisualSpriteRenderer.enabled = true;
+            _sleepInteractionVisualAnimator.Play(
+                ResolvePlayerInteractionStateName(request.AnimationVariant),
+                0,
+                0f);
+
+            if (_spriteRenderer != null)
+            {
+                _storedPetSpriteVisible = _spriteRenderer.enabled;
+                _hasStoredPetSpriteVisible = true;
+                _spriteRenderer.enabled = false;
+            }
+        }
+
+        private void RestoreSleepInteractionVisual()
+        {
+            if (_sleepInteractionVisualSpriteRenderer != null)
+            {
+                _sleepInteractionVisualSpriteRenderer.enabled = false;
+            }
+
+            if (_spriteRenderer != null && _hasStoredPetSpriteVisible)
+            {
+                _spriteRenderer.enabled = _storedPetSpriteVisible;
+            }
+
+            _hasStoredPetSpriteVisible = false;
+        }
+
+        private void EnsureSleepInteractionVisual()
+        {
+            if (_sleepInteractionVisualObject != null &&
+                _sleepInteractionVisualTransform != null &&
+                _sleepInteractionVisualAnimator != null &&
+                _sleepInteractionVisualSpriteRenderer != null)
+            {
+                return;
+            }
+
+            _sleepInteractionVisualObject = new GameObject("SleepInteractionVisual")
+            {
+                layer = gameObject.layer
+            };
+
+            _sleepInteractionVisualTransform = _sleepInteractionVisualObject.transform;
+            Transform parent = transform.parent != null ? transform.parent : transform;
+            _sleepInteractionVisualTransform.SetParent(parent, false);
+            _sleepInteractionVisualTransform.localPosition = Vector3.zero;
+            _sleepInteractionVisualTransform.localRotation = Quaternion.identity;
+            _sleepInteractionVisualTransform.localScale = Vector3.one;
+
+            _sleepInteractionVisualSpriteRenderer = _sleepInteractionVisualObject.AddComponent<SpriteRenderer>();
+            if (_spriteRenderer != null)
+            {
+                _sleepInteractionVisualSpriteRenderer.sharedMaterial = _spriteRenderer.sharedMaterial;
+                _sleepInteractionVisualSpriteRenderer.color = _spriteRenderer.color;
+                _sleepInteractionVisualSpriteRenderer.sortingLayerID = _spriteRenderer.sortingLayerID;
+                _sleepInteractionVisualSpriteRenderer.sortingOrder = _spriteRenderer.sortingOrder;
+                _sleepInteractionVisualSpriteRenderer.sprite = _spriteRenderer.sprite;
+            }
+
+            _sleepInteractionVisualSpriteRenderer.enabled = false;
+
+            _sleepInteractionVisualAnimator = _sleepInteractionVisualObject.AddComponent<Animator>();
+            if (_movementController != null)
+            {
+                _sleepInteractionVisualAnimator.runtimeAnimatorController = _movementController;
+            }
+        }
+
+        private void ApplySleepInteractionVisualSorting(GameObject sortingTarget)
+        {
+            if (_sleepInteractionVisualSpriteRenderer == null)
+            {
+                return;
+            }
+
+            if (sortingTarget.TryGetComponent(out SortingGroup sortingGroup))
+            {
+                _sleepInteractionVisualSpriteRenderer.sortingLayerID = sortingGroup.sortingLayerID;
+                _sleepInteractionVisualSpriteRenderer.sortingOrder = sortingGroup.sortingOrder;
+                return;
+            }
+
+            if (sortingTarget.TryGetComponent(out SpriteRenderer targetRenderer))
+            {
+                _sleepInteractionVisualSpriteRenderer.sortingLayerID = targetRenderer.sortingLayerID;
+                _sleepInteractionVisualSpriteRenderer.sortingOrder = targetRenderer.sortingOrder;
+            }
+        }
+
         private void ApplyInteractionPoseOverride(PetPlayerInteractionRequest request)
         {
             RestoreInteractionPose();
@@ -491,11 +894,39 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
+            if (RequiresDetachedInteractionVisual(request.AnimationVariant))
+            {
+                return;
+            }
+
             _hasStoredInteractionPose = true;
-            _storedInteractionPosition = transform.position;
+            _storedInteractionPosition = GetCurrentWorldPosition();
             _storedInteractionScale = transform.localScale;
-            transform.position = new Vector3(request.PetInteractionWorldPoint.x, request.PetInteractionWorldPoint.y, transform.position.z);
+            Vector2 posePoint = request.PetInteractionWorldPoint;
+            if (request.UseTargetPositionForPetPose && request.VisualHideTarget != null)
+            {
+                posePoint = ResolveInteractionPosePoint(request.VisualHideTarget.transform, request.PetInteractionLocalOffset);
+            }
+
+            ApplyRuntimePosition(posePoint);
             transform.localScale = request.PetInteractionScale;
+        }
+
+        private static Vector2 ResolveInteractionPosePoint(Transform targetTransform, Vector2 localOffset)
+        {
+            Transform[] transforms = targetTransform.GetComponentsInChildren<Transform>(true);
+            for (int i = 0; i < transforms.Length; i++)
+            {
+                Transform candidate = transforms[i];
+                if (!string.Equals(candidate.name, SleepPoseAnchorName, System.StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                return (Vector2)candidate.position + localOffset;
+            }
+
+            return (Vector2)targetTransform.position + localOffset;
         }
 
         private void RestoreInteractionPose()
@@ -505,7 +936,7 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
-            transform.position = _storedInteractionPosition;
+            ApplyRuntimePosition(_storedInteractionPosition);
             transform.localScale = _storedInteractionScale;
             _hasStoredInteractionPose = false;
         }
@@ -572,7 +1003,7 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
-            Vector2 currentPosition = transform.position;
+            Vector2 currentPosition = GetCurrentWorldPosition();
             Vector2 delta = currentPosition - _lastAnimationPosition;
             _lastAnimationPosition = currentPosition;
 
@@ -729,11 +1160,24 @@ namespace GeminiLab.Modules.Pet
             return variant switch
             {
                 "beside door" => InteractBesideDoorStateName,
-                "flower" => InteractBesideDoorStateName,
-                "playing music" => InteractReadStateName,
+                "flower" => InteractFlowerStateName,
+                "playing music" => InteractPlayingMusicStateName,
                 "read" => InteractReadStateName,
+                "write" => InteractWriteStateName,
                 "sleep" => SleepStateName,
                 _ => MoveFrontStateName
+            };
+        }
+
+        private static bool RequiresDetachedInteractionVisual(string variant)
+        {
+            return variant switch
+            {
+                "sleep" => true,
+                "flower" => true,
+                "playing music" => true,
+                "write" => true,
+                _ => false
             };
         }
 
@@ -828,6 +1272,114 @@ namespace GeminiLab.Modules.Pet
             {
                 _animator.runtimeAnimatorController = _movementController;
             }
+        }
+
+        private void EnsurePhysicsBinding()
+        {
+            BoxCollider2D? legacyBoxCollider = gameObject.GetComponent<BoxCollider2D>();
+
+            if (_rigidbody2D == null)
+            {
+                _rigidbody2D = gameObject.AddComponent<Rigidbody2D>();
+            }
+
+            if (_rigidbody2D != null)
+            {
+                _rigidbody2D.bodyType = RigidbodyType2D.Dynamic;
+                _rigidbody2D.gravityScale = 0f;
+                _rigidbody2D.freezeRotation = true;
+                _rigidbody2D.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                _rigidbody2D.interpolation = RigidbodyInterpolation2D.Interpolate;
+            }
+
+            if (_capsuleCollider2D == null)
+            {
+                if (legacyBoxCollider != null)
+                {
+                    Destroy(legacyBoxCollider);
+                }
+
+                _capsuleCollider2D = gameObject.AddComponent<CapsuleCollider2D>();
+            }
+
+            if (_capsuleCollider2D != null)
+            {
+                _capsuleCollider2D.direction = CapsuleDirection2D.Vertical;
+                if (_spriteRenderer != null && _spriteRenderer.sprite != null)
+                {
+                    Bounds bounds = _spriteRenderer.sprite.bounds;
+                    float colliderWidth = Mathf.Max(0.2f, bounds.size.x * 0.45f);
+                    float colliderHeight = Mathf.Max(0.3f, bounds.size.y * 0.7f);
+                    _capsuleCollider2D.offset = new Vector2(
+                        bounds.center.x,
+                        bounds.min.y + colliderHeight * 0.5f);
+                    _capsuleCollider2D.size = new Vector2(
+                        colliderWidth,
+                        colliderHeight);
+                }
+            }
+        }
+
+        private void ApplyRuntimePosition(Vector2 position)
+        {
+            position = ClampToMovementBounds(position);
+            if (_rigidbody2D != null)
+            {
+                _rigidbody2D.MovePosition(position);
+                return;
+            }
+
+            transform.position = new Vector3(position.x, position.y, transform.position.z);
+        }
+
+        private Vector2 GetCurrentWorldPosition()
+        {
+            if (_rigidbody2D != null)
+            {
+                return _rigidbody2D.position;
+            }
+
+            return transform.position;
+        }
+
+        private Vector2 ClampToMovementBounds(Vector2 position)
+        {
+            if (_movementBounds == null)
+            {
+                return position;
+            }
+
+            Bounds bounds = _movementBounds.bounds;
+            float halfWidth = 0f;
+            float halfHeight = 0f;
+            if (_capsuleCollider2D != null)
+            {
+                halfWidth = _capsuleCollider2D.bounds.extents.x;
+                halfHeight = _capsuleCollider2D.bounds.extents.y;
+            }
+
+            float minX = bounds.min.x + halfWidth;
+            float maxX = bounds.max.x - halfWidth;
+            float minY = bounds.min.y + halfHeight;
+            float maxY = bounds.max.y - halfHeight;
+
+            if (minX > maxX)
+            {
+                float centerX = bounds.center.x;
+                minX = centerX;
+                maxX = centerX;
+            }
+
+            if (minY > maxY)
+            {
+                float centerY = bounds.center.y;
+                minY = centerY;
+                maxY = centerY;
+            }
+
+            return new Vector2(
+                Mathf.Clamp(position.x, minX, maxX),
+                Mathf.Clamp(position.y, minY, maxY));
         }
     }
 }

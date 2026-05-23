@@ -34,8 +34,11 @@ namespace GeminiLab.Modules.Pet
             [SerializeField] private Vector2 _fallbackWorldPoint;
             [SerializeField] private float _activationDistance = 1.5f;
             [SerializeField] private bool _hideTargetWhileInteracting;
+            [SerializeField] private GameObject[] _additionalHideTargets = Array.Empty<GameObject>();
             [SerializeField] private bool _useTargetSortingWhileInteracting;
             [SerializeField] private bool _usePetPoseOverride;
+            [SerializeField] private bool _useTargetPositionForPetPose;
+            [SerializeField] private Vector2 _petInteractionLocalOffset;
             [SerializeField] private Vector2 _petInteractionWorldPoint;
             [SerializeField] private Vector3 _petInteractionScale = Vector3.one;
             [SerializeField] private FurnitureCategory _category = FurnitureCategory.Decoration;
@@ -51,8 +54,11 @@ namespace GeminiLab.Modules.Pet
             public Vector2 FallbackWorldPoint => _fallbackWorldPoint;
             public float ActivationDistance => Mathf.Max(0.1f, _activationDistance);
             public bool HideTargetWhileInteracting => _hideTargetWhileInteracting;
+            public GameObject[] AdditionalHideTargets => _additionalHideTargets;
             public bool UseTargetSortingWhileInteracting => _useTargetSortingWhileInteracting;
             public bool UsePetPoseOverride => _usePetPoseOverride;
+            public bool UseTargetPositionForPetPose => _useTargetPositionForPetPose;
+            public Vector2 PetInteractionLocalOffset => _petInteractionLocalOffset;
             public Vector2 PetInteractionWorldPoint => _petInteractionWorldPoint;
             public Vector3 PetInteractionScale => _petInteractionScale;
             public FurnitureCategory Category => _category;
@@ -129,9 +135,12 @@ namespace GeminiLab.Modules.Pet
                 animatorStateNameOverride: ResolveAnimatorStateOverride(binding),
                 hideTargetWhileInteracting: binding.HideTargetWhileInteracting,
                 visualHideTarget: binding.HideTargetWhileInteracting ? targetObject : null,
+                additionalVisualHideTargets: binding.AdditionalHideTargets,
                 useTargetSortingWhileInteracting: binding.UseTargetSortingWhileInteracting,
                 visualSortingTarget: binding.UseTargetSortingWhileInteracting ? targetObject : null,
                 usePetPoseOverride: binding.UsePetPoseOverride,
+                useTargetPositionForPetPose: binding.UseTargetPositionForPetPose,
+                petInteractionLocalOffset: binding.PetInteractionLocalOffset,
                 petInteractionWorldPoint: binding.PetInteractionWorldPoint,
                 petInteractionScale: binding.PetInteractionScale,
                 interactionDurationSeconds: binding.InteractionDurationSeconds);
@@ -293,9 +302,12 @@ namespace GeminiLab.Modules.Pet
             string animatorStateNameOverride,
             bool hideTargetWhileInteracting,
             GameObject? visualHideTarget,
+            GameObject[]? additionalVisualHideTargets,
             bool useTargetSortingWhileInteracting,
             GameObject? visualSortingTarget,
             bool usePetPoseOverride,
+            bool useTargetPositionForPetPose,
+            Vector2 petInteractionLocalOffset,
             Vector2 petInteractionWorldPoint,
             Vector3 petInteractionScale,
             float interactionDurationSeconds)
@@ -307,9 +319,12 @@ namespace GeminiLab.Modules.Pet
             AnimatorStateNameOverride = animatorStateNameOverride;
             HideTargetWhileInteracting = hideTargetWhileInteracting;
             VisualHideTarget = visualHideTarget;
+            AdditionalVisualHideTargets = additionalVisualHideTargets ?? Array.Empty<GameObject>();
             UseTargetSortingWhileInteracting = useTargetSortingWhileInteracting;
             VisualSortingTarget = visualSortingTarget;
             UsePetPoseOverride = usePetPoseOverride;
+            UseTargetPositionForPetPose = useTargetPositionForPetPose;
+            PetInteractionLocalOffset = petInteractionLocalOffset;
             PetInteractionWorldPoint = petInteractionWorldPoint;
             PetInteractionScale = petInteractionScale;
             InteractionDurationSeconds = interactionDurationSeconds;
@@ -322,9 +337,12 @@ namespace GeminiLab.Modules.Pet
         public string AnimatorStateNameOverride { get; }
         public bool HideTargetWhileInteracting { get; }
         public GameObject? VisualHideTarget { get; }
+        public GameObject[] AdditionalVisualHideTargets { get; }
         public bool UseTargetSortingWhileInteracting { get; }
         public GameObject? VisualSortingTarget { get; }
         public bool UsePetPoseOverride { get; }
+        public bool UseTargetPositionForPetPose { get; }
+        public Vector2 PetInteractionLocalOffset { get; }
         public Vector2 PetInteractionWorldPoint { get; }
         public Vector3 PetInteractionScale { get; }
         public float InteractionDurationSeconds { get; }

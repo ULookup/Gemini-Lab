@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-05-11
+Updated: 2026-05-20
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -10,6 +10,7 @@ Updated: 2026-05-11
 ## 快速导航
 - [AGENTS.md](../../AGENTS.md)
 - [当前任务卡](../current-task-card.md)
+- [当前任务卡 JSON](../current-task-card.json)
 - [上下文包](../workflow-context-packages.md)
 - [架构记忆](./gemini-lab-memory-architecture.md)
 - [规则与历史](./gemini-lab-memory-rules-and-history.md)
@@ -24,6 +25,7 @@ Updated: 2026-05-11
 - [Skill 设计边界](../skill-design-boundary.md)
 - [方法论对齐审计](../ai-workspace-bootstrap-alignment.md)
 - [上下文压缩与知识沉淀计划](../context-compression-and-knowledge-plan.md)
+- [做梦整理清单](../dream-maintenance-checklist.md)
 - [记忆索引](./memory-index.paths.txt)
 
 ## Workspace Identity
@@ -48,11 +50,19 @@ Updated: 2026-05-11
   - 用户确认后再执行
   - 当前任务只做当前任务
   - 发现别的问题只提醒，不顺带处理
+- 当前项目已新增一条视觉一致性硬规则：
+  - `Play` 视图与 `Scene` 视图必须一致
+  - 视觉结果必须优先作者化到 `Scene / Prefab / Inspector`
+  - 运行时脚本不能让 `Scene` 中已调好的视觉结果在 `Play` 中失效
 - 当前默认使用“探索 → 规划 → 行动”三段式：
   - 探索：只读检查，不改文件
   - 规划：复述理解、列边界、等待确认
   - 行动：确认后才改文件、改场景、执行 git
 - 当前推荐按任务类型装配最小必要上下文，不默认把所有项目文档都当作当前任务上下文；具体见 `docs/workflow-context-packages.md`。
+- 当前已启用最小闭环任务闸门：
+  - `docs/current-task-card.md`
+  - `docs/current-task-card.json`
+  - `tools/check-task-gate.ps1`
 - 渐进式上下文压缩已纳入设计，但当前默认不启用自动压缩；现阶段只保留人工分层方案。
 - 做梦整理、L2 技能手册、L3 知识库已纳入第二部分建设，当前以人工整理、skill 沉淀和索引增强为主。
 - 第一批 workflow skill 已开始落地：
@@ -133,73 +143,6 @@ Updated: 2026-05-11
   - 已为同一批 `49` 个家具资源生成对应 `Furniture` Prefab
   - `Apartment_Main.unity` 已开始转成使用这些真实 Prefab 实例
   - `FurnitureService` 现会优先使用场景对象上已赋值的真实 `FurnitureDefinitionSO`
-- `2026-05-11` 已落地「Phase G P0：花园（实时生长 2 小时）」：
-  - 新 asmdef `GeminiLab.Modules.Garden`（引用 Core + Inventory + Collection）
-  - `GardenStage` 枚举（Empty / Seeded / Growing / Ready / Withered）；`GardenPlot` 运行态（`PlantedAtUtcTicks`, `TotalGrowSeconds`）；`GardenPlotChangedEvent` / `GardenHarvestedEvent`
-  - `SeedDefinitionSO`（种子 itemId → 作物 itemId + 成熟秒数 + Growing 阈值）；`SeedCatalogSO` 目录
-  - `IGardenService` + `GardenService`：9 格；`Plant`（扣 Inventory 一颗种子）→ `Refresh`（每帧按 IGameClock 算 elapsed）→ `Harvest`（给 Inventory.Add(crop) + CollectionService.Register 到 GardenHarvest 分类，首次入集）；实现 `IPersistentService`，Key=`garden`（plantedAtUtcTicks 存 UTC Ticks，天然支持离线补算）
-  - `GardenRuntimeBootstrap` 挂 Boot.BootstrapRoot，Awake 注册到 ServiceLocator + Registry，Update 每帧 Refresh
-  - `InventoryRuntimeBootstrap` 新增 `_starterItems` 字段：Inventory 首次为空时注入初始礼包（当前配置：`seed_carrot/tomato/wheat` 各 5）。不会叠加到 SaveCoordinator 恢复的存档上。
-  - `GardenPanelStub`（`PanelId.Garden = 24`）：3×3 地块 + 种子选择条 + 剩余秒数计时；订阅 `GardenPlotChangedEvent` / `InventoryChangedEvent` 自动刷新
-  - `SidebarController` 增 `_tabGarden`，`ApartmentSidebarAuthoring` 把 Garden 做成侧边栏第 5 项并生成 `Panel_Garden`
-  - Editor 新增三个 authoring：`Tools/Gemini-Lab/Author Seed Catalog`、`Author Boot Garden Bootstrap`、`Author Garden Panel (Apartment)`
-  - HubUI asmdef 新增对 `GeminiLab.Modules.Garden` 的引用
-- `2026-05-11` 已落地「Phase F（P0 2.5 天）：宠物陈衰 + 每日重置 + 性格演化」：
-  - **F-1 状态真实衰减**：`PetStateValueSO` 新增 `SatietyDecayPerSecond / LowSatietyMoodPenaltyPerSecond / LowEnergyMoodPenaltyPerSecond / MoodRecoveryPenaltyFactor`；`StatTickService` 重写：饱食始终衰减（睡眠中也饿）、清醒时精力持续衰减、饱食或精力触底时心情反向扣除并把回复速度降到 `MoodRecoveryPenaltyFactor` 倍（默认 0.2）。同时新增 `ApplySatietyDelta` 静态入口供后续喂食流程调用。
-  - **F-2 DailyResetService**：`Core/Time/` 新增 `NewDayStartedEvent` + `IDailyResetService` + `DailyResetService`；实现 `IPersistentService`（Key=`daily_reset`），`LastRecordedDateIso` 进 SaveBundle，同时用 PlayerPrefs 兜底冷启动跨天。`GameBootstrap.RegisterCoreServices` 注册并登记到 Registry；`Start()` 每次入场先 `CheckAndReset` 一次。后续 `TarotService` / 花园 / 每日奖励订阅 `NewDayStartedEvent` 自行刷新。
-  - **F-3 PersonalityEvolutionService**：新程序集 `Modules/Pet/Personality/`（独立 asmdef `GeminiLab.Modules.Pet.Personality`，引用 Core + Pet + Furniture + Tarot，避免 Pet ↔ Tarot 循环）。
-    - `PersonalityVector`（7 维 -1..1，`FromSO` / `Clamp` / `+` 算子），`PersonalityEvolutionRulesSO`（塔罗规则 + 家具交互规则 + GlobalDeltaScale 默认 0.02）
-    - `IPersonalityEvolutionService` + `PersonalityEvolutionService`：订阅 `TarotDrawnEvent`（正位 → Angel 通常受益 / 逆位 → Devil；可按 CardId 特写）+ `PetInteractionCompletedEvent`（按 `FurnitureInteractionType`）+ `PetControllerInitializedEvent`（宠物初始化时以 PersonalityMatrixSO 作为初值）
-    - `PersonalityEvolutionBootstrap`（挂 Boot.BootstrapRoot）在 Awake 里创建 Service，注册到 `ServiceLocator` + `IPersistentServiceRegistry`（Key=`personality`）
-    - 为了避开 Pet → Tarot 反向依赖，`PetController.Awake` 不再直接调 Personality Service；改为广播 `PetControllerInitializedEvent`，由 Personality 子系统订阅回填初值。
-  - **F-4 IPersistentService 接入**：`PetRuntimeSaveService`（Key=`pet_runtime`）把双宠运行态 Mood / Energy / Satiety / runtimeTime / 最近交互 / CurrentState 写进 SaveBundle；`PetRuntimeBootstrap` 在 AfterSceneLoad 注册 IPetRoster（若缺省）并把 `PetRuntimeSaveService` 登记进 Registry；`PersonalityEvolutionService` 自身实现 `IPersistentService` 保存全部 PetId → PersonalityVector。
-  - **HubUI 接线**：`PetStatusPanelStub.RefreshRadar()` 优先读 `IPersonalityEvolutionService.GetMatrix(petId)`，缺失时回退到 `PersonalityMatrixSO`；`GeminiLab.Modules.HubUI.asmdef` 新增对 `GeminiLab.Modules.Pet.Personality` 的引用。
-  - **Editor 新增 authoring**：`Tools/Gemini-Lab/Author Personality Evolution Rules`（生成 `ScriptableObjects/PersonalityConfig/PersonalityEvolutionRules.asset`，预置 6 条塔罗规则 + 5 条家具交互规则）、`Author Boot Personality Bootstrap`（给 BootstrapRoot 挂 `PersonalityEvolutionBootstrap` 并绑定上面那份 Rules）。
-- `2026-05-11` 已落地「Phase E：C1 存档整合」：
-  - **Core/Persistence 新增**：`IPersistentServiceRegistry` + `PersistentServiceRegistry`；GameBootstrap 注册默认实现；各业务 Bootstrap 在注册 Service 后调 `registry.Register(service)` 把自己挂进去。
-  - **Persistence 模块新增**：`SaveBundle`（顶层容器 + SlotSummary）、`ISaveCoordinator` + `SaveCoordinator`（聚合 ISaveSystem + Registry + IGameClock + EventBus）；`ListSlotsAsync / SaveAsync / LoadAsync / DeleteAsync`；事件 `SaveSlotCommittedEvent / LoadedEvent / DeletedEvent`。
-  - **PersistenceBootstrap** 升级：在 AfterSceneLoad 阶段依次注册 `ISaveSystem` + `ISaveCoordinator`。
-  - **Settings / Inventory / Collection / Tarot** 四件 Bootstrap 在注册 Service 后均 `Register` 进 Registry；`TarotService` 自己实现 `IPersistentService`（Key=`tarot`），lastDrawDate 走 SaveSlot，PlayerPrefs 保留为 cold-start 兜底；`SettingsService` / `InventoryService` / `CollectionService` 的 Phase D CaptureJson / RestoreJson 现在真正被 Coordinator 消费。
-  - **SaveSlotsPanel** 重构：从 mock JSON 改走 `ISaveCoordinator`；3 个默认槽位 slot_1..slot_3；读档成功后经 `ISceneFlowService` 切回 Apartment。
-- `2026-05-11` 已落地「Phase D：面板全建 + Settings/Inventory/Collection 服务」：
-  - **Settings**：新模块 `Modules/Settings`，`ISettingsService` + `SettingsService`（实现 `IPersistentService`），包含主/BGM/SFX 音量、全屏、Overlay 开关、语言 ISO；PlayerPrefs 持久化 + `SettingsChangedEvent` 广播；MainMenu.Canvas 下新增 Panel_Settings（滑条 + 开关 + 重置 + 关闭）。
-  - **Inventory**：新模块 `Modules/Inventory`，`ItemCategory`、`ItemDefSO`、`ItemCatalogSO`、`IInventoryService` + `InventoryService`（实现 `IPersistentService`）、`ItemStack` / `InventoryChangedEvent`；已生成 10 个占位 `ItemDefSO`（种子/作物/塔罗券/旅行补给/纪念物/金币）+ `ItemCatalog.asset`；Apartment `Panel_Inventory` 升级为 Grid + Tooltip 真实面板。
-  - **Collection**：新模块 `Modules/Collection`，`CollectionCategory`、`CollectionEntry`、`ICollectionService` + `CollectionService`（实现 `IPersistentService`）；`CollectionRuntimeBootstrap` 订阅 `TarotDrawnEvent` 自动把抽卡记录归入 Tarot 类别；Apartment `Panel_Collection` 升级为 3 Tab（旅行 / 塔罗 / 花园）+ Grid。
-  - **SaveSlots 骨架**：MainMenu.Canvas 下新增 Panel_SaveSlots，3 个槽位读写 `Application.persistentDataPath/saves/slot_N.json`；仅槽位元数据，真正 SaveSystem 整合留给 Phase E。
-  - **Boot.BootstrapRoot** 新挂三件：`SettingsRuntimeBootstrap`、`InventoryRuntimeBootstrap`、`CollectionRuntimeBootstrap`。
-  - Editor 新增 authoring：`Tools/Gemini-Lab/Author Item Catalog (10 placeholders)`、`Author Boot Phase D Bootstraps`、`Author Settings + SaveSlots Panels (MainMenu)`、`Author Inventory + Collection Panels (Apartment)`。
-  - 顺手恢复：PR #3 merge 中被退回的 `PetRuntimeData.PetId` / `PetRuntimeSnapshotChangedEvent.PetId` / `PetController._petId + Roster 注册` 重新接上，使 Phase C PetStatus 面板的双宠页签继续正常工作。
-- `2026-05-11` 已落地「Phase C 第一轮：底座 + PetStatus Panel」：
-  - **GameClock**：`Core/Time/IGameClock` + `SystemGameClock`（默认）+ `FakeGameClock`（测试用）；GameBootstrap 以 `IGameClock` 注册到 ServiceLocator，是业务侧取时间的**唯一入口**。
-  - **塔罗每日限制迁移**：`TarotService` 从直接 `DateTime.Now` 改走 `IGameClock.TodayIso` / `IsToday`，构造参数里 `Func<DateTime>` 改为 `IGameClock?`；PlayerPrefs 仍作为临时载体，C1 存档整合时迁移到 SaveSlot。
-  - **Toast 通知系统**：`Core/UI/ToastKind` + `ToastRequestedEvent` + `IToastService`；`Modules/HubUI/Toast/ToastOverlayController` 挂 Boot、DontDestroyOnLoad，既是 IToastService 实现也订阅 EventBus；TarotRuntimeBootstrap 订阅 `TarotDrawnEvent` 自动发 Success Toast。
-  - **ESC 关栈 + Scene 淡入淡出**：`Modules/HubUI/UIInputRouter`（ESC → IUIRouter.CloseTop）、`Modules/HubUI/SceneFadeOverlay`（订阅 SceneLoadStarted/Completed 事件，黑幕 CanvasGroup 淡入淡出）都挂在 Boot.BootstrapRoot。
-  - **IPersistentService 契约**：`Core/Persistence/IPersistentService`（Key + CaptureJson + RestoreJson），当前只是空接口 + 协议文档，C1 阶段 SaveSystem 整合时启用。
-  - **PetStatus Panel 真实化**：`PersonalityRadarGraphic`（手绘 UI Mesh 7 维雷达）+ `PetStatusPanelStub` 升级为真实控制器（Angel/Devil 页签 + 心情/精力/饱食进度条 + 当前状态 + 雷达图）；数据源 `IPetRoster` + `PetRuntimeSnapshotChangedEvent` 实时刷新。
-  - Editor 新增 3 个 authoring：`Tools/Gemini-Lab/Author Boot ToastOverlay`、`Author Boot InputRouter + Fade`、`Author Pet Status Panel UI`。
-- `2026-05-10` 已落地「B1 塔罗垂直切片」：
-  - 新模块 `Modules/Tarot`（asmdef `GeminiLab.Modules.Tarot`）：`TarotOrientation`、`TarotCardSO`、`TarotDeckSO`、`TarotModels`（DrawResult/Reading/事件）、`ITarotService` + `TarotService`（每日一次，`yyyy-MM-dd` PlayerPrefs 记录）、`ITarotReadingBackend` + `LocalFallback` + `GatewayTarotBackend`、`TarotRuntimeBootstrap`
-  - 22 张大阿卡那 `TarotCardSO` + 1 张 `TarotDeckSO` 已生成到 `ScriptableObjects/TarotConfig/`；占位卡面 PNG 在 `Art/Sprites/Tarot/Majors/`（256x384 色块 + 卡框十字基准），美术交付后替换 `TarotCardSO._artwork`
-  - Apartment `Panel_Tarot` 已升级成真实面板：左侧卡面 + 正/逆位标识、底部"抽今日塔罗"按钮、右上 `AngelBubble`（天使·正位）、右下 `DevilBubble`（恶魔·逆位）；所有 TMP 自动挂 `TMPFontBinder`
-  - 塔罗解读路径：抽卡后**并行**发起 Angel 正位 / Devil 逆位两个 `RequestReadingAsync`；后端优先走 Gateway，失败或超时回退到 `LocalFallback`（关键词 + 人格模板拼接）
-  - `TarotRuntimeBootstrap` 已挂在 Boot.unity 的 BootstrapRoot 上，绑定 `TarotDeck.asset`；Gateway 未就绪时自动走 Fallback-only backend
-  - Editor 工具：`Tools/Gemini-Lab/Author Tarot Deck (22 Majors)`、`Author Tarot Panel UI`、`Author Boot TarotBootstrap`
-- `2026-05-10` 已落地「A1 双宠改造 + A2 CJK 字体 / Catalog 真接入」：
-  - **A1 双宠改造**：`Modules/Pet/` 新增 `PetId` 枚举（Angel / Devil）、`IPetRoster` + `PetRoster`；`PetRuntimeData`、`PetContext`、`PetStateChangedEvent`、`PetRuntimeSnapshotChangedEvent` 都带上 PetId（默认 Angel 保持老代码零改动）。`PetController` 增加 `[SerializeField] _petId` 并在 Awake 时向 Roster 注册。`PetRuntimeBootstrap` 现会先保证 `IPetRoster` 已注册。Apartment / WorldMap 各有 Pet_Angel + Pet_Devil 两只宠物（Devil 用暖色染色占位，真实美术后续替换）。
-  - **A2 CJK 字体 + Catalog 接入**：`Art/Fonts/` 落地 `NotoSansSC-VF.ttf`（17MB）+ 动态 SDF `NotoSansSC_SDF.asset`（~3KB）；`ScriptableObjects/UIArt/UIFontCatalog.asset` + `UIArtCatalog.asset` 落地，FontCatalog 的 default/title/bubble 三个 key 全部指向 NotoSansSC_SDF。`Modules/UI/Catalogs/` 新增 `IUIFontService`、`IUIArtService`、`UICatalogHost`（挂 Boot.unity，DontDestroyOnLoad，把 Catalog 以服务形式注册）、`TMPFontBinder`（挂每个 TMP_Text 上 Awake 时自动从 Catalog 取字体）。MainMenu / Apartment / WorldMap 三个场景的占位英文标签已替换为中文（开始/存档/设置、收藏/塔罗/花园/…），TMP Binder 已回填到 18 个 TMP 对象。
-  - Editor 新增 authoring 菜单：`Tools/Gemini-Lab/Author Dual Pets (Apartment + WorldMap)`、`Generate CJK TMP Font Asset`、`Author UI Catalogs`、`Author Boot UICatalogHost`、`Author TMP Binder Backfill`
-- `2026-05-10` 已落地「框架搭建 + 场景切换」承重层（P0）：
-  - Core 新增 `SceneFlow/` 命名空间：`SceneId` 枚举（Boot / MainMenu / Apartment / WorldMap / DesktopOverlay）、`ISceneCatalog` 与 `DefaultSceneCatalog`、`ISceneFlowService` 与 `SceneFlowService`、`SceneTransitionPayload`、`SceneLoadStartedEvent` / `SceneLoadCompletedEvent`
-  - Core 新增 `UI/` 命名空间：`PanelId`、`IUIPanel`、`IUIRouter` 与 `UIRouter`（含 `UIPanelOpenedEvent` / `UIPanelClosedEvent`）
-  - `GameBootstrap` 升级：注册 EventBus / CommandDispatcher / SceneFlowService / UIRouter；Boot 场景启动后自动加载 `MainMenu`；在非 Boot 场景（直开 Editor 调试）跳过自动跳转并同步当前场景 id
-  - `DesktopOverlayManager` 改造：切场景走 `ISceneFlowService.LoadAsync`，不再直接调用 `SceneManager`；仍由 `DesktopOverlayRuntimeBootstrap` 在首次场景加载后挂到 DontDestroyOnLoad 的 `DesktopOverlaySystem` 上
-  - 新增模块 asmdef：`GeminiLab.Modules.MainMenu`、`GeminiLab.Modules.HubUI`、`GeminiLab.Modules.WorldMap`
-  - 新增 `UIArtCatalogSO` / `UIFontCatalogSO`（放在 `Modules/UI/Catalogs/`）：静态 UI 走 Sprite key、动态文本走 TMP key；美术替换只改 `.asset`，不改 Prefab / 代码
-  - 新增场景骨架：`Scenes/MainMenu/MainMenu.unity`（开始 / 存档 / 设置 三个占位按钮）、`Scenes/WorldMap/WorldMap_Main.unity`（横板摄像头 + 返回公寓按钮 + Garden Zone 标记）
-  - 公寓场景注入 `UI_Sidebar`（展开/收起 + 4 个占位 Panel：PetStatus / Tarot / Collection / Inventory）与右上 `UI_WorldMapPortal` 按钮
-  - EditorBuildSettings 整理：`Boot(0) / MainMenu / Apartment_Main / WorldMap_Main / Desktop_Overlay`，移除 Unity 默认 SampleScene
-  - Editor 新增一次性 authoring 入口：`Tools/Gemini-Lab/Author MainMenu Scene`、`Author WorldMap Scene`、`Author Apartment Sidebar`
-  - UI 静态文本统一走 Sprite（美术交付后替换）、动态文本走 TMP；当前占位 TMP 使用 LiberationSans SDF，中文字符显示为 □，待补中文 CJK TMP Font Asset
 - `2026-05-07` 已完成 `Interact` 资源命名规范收口：
   - `read/` 组重命名为 `Pet_Angel_Interact_Read_0001...0006.png`
   - `beside door/` 组重命名为 `Pet_Angel_Interact_BesideDoor_0001...0005.png`
@@ -225,6 +168,22 @@ Updated: 2026-05-11
     - 新增 `Pet_Angel_Sleep.anim`
     - `Pet_Angel.controller` 新增 `Idle_Front / Idle_Back / Idle_Side / Sleep`
     - `PetController` 当前会在静止时切到 `Idle_*`，在 `SleepingState` 时切到 `Sleep`
+- `2026-05-21` 已清理 `Apartment_Main.unity` 中旧的占位 UI：
+  - 已移除 `TopLeft_StatusPanel`
+  - 已移除 `Right_InventoryPanel`
+  - 已移除 `BottomRight_PersonalityRadar`
+  - 已移除旧的 `SpaceSystemPrototypeRoot` 原型 UI
+  - 后续 UI 制作改用 `Assets/_Project/Art/UI/` 下的新美术资源重新搭建
+- `2026-05-22` 已把 `Pet_Devil` 接入 `Apartment_Main.unity`：
+  - 公寓场景里的 `Pet` 根节点现在包含 `Pet_Angel` 与 `Pet_Devil`
+  - `Pet_Devil` 已接入自己的 `Pet_Devil.controller` 与恶魔 `Move / Idle / Sleep` 动画资源
+  - 玩家输入链路已补成“双宠点击切换主控”：默认天使可控，点击恶魔后切换为恶魔可控，避免双宠同时响应同一套方向键
+  - 同日已修正双宠控制细节：未被选中的桌宠不再继续运行自动 FSM 并触发 `Sleep`，而是保持 `Idle`；点击桌宠时会显式接管 `PetPlayerInputController` 控制权，确保切到恶魔后键盘移动真实生效
+  - 同日已修正恶魔无法移动的场景边界问题：`Pet_Devil` 不再复用只覆盖天使右侧区域的共享 `PetMovementBounds`，而是改为绑定左侧 `PetMovementBounds_Devil`
+- `2026-05-23` 已为恶魔补上门边“左右看”交互动画像：
+  - 新增 `Assets/_Project/Animations/Pet/Pet_Devil_Interact_BesideDoor.anim`
+  - `Pet_Devil.controller` 的 `Interact_BesideDoor` 已改接恶魔自己的 clip，不再继续引用天使门边动画
+  - `Apartment_Main.unity` 中恶魔现有 `门边 / Interact_BesideDoor / beside door` 触发方式保持不变
 - `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 现在都不再是完全空目录，且 `Furniture` / `FurnitureConfig` 这条线已覆盖当前全部家具 Sprite 资源；其他模块仍未完成资产作者化。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。
@@ -251,6 +210,7 @@ Updated: 2026-05-11
 7. 当前最明显的资源层缺口仍是：
    - `Furniture` 之外的大部分 `Prefab` / `ScriptableObject` 资产仍未作者化
    - 真实人格雷达、美术更完整的交互动画与更正式的 UI 资源仍未补齐
+   - `Assets/_Project/Art/UI/` 当前已经开始承载新的 UI 美术资源输入，但 Apartment 场景内对应的新 UI 还未重新作者化落地
    - `Pet_Angel` 当前已有 `Move_Front / Move_Back / Move_Side / Interact_Read / Interact_BesideDoor`
    - 但 `Idle` 与更完整的 `Emotion` 仍缺少正式资源与状态链路
 8. 当前工作树不是干净状态，执行任何修改前都要先看 `git status`，避免覆盖用户现有改动。
@@ -267,6 +227,7 @@ Updated: 2026-05-11
 - `UI` 不承载业务逻辑；跨模块通信只走接口、事件或服务定位。
 - ScriptableObject 资产在运行期只读，运行态状态进入 Service 或 Snapshot。
 - 优先 Scene / Inspector 友好与美术替换友好，不做只能靠硬编码维持的结构。
+- 视觉类结果默认要求 Scene 可见、Inspector 可调、Play/Scene 一致；不要依赖运行时脚本临时拼出最终视觉。
 - `_Project/` 继续作为自研业务资产唯一落点；第三方资源不要混入其中。
 
 ## 阶段进度
