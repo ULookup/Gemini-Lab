@@ -53,6 +53,7 @@ namespace GeminiLab.Modules.Pet
 
         private SpriteRenderer? _petRenderer;
         private PetController? _petController;
+        private PetPlayerInputController? _playerInputController;
         private Collider2D? _clickCollider;
         private GameObject? _bubbleRoot;
         private SpriteRenderer? _bubbleOutline;
@@ -66,6 +67,7 @@ namespace GeminiLab.Modules.Pet
         {
             _petRenderer = GetComponent<SpriteRenderer>();
             _petController = GetComponent<PetController>();
+            _playerInputController = GetComponent<PetPlayerInputController>();
             EnsureClickCollider();
             EnsureBubbleVisuals();
             HideBubbleImmediate();
@@ -78,7 +80,7 @@ namespace GeminiLab.Modules.Pet
                 HideBubbleImmediate();
             }
 
-            if (!_enableClickReaction || !isActiveAndEnabled || !Input.GetMouseButtonDown(0))
+            if (!isActiveAndEnabled || !Input.GetMouseButtonDown(0))
             {
                 return;
             }
@@ -124,6 +126,14 @@ namespace GeminiLab.Modules.Pet
             Vector3 worldPoint3 = Camera.main.ScreenToWorldPoint(screenPoint);
             Vector2 worldPoint = new(worldPoint3.x, worldPoint3.y);
             if (!_clickCollider.OverlapPoint(worldPoint))
+            {
+                return;
+            }
+
+            _playerInputController ??= GetComponent<PetPlayerInputController>();
+            _playerInputController?.TakeControl();
+
+            if (!_enableClickReaction)
             {
                 return;
             }

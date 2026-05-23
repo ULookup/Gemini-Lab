@@ -158,6 +158,14 @@ namespace GeminiLab.Modules.Pet
 
             _context.RuntimeData.Position = GetCurrentWorldPosition();
             RefreshLateBoundServices(_context);
+            if (IsInactivePlayerPet())
+            {
+                TickInactivePlayerControlled(_context, Time.deltaTime);
+                UpdateMovementAnimation();
+                PublishSnapshotIfChanged(_context);
+                return;
+            }
+
             if (IsPlayerControlled())
             {
                 TickPlayerControlled(_context, Time.deltaTime);
@@ -179,6 +187,11 @@ namespace GeminiLab.Modules.Pet
             if (_context is not null)
             {
                 ApplyRuntimePosition(_context.RuntimeData.Position);
+            }
+
+            if (IsInactivePlayerPet())
+            {
+                return;
             }
 
             _stateMachine?.FixedTick(Time.fixedDeltaTime);
@@ -502,12 +515,22 @@ namespace GeminiLab.Modules.Pet
 
         private bool IsPlayerControlled()
         {
+            return HasPlayerInputController() && _playerInputController!.InputEnabled;
+        }
+
+        private bool IsInactivePlayerPet()
+        {
+            return HasPlayerInputController() && !_playerInputController!.InputEnabled;
+        }
+
+        private bool HasPlayerInputController()
+        {
             if (_playerInputController == null)
             {
                 _playerInputController = GetComponent<PetPlayerInputController>();
             }
 
-            return _playerInputController != null && _playerInputController.InputEnabled;
+            return _playerInputController != null;
         }
 
         private void TickPlayerControlled(PetContext context, float deltaTime)
@@ -541,6 +564,18 @@ namespace GeminiLab.Modules.Pet
 
             context.RuntimeData.Position += movementInput * _playerInputController.MoveSpeed * deltaTime;
             context.RuntimeData.Position = ClampToMovementBounds(context.RuntimeData.Position);
+            context.RuntimeData.TargetPosition = context.RuntimeData.Position;
+            context.RuntimeData.TargetReached = true;
+        }
+
+        private void TickInactivePlayerControlled(PetContext context, float deltaTime)
+        {
+            CancelPlayerInteraction(context);
+            _hasPlayerAnimationDirection = false;
+            SetPlayerControlledState(context, IdleState.StateName);
+            context.Advance(deltaTime);
+            _tickService?.Tick(context, deltaTime);
+            ResetPlayerControlledRuntime(context);
             context.RuntimeData.TargetPosition = context.RuntimeData.Position;
             context.RuntimeData.TargetReached = true;
         }
@@ -636,6 +671,24 @@ namespace GeminiLab.Modules.Pet
                 context.RuntimeData.ActivePath.Clear();
                 context.RuntimeData.PathIndex = 0;
             }
+        }
+
+        private void CancelPlayerInteraction(PetContext context)
+        {
+            if (!context.RuntimeData.IsPlayerInteractionActive)
+            {
+                return;
+            }
+
+            context.RuntimeData.IsPlayerInteractionActive = false;
+            context.RuntimeData.PlayerInteractionRemainingSeconds = 0f;
+            context.RuntimeData.PlayerInteractionAnimatorStateName = string.Empty;
+            context.RuntimeData.PlayerInteractionAnimationVariant = string.Empty;
+            context.RuntimeData.PlayerInteractionLabel = string.Empty;
+            RestoreHiddenInteractionVisuals();
+            RestoreSleepInteractionVisual();
+            RestoreInteractionSorting();
+            RestoreInteractionPose();
         }
 
         private static void SetPlayerControlledState(PetContext context, string stateName)

@@ -174,6 +174,16 @@ Updated: 2026-05-20
   - 已移除 `BottomRight_PersonalityRadar`
   - 已移除旧的 `SpaceSystemPrototypeRoot` 原型 UI
   - 后续 UI 制作改用 `Assets/_Project/Art/UI/` 下的新美术资源重新搭建
+- `2026-05-22` 已把 `Pet_Devil` 接入 `Apartment_Main.unity`：
+  - 公寓场景里的 `Pet` 根节点现在包含 `Pet_Angel` 与 `Pet_Devil`
+  - `Pet_Devil` 已接入自己的 `Pet_Devil.controller` 与恶魔 `Move / Idle / Sleep` 动画资源
+  - 玩家输入链路已补成“双宠点击切换主控”：默认天使可控，点击恶魔后切换为恶魔可控，避免双宠同时响应同一套方向键
+  - 同日已修正双宠控制细节：未被选中的桌宠不再继续运行自动 FSM 并触发 `Sleep`，而是保持 `Idle`；点击桌宠时会显式接管 `PetPlayerInputController` 控制权，确保切到恶魔后键盘移动真实生效
+  - 同日已修正恶魔无法移动的场景边界问题：`Pet_Devil` 不再复用只覆盖天使右侧区域的共享 `PetMovementBounds`，而是改为绑定左侧 `PetMovementBounds_Devil`
+- `2026-05-23` 已为恶魔补上门边“左右看”交互动画像：
+  - 新增 `Assets/_Project/Animations/Pet/Pet_Devil_Interact_BesideDoor.anim`
+  - `Pet_Devil.controller` 的 `Interact_BesideDoor` 已改接恶魔自己的 clip，不再继续引用天使门边动画
+  - `Apartment_Main.unity` 中恶魔现有 `门边 / Interact_BesideDoor / beside door` 触发方式保持不变
 - `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 现在都不再是完全空目录，且 `Furniture` / `FurnitureConfig` 这条线已覆盖当前全部家具 Sprite 资源；其他模块仍未完成资产作者化。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。
