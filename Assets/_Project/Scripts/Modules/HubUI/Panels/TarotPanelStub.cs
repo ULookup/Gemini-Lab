@@ -62,6 +62,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private GameObject? _drawView;
         [SerializeField] private GameObject? _historyView;
         [SerializeField] private GameObject? _guideView;
+        [SerializeField] private Button? _guideBackButton;
 
         [Header("历史记录")]
         [SerializeField] private Transform? _historyContentRoot;
@@ -70,15 +71,6 @@ namespace GeminiLab.Modules.HubUI.Panels
         [Header("图鉴")]
         [SerializeField] private Transform? _guideGridRoot;
         [SerializeField] private GameObject? _guideCardPrefab;
-
-        [Header("Tab 按钮 Image（高亮用）")]
-        [SerializeField] private Image? _drawTabImage;
-        [SerializeField] private Image? _historyTabImage;
-        [SerializeField] private Image? _guideTabImage;
-
-        [Header("Tab 高亮色")]
-        [SerializeField] private Color _activeTabColor = new Color(1f, 0.85f, 0.3f, 1f);
-        [SerializeField] private Color _inactiveTabColor = new Color(0.7f, 0.7f, 0.7f, 0.6f);
 
         [Header("Layout")]
         [SerializeField] private TarotLayoutSO? _layoutConfig;
@@ -92,17 +84,14 @@ namespace GeminiLab.Modules.HubUI.Panels
         private SubView _currentTab;
         private TarotArcLayout? _arcLayout;
 
-        // SubView tab Image lookup
-        private Dictionary<SubView, Image?> _tabImages = new();
-
         protected override void Awake()
         {
             base.Awake();
             EnsureServices();
-            CacheTabImages();
 
             if (_historyButton != null) _historyButton.onClick.AddListener(() => SwitchTab(SubView.History));
             if (_guideButton != null) _guideButton.onClick.AddListener(() => SwitchTab(SubView.Guide));
+            if (_guideBackButton != null) _guideBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
 
             // Idle → Select (from draw button inside drawView)
             if (_drawButton != null) _drawButton.onClick.AddListener(OnStartDrawClicked);
@@ -119,6 +108,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_drawButton != null) _drawButton.onClick.RemoveAllListeners();
             if (_historyButton != null) _historyButton.onClick.RemoveAllListeners();
             if (_guideButton != null) _guideButton.onClick.RemoveAllListeners();
+            if (_guideBackButton != null) _guideBackButton.onClick.RemoveAllListeners();
             if (_shuffleButton != null) _shuffleButton.onClick.RemoveAllListeners();
             if (_confirmButton != null) _confirmButton.onClick.RemoveAllListeners();
             if (_continueButton != null) _continueButton.onClick.RemoveAllListeners();
@@ -149,13 +139,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_collection == null) ServiceLocator.TryResolve(out _collection);
         }
 
-        private void CacheTabImages()
-        {
-            _tabImages[SubView.Draw] = _drawTabImage;
-            _tabImages[SubView.History] = _historyTabImage;
-            _tabImages[SubView.Guide] = _guideTabImage;
-        }
-
         // ======================== Tab 切换 ========================
 
         private void SwitchTab(SubView tab)
@@ -164,7 +147,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_drawView != null) _drawView.SetActive(tab == SubView.Draw);
             if (_historyView != null) _historyView.SetActive(tab == SubView.History);
             if (_guideView != null) _guideView.SetActive(tab == SubView.Guide);
-            RefreshTabHighlight();
 
             switch (tab)
             {
@@ -172,12 +154,6 @@ namespace GeminiLab.Modules.HubUI.Panels
                 case SubView.History: PopulateHistory(); break;
                 case SubView.Guide: PopulateGuide(); break;
             }
-        }
-
-        private void RefreshTabHighlight()
-        {
-            foreach (var (tab, img) in _tabImages)
-                if (img != null) img.color = tab == _currentTab ? _activeTabColor : _inactiveTabColor;
         }
 
         // ======================== Stage 切换 ========================
@@ -224,7 +200,11 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_cardSpreadContainer == null || _cardSelectablePrefab == null) return;
 
             for (int i = _cardSpreadContainer.childCount - 1; i >= 0; i--)
-                Destroy(_cardSpreadContainer.GetChild(i).gameObject);
+            {
+                var child = _cardSpreadContainer.GetChild(i);
+                child.SetParent(null);       // 立即脱离容器层级，避免后续排列搜到残留
+                Destroy(child.gameObject);
+            }
 
             Sprite? cardBack = _tarot?.Deck?.CardBack;
 
@@ -248,19 +228,34 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_session == null || _tarot == null) return;
             if (_session.PickedCount >= 3) return;
 
-            _session = _tarot.PickCard(_session, card);
-
-            // Place into next slot
-            var slotPos = (TarotSlotPosition)(_session.PickedCount - 1);
-            var slot = GetSlot(slotPos);
-            if (slot != null) slot.PlaceCard(card);
-
-            // Flip card to face
+            // Find the clicked card's selectable
             var selectables = _cardSpreadContainer?.GetComponentsInChildren<TarotCardSelectable>();
+            TarotCardSelectable? clicked = null;
             if (selectables != null)
             {
                 foreach (var s in selectables)
-                    if (s.CardData == card) s.FlipToFace(true);
+                    if (s.CardData == card) { clicked = s; break; }
+            }
+
+            _session = _tarot.PickCard(_session, card);
+
+            var slotPos = (TarotSlotPosition)(_session.PickedCount - 1);
+            var slot = GetSlot(slotPos);
+
+            if (clicked != null && slot != null)
+            {
+                // Flip to face + fly to slot
+                clicked.FlipToFace(true);
+                var slotRt = slot.GetComponent<RectTransform>();
+                if (slotRt != null)
+                    StartCoroutine(clicked.FlyToSlot(slotRt, _layoutConfig?.CardFlyDuration ?? 0.5f, () =>
+                    {
+                        slot.PlaceCard(card);
+                    }));
+            }
+            else if (slot != null)
+            {
+                slot.PlaceCard(card);
             }
         }
 

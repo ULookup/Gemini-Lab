@@ -5,7 +5,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using GeminiLab.Core;
 using GeminiLab.Modules.Pet;
-using GeminiLab.Modules.Pet.Personality;
 using UnityEngine;
 using UnityEngine.Networking;
 
@@ -18,10 +17,12 @@ namespace GeminiLab.Modules.Tarot
     public sealed class DirectLLMBackend : ITarotReadingBackend
     {
         private readonly LLMConfigSO _config;
+        private readonly Func<PetId, string>? _personalityResolver;
 
-        public DirectLLMBackend(LLMConfigSO config)
+        public DirectLLMBackend(LLMConfigSO config, Func<PetId, string>? personalityResolver = null)
         {
             _config = config ?? throw new ArgumentNullException(nameof(config));
+            _personalityResolver = personalityResolver;
         }
 
         public async Task<TarotReading> RequestAsync(
@@ -126,13 +127,11 @@ namespace GeminiLab.Modules.Tarot
             return response.choices[0].message?.content ?? string.Empty;
         }
 
-        private static string ResolvePersonality(PetId petId)
+        private string ResolvePersonality(PetId petId)
         {
-            if (ServiceLocator.TryResolve(out IPersonalityEvolutionService? evo) && evo is not null)
+            if (_personalityResolver != null)
             {
-                var pv = evo.GetMatrix(petId);
-                return $"善良:{pv.Kindness:F1} 邪恶:{pv.Evilness:F1} 沉着:{pv.Calmness:F1} " +
-                       $"勇敢:{pv.Bravery:F1} 害羞:{pv.Shyness:F1} 正直:{pv.Integrity:F1} 好奇:{pv.Curiosity:F1}";
+                return _personalityResolver(petId);
             }
             return "性格数据未加载";
         }

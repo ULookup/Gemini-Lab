@@ -2,7 +2,10 @@
 using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.UI;
 using GeminiLab.Modules.Gateway;
+using GeminiLab.Modules.Pet;
+using GeminiLab.Modules.Pet.Personality;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Tarot
@@ -51,7 +54,7 @@ namespace GeminiLab.Modules.Tarot
             if (_llmConfig != null && _llmConfig.IsConfigured)
             {
                 Debug.Log("[TarotBootstrap] 使用 DirectLLMBackend");
-                return new DirectLLMBackend(_llmConfig);
+                return new DirectLLMBackend(_llmConfig, ResolvePersonalityText);
             }
 
             if (ServiceLocator.TryResolve(out IGatewayClient? client) && client is not null)
@@ -67,6 +70,17 @@ namespace GeminiLab.Modules.Tarot
         private void OnDestroy()
         {
             _drawnSub?.Dispose();
+        }
+
+        private static string ResolvePersonalityText(PetId petId)
+        {
+            if (ServiceLocator.TryResolve(out IPersonalityEvolutionService? evo) && evo is not null)
+            {
+                var pv = evo.GetMatrix(petId);
+                return $"善良:{pv.Kindness:F1} 邪恶:{pv.Evilness:F1} 沉着:{pv.Calmness:F1} " +
+                       $"勇敢:{pv.Bravery:F1} 害羞:{pv.Shyness:F1} 正直:{pv.Integrity:F1} 好奇:{pv.Curiosity:F1}";
+            }
+            return "性格数据未加载";
         }
 
         private void OnTarotDrawn(TarotDrawnEvent evt)

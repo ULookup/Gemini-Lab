@@ -64,6 +64,7 @@ namespace GeminiLab.Modules.Tarot
             session.PickedCount++;
 
             _eventBus?.Publish(new TarotDrawnEvent(draw));
+            _eventBus?.Publish(new CardDrawnEvent(draw.Card.Id, draw.Orientation));
             return session;
         }
 

@@ -21,10 +21,10 @@ namespace GeminiLab.Modules.Tarot
 
         [Header("Hover 效果")]
         [Tooltip("hover 放大倍率")]
-        [SerializeField] private float _hoverScale = 1.15f;
+        [SerializeField] private float _hoverScale = 1.18f;
 
         [Tooltip("hover 上浮距离（像素）")]
-        [SerializeField] private float _hoverLift = 30f;
+        [SerializeField] private float _hoverLift = 50f;
 
         [Header("动画")]
         [Tooltip("牌浮现动画时长（秒）")]

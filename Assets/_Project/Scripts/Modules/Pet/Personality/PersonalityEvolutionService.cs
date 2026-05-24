@@ -11,7 +11,7 @@ namespace GeminiLab.Modules.Pet.Personality
     /// <summary>
     /// 默认性格演化实现。
     /// - 对每只 PetId 维护一个运行态 PersonalityVector
-    /// - 订阅 <see cref="TarotDrawnEvent"/> + <see cref="PetInteractionCompletedEvent"/> 按 Rules SO 叠加
+    /// - 订阅 <see cref="CardDrawnEvent"/> + <see cref="PetInteractionCompletedEvent"/> 按 Rules SO 叠加
     /// - 实现 <see cref="IPersistentService"/>，`matrices` 以 SaveBundle 随存档走
     /// </summary>
     public sealed class PersonalityEvolutionService : IPersonalityEvolutionService, IPersistentService, IDisposable
@@ -30,7 +30,7 @@ namespace GeminiLab.Modules.Pet.Personality
 
             if (_eventBus is not null)
             {
-                _tarotSub = _eventBus.Subscribe<TarotDrawnEvent>(OnTarotDrawn);
+                _tarotSub = _eventBus.Subscribe<CardDrawnEvent>(OnCardDrawn);
                 _interactSub = _eventBus.Subscribe<PetInteractionCompletedEvent>(OnInteractionCompleted);
                 _petInitSub = _eventBus.Subscribe<PetControllerInitializedEvent>(OnPetControllerInitialized);
             }
@@ -65,12 +65,12 @@ namespace GeminiLab.Modules.Pet.Personality
             _petInitSub?.Dispose();
         }
 
-        private void OnTarotDrawn(TarotDrawnEvent evt)
+        private void OnCardDrawn(CardDrawnEvent evt)
         {
             if (_rules.TarotRules == null) return;
 
-            string cardId = evt.Result.Card.Id;
-            bool isUpright = evt.Result.Orientation == TarotOrientation.Upright;
+            string cardId = evt.CardId;
+            bool isUpright = evt.Orientation == TarotOrientation.Upright;
 
             foreach (var rule in _rules.TarotRules)
             {
