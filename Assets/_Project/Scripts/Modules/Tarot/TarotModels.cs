@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections.Generic;
 using GeminiLab.Modules.Pet;
 
 namespace GeminiLab.Modules.Tarot
@@ -55,5 +56,64 @@ namespace GeminiLab.Modules.Tarot
 
         public TarotDrawResult Draw { get; }
         public TarotReading Reading { get; }
+    }
+
+    /// <summary>三张牌的槽位位置。</summary>
+    public enum TarotSlotPosition
+    {
+        Past = 0,
+        Present = 1,
+        Future = 2
+    }
+
+    /// <summary>
+    /// 一次完整的抽牌会话。由 TarotPanelStub 持有和驱动。
+    /// </summary>
+    public sealed class TarotSession
+    {
+        public string Question;
+        public string SessionDateIso;
+        public List<TarotCardSO> CandidateCards = new();
+        public TarotDrawResult? PastCard;
+        public TarotDrawResult? PresentCard;
+        public TarotDrawResult? FutureCard;
+        public int PickedCount;
+        /// <summary>key = "past_angel" / "past_devil" / "present_angel" 等</summary>
+        public Dictionary<string, TarotReading> Readings = new();
+        public int RevealedSlotIndex;
+
+        public TarotDrawResult? GetCardAtSlot(TarotSlotPosition slot)
+        {
+            return slot switch
+            {
+                TarotSlotPosition.Past => PastCard,
+                TarotSlotPosition.Present => PresentCard,
+                TarotSlotPosition.Future => FutureCard,
+                _ => null
+            };
+        }
+
+        public void SetCardAtSlot(TarotSlotPosition slot, TarotDrawResult draw)
+        {
+            switch (slot)
+            {
+                case TarotSlotPosition.Past: PastCard = draw; break;
+                case TarotSlotPosition.Present: PresentCard = draw; break;
+                case TarotSlotPosition.Future: FutureCard = draw; break;
+            }
+        }
+
+        public static string ReadingKey(TarotSlotPosition slot, PetId petId)
+        {
+            string slotName = slot switch
+            {
+                TarotSlotPosition.Past => "past",
+                TarotSlotPosition.Present => "present",
+                TarotSlotPosition.Future => "future",
+                _ => "unknown"
+            };
+            string petName = petId == PetId.Angel ? "angel" : "devil";
+            return $"{slotName}_{petName}";
+        }
     }
 }
