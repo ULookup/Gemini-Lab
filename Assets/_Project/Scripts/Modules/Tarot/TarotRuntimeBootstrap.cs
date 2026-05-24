@@ -2,8 +2,6 @@
 using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
-using GeminiLab.Core.Persistence;
-using GeminiLab.Core.UI;
 using GeminiLab.Modules.Gateway;
 using UnityEngine;
 
@@ -11,12 +9,15 @@ namespace GeminiLab.Modules.Tarot
 {
     /// <summary>
     /// 塔罗系统运行态宿主。挂在 Boot.unity 的 BootstrapRoot 上；DontDestroyOnLoad。
-    /// 在 Inspector 拖入 `TarotDeckSO`；Awake 时注册 <see cref="ITarotService"/> 到 ServiceLocator。
-    /// Gateway 已注册则使用 <see cref="GatewayTarotBackend"/>，否则回退到 <see cref="FallbackOnlyBackend"/>（全本地解读）。
+    /// 在 Inspector 拖入 `TarotDeckSO` 和可选的 `LLMConfigSO`。
+    /// LLMConfigSO 已配置 API Key → 使用 DirectLLMBackend；
+    /// 否则 Gateway 可用 → GatewayTarotBackend；
+    /// 否则 → FallbackOnlyBackend（全本地解读）。
     /// </summary>
     public sealed class TarotRuntimeBootstrap : MonoBehaviour
     {
         [SerializeField] private TarotDeckSO? _deck;
+        [SerializeField] private LLMConfigSO? _llmConfig;
 
         private IDisposable? _drawnSub;
         private EventBus? _eventBus;
@@ -33,31 +34,34 @@ namespace GeminiLab.Modules.Tarot
 
             ServiceLocator.TryResolve(out _eventBus);
 
-            ITarotReadingBackend backend;
-            if (ServiceLocator.TryResolve(out IGatewayClient? client) && client is not null)
-            {
-                backend = new GatewayTarotBackend(client);
-            }
-            else
-            {
-                backend = new FallbackOnlyBackend();
-                Debug.Log("[TarotBootstrap] 未发现 IGatewayClient，塔罗解读走本地 fallback");
-            }
-
+            ITarotReadingBackend backend = ResolveBackend();
             var service = new TarotService(_deck, _eventBus, backend);
             ServiceLocator.Register<ITarotService>(service);
 
-            if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
-            {
-                registry.Register(service);
-            }
-
-            Debug.Log("[TarotBootstrap] TarotService registered.");
+            Debug.Log($"[TarotBootstrap] TarotService registered. Backend: {backend.GetType().Name}");
 
             if (_eventBus is not null)
             {
                 _drawnSub = _eventBus.Subscribe<TarotDrawnEvent>(OnTarotDrawn);
             }
+        }
+
+        private ITarotReadingBackend ResolveBackend()
+        {
+            if (_llmConfig != null && _llmConfig.IsConfigured)
+            {
+                Debug.Log("[TarotBootstrap] 使用 DirectLLMBackend");
+                return new DirectLLMBackend(_llmConfig);
+            }
+
+            if (ServiceLocator.TryResolve(out IGatewayClient? client) && client is not null)
+            {
+                Debug.Log("[TarotBootstrap] 使用 GatewayTarotBackend");
+                return new GatewayTarotBackend(client);
+            }
+
+            Debug.Log("[TarotBootstrap] 使用 FallbackOnlyBackend（本地解读）");
+            return new FallbackOnlyBackend();
         }
 
         private void OnDestroy()
@@ -67,13 +71,10 @@ namespace GeminiLab.Modules.Tarot
 
         private void OnTarotDrawn(TarotDrawnEvent evt)
         {
-            if (_eventBus is null)
-            {
-                return;
-            }
+            if (_eventBus is null) return;
 
             string orientZh = evt.Result.Orientation == TarotOrientation.Upright ? "正位" : "逆位";
-            string msg = $"今日塔罗：{evt.Result.Card.DisplayNameZh} · {orientZh}";
+            string msg = $"已选牌：{evt.Result.Card.DisplayNameZh} · {orientZh}";
             _eventBus.Publish(new ToastRequestedEvent(msg, ToastKind.Success, 0f));
         }
 
