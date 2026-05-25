@@ -37,6 +37,26 @@ namespace GeminiLab.Modules.Tarot
             "关键词：{keywords}\n" +
             "请从你的人格视角给出「{slotName}」的解读。";
 
+        [Tooltip("总结轮 System prompt。占位符: {pastCard}, {presentCard}, {futureCard}, {question}")]
+        [TextArea(5, 20)]
+        [SerializeField] private string _summarySystemTemplate =
+            "你是一位塔罗占卜师，已为玩家解读了过去、现在、未来三张牌。\n" +
+            "请基于这三张牌给出综合运势总结，严格返回以下 JSON 格式（不要包含任何其他文字）：\n" +
+            "{\n" +
+            "  \"fortuneLevel\": <1-5的整数，代表运势星级>,\n" +
+            "  \"luckyHint\": {\n" +
+            "    \"color\": \"<幸运颜色>\",\n" +
+            "    \"number\": \"<幸运数字>\",\n" +
+            "    \"time\": \"<幸运时间段>\",\n" +
+            "    \"action\": \"<幸运行动建议>\"\n" +
+            "  },\n" +
+            "  \"advice\": \"<今日综合建议，2-3句话>\"\n" +
+            "}\n" +
+            "过去牌：{pastCard}\n" +
+            "现在牌：{presentCard}\n" +
+            "未来牌：{futureCard}\n" +
+            "玩家问题：{question}";
+
         [Tooltip("单次请求超时秒数")]
         [SerializeField] private float _timeoutSeconds = 30f;
 
@@ -46,6 +66,7 @@ namespace GeminiLab.Modules.Tarot
         public string AngelSystemTemplate => _angelSystemTemplate;
         public string DevilSystemTemplate => _devilSystemTemplate;
         public string UserMessageTemplate => _userMessageTemplate;
+        public string SummarySystemTemplate => _summarySystemTemplate;
         public float TimeoutSeconds => _timeoutSeconds;
 
         public bool IsConfigured => !string.IsNullOrWhiteSpace(_endpoint) && !string.IsNullOrWhiteSpace(_apiKey);
