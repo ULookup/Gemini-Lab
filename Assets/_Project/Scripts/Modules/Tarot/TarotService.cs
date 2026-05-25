@@ -96,6 +96,26 @@ namespace GeminiLab.Modules.Tarot
             return reading;
         }
 
+        public async Task<TarotSummaryResult> RequestSummaryAsync(
+            TarotDrawResult past, TarotDrawResult present, TarotDrawResult future,
+            string? question, CancellationToken cancellationToken = default)
+        {
+            try
+            {
+                return await _readingBackend.RequestSummaryAsync(past, present, future, question, cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[Tarot] Summary backend failed, falling back. {ex.Message}");
+                return TarotSummaryResult.Default();
+            }
+        }
+
         private List<TarotCardSO> PickRandomCards(int count)
         {
             var deckCards = new List<TarotCardSO>(_deck.Cards);

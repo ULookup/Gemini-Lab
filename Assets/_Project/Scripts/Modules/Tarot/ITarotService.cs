@@ -32,5 +32,12 @@ namespace GeminiLab.Modules.Tarot
         /// </summary>
         Task<TarotReading> RequestReadingAsync(TarotDrawResult draw, PetId petId,
             TarotOrientation orientation, CancellationToken cancellationToken = default);
+
+        /// <summary>
+        /// 请求总结轮结构化运势解读。
+        /// </summary>
+        Task<TarotSummaryResult> RequestSummaryAsync(
+            TarotDrawResult past, TarotDrawResult present, TarotDrawResult future,
+            string? question, CancellationToken cancellationToken = default);
     }
 }
