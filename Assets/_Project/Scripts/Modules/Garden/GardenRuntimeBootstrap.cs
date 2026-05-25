@@ -21,7 +21,7 @@ namespace GeminiLab.Modules.Garden
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             if (_seedCatalog == null)
             {

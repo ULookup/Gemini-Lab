@@ -64,6 +64,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [Header("动画参数")]
         [SerializeField] private float _fadeDuration = 0.5f;
         [SerializeField] private float _buttonFadeDuration = 0.3f;
+        [SerializeField] private float _minPlaceholderDuration = 1.2f;
 
         // ---- 公开事件 ----
         public event Action? OnRevealComplete;
@@ -109,8 +110,16 @@ namespace GeminiLab.Modules.HubUI.Panels
 
             HideAllBubbles();
 
+            if (_pastPlaceholder != null) _pastPlaceholder.gameObject.SetActive(false);
+            if (_presentPlaceholder != null) _presentPlaceholder.gameObject.SetActive(false);
+            if (_futurePlaceholder != null) _futurePlaceholder.gameObject.SetActive(false);
             if (_summaryContentRoot != null) _summaryContentRoot.SetActive(false);
-            if (_summaryPlaceholder != null) _summaryPlaceholder.gameObject.SetActive(false);
+            if (_summaryPlaceholder != null)
+            {
+                _summaryPlaceholder.gameObject.SetActive(true);
+                SetImageAlpha(_summaryPlaceholder, 0f);
+                StartCoroutine(CrossfadeImage(_summaryPlaceholder, toAlpha: 1f, _fadeDuration));
+            }
 
             _cts?.Cancel();
             _cts = new CancellationTokenSource();
@@ -123,6 +132,14 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void EnterPhase(RevealPhase phase)
         {
+            // Fade out previous phase bubbles
+            switch (_phase)
+            {
+                case RevealPhase.Past: StartCoroutine(FadeOutSlotBubbles(TarotSlotPosition.Past)); break;
+                case RevealPhase.Present: StartCoroutine(FadeOutSlotBubbles(TarotSlotPosition.Present)); break;
+                case RevealPhase.Future: StartCoroutine(FadeOutSlotBubbles(TarotSlotPosition.Future)); break;
+            }
+
             _phase = phase;
 
             SetButtonAlpha(_continueButton, 0f);
@@ -168,20 +185,27 @@ namespace GeminiLab.Modules.HubUI.Panels
             var placeholder = GetPlaceholder(slot);
             if (placeholder == null) return;
             placeholder.gameObject.SetActive(true);
-            SetImageAlpha(placeholder, 1f);
+            SetImageAlpha(placeholder, 0f);
+            StartCoroutine(CrossfadeImage(placeholder, toAlpha: 1f, _fadeDuration));
             HideSlotBubbles(slot);
         }
 
         private IEnumerator WaitThenRevealSlot(TarotSlotPosition slot)
         {
+            float elapsed = 0f;
             string angelKey = TarotSession.ReadingKey(slot, PetId.Angel);
             string devilKey = TarotSession.ReadingKey(slot, PetId.Devil);
 
             while (_session != null &&
                    (!_session.Readings.ContainsKey(angelKey) || !_session.Readings.ContainsKey(devilKey)))
             {
+                elapsed += Time.deltaTime;
                 yield return null;
             }
+
+            float remaining = _minPlaceholderDuration - elapsed;
+            if (remaining > 0f)
+                yield return new WaitForSeconds(remaining);
 
             var placeholder = GetPlaceholder(slot);
             if (placeholder != null)
@@ -261,10 +285,11 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void PopulateSummaryUI(TarotSummaryResult result)
         {
+            if (_session != null) _session.SummaryResult = result;
+
             if (_summaryPlaceholder != null)
             {
-                StartCoroutine(CrossfadeImage(_summaryPlaceholder, toAlpha: 0f, _fadeDuration));
-                _summaryPlaceholder.gameObject.SetActive(false);
+                StartCoroutine(FadeOutAndHide(_summaryPlaceholder, _fadeDuration));
             }
 
             if (_summaryContentRoot != null)
@@ -404,6 +429,12 @@ namespace GeminiLab.Modules.HubUI.Panels
             cg.alpha = toAlpha;
         }
 
+        private IEnumerator FadeOutAndHide(Image img, float duration)
+        {
+            yield return StartCoroutine(CrossfadeImage(img, toAlpha: 0f, duration));
+            img.gameObject.SetActive(false);
+        }
+
         private IEnumerator FadeBubbleIn(ReadingBubble? bubble, float duration)
         {
             if (bubble == null) yield break;
@@ -466,6 +497,28 @@ namespace GeminiLab.Modules.HubUI.Panels
             HideSlotBubbles(TarotSlotPosition.Past);
             HideSlotBubbles(TarotSlotPosition.Present);
             HideSlotBubbles(TarotSlotPosition.Future);
+        }
+
+        private IEnumerator FadeOutSlotBubbles(TarotSlotPosition slot)
+        {
+            var (a, d) = GetBubbles(slot);
+            if (a != null) StartCoroutine(FadeBubbleOut(a, _fadeDuration));
+            if (d != null) yield return StartCoroutine(FadeBubbleOut(d, _fadeDuration));
+        }
+
+        private IEnumerator FadeBubbleOut(ReadingBubble bubble, float duration)
+        {
+            var cg = bubble.GetComponent<CanvasGroup>();
+            if (cg == null) cg = bubble.gameObject.AddComponent<CanvasGroup>();
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                cg.alpha = Mathf.Lerp(1f, 0f, Mathf.Clamp01(elapsed / duration));
+                yield return null;
+            }
+            cg.alpha = 0f;
+            bubble.Hide();
         }
 
         private static void ShowCardFace(Image? image, TarotDrawResult? draw)

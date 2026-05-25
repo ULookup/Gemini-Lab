@@ -31,7 +31,7 @@ namespace GeminiLab.Modules.HubUI.Toast
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             ServiceLocator.Register<IToastService>(this);
 
@@ -40,7 +40,7 @@ namespace GeminiLab.Modules.HubUI.Toast
                 _subscription = _eventBus.Subscribe<ToastRequestedEvent>(OnToastRequested);
             }
 
-            BuildCanvas();
+            if (Application.isPlaying) BuildCanvas();
         }
 
         private void OnDestroy()

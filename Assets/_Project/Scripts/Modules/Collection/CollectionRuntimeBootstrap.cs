@@ -22,7 +22,7 @@ namespace GeminiLab.Modules.Collection
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             ServiceLocator.TryResolve(out _eventBus);
             ServiceLocator.TryResolve(out _clock);

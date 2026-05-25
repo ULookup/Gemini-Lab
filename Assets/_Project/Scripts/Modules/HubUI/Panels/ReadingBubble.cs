@@ -14,6 +14,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Image? _bubbleBg;
         [SerializeField] private TMP_Text? _readingText;
         [SerializeField] private TMP_Text? _personaLabel;
+        [SerializeField] private Image? _avatarImage;
         [SerializeField] private Animator? _animator;
 
         [Header("配色")]

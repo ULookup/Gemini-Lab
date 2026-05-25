@@ -27,7 +27,7 @@ namespace GeminiLab.Modules.Tarot
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             if (_deck == null)
             {

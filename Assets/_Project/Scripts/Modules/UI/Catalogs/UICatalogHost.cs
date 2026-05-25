@@ -16,7 +16,7 @@ namespace GeminiLab.Modules.UI.Catalogs
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             if (_fontCatalog != null)
             {

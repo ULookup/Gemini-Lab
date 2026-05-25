@@ -17,7 +17,7 @@ using UnityEngine.UI;
 namespace GeminiLab.Modules.HubUI.Panels
 {
     /// <summary>
-    /// 塔罗面板：3 阶段状态机 —— Idle（3按钮）/ Select（选牌）/ Reveal（解读揭晓）。
+    /// 塔罗面板：3 阶段状态机 —— Idle / Select / Reveal。
     /// </summary>
     public sealed class TarotPanelStub : StubPanelBase
     {
@@ -31,7 +31,6 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _drawButton;       // "开始抽牌"
         [SerializeField] private Button? _historyButton;     // "历史记录"
         [SerializeField] private Button? _guideButton;       // "塔罗图鉴"
-        [SerializeField] private TMP_InputField? _questionInput;
         [SerializeField] private GameObject? _idleRoot;
 
         [Header("Select 阶段")]
@@ -45,6 +44,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _confirmButton;
 
         [Header("Reveal")]
+        [SerializeField] private GameObject? _revealRoot;
         [SerializeField] private TarotRevealController? _revealController;
 
         [Header("子视图根节点")]
@@ -60,11 +60,13 @@ namespace GeminiLab.Modules.HubUI.Panels
         [Header("图鉴")]
         [SerializeField] private Transform? _guideGridRoot;
         [SerializeField] private GameObject? _guideCardPrefab;
+        [SerializeField] private TarotCardDetailPopup? _detailPopup;
 
         [Header("Layout")]
         [SerializeField] private TarotLayoutSO? _layoutConfig;
 
         // ---- 运行态 ----
+        private const string TarotIconPrefix = "tarot_";
         private ITarotService? _tarot;
         private ICollectionService? _collection;
         private CancellationTokenSource? _cts;
@@ -82,7 +84,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_guideButton != null) _guideButton.onClick.AddListener(() => SwitchTab(SubView.Guide));
             if (_guideBackButton != null) _guideBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
 
-            // Idle → Select (from draw button inside drawView)
             if (_drawButton != null) _drawButton.onClick.AddListener(OnStartDrawClicked);
             if (_shuffleButton != null) _shuffleButton.onClick.AddListener(OnShuffleClicked);
             if (_confirmButton != null) _confirmButton.onClick.AddListener(OnConfirmSelection);
@@ -94,7 +95,7 @@ namespace GeminiLab.Modules.HubUI.Panels
                 _revealController.OnRevealComplete += () =>
                 {
                     SaveToCollection(_session!);
-                    _session = _tarot!.CreateSession(_questionInput?.text);
+                    _session = _tarot!.CreateSession(null);
                     EnterStage(Stage.Select);
                 };
                 _revealController.OnOpenGuide += () =>
@@ -163,6 +164,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             _currentStage = stage;
             if (_idleRoot != null) _idleRoot.SetActive(stage == Stage.Idle);
             if (_selectRoot != null) _selectRoot.SetActive(stage == Stage.Select);
+            if (_revealRoot != null) _revealRoot.SetActive(stage == Stage.Reveal);
 
             switch (stage)
             {
@@ -180,8 +182,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         private void OnStartDrawClicked()
         {
             if (_tarot == null) return;
-            string? question = _questionInput?.text;
-            _session = _tarot.CreateSession(question);
+            _session = _tarot.CreateSession(null);
             EnterStage(Stage.Select);
         }
 
@@ -204,8 +205,9 @@ namespace GeminiLab.Modules.HubUI.Panels
             for (int i = _cardSpreadContainer.childCount - 1; i >= 0; i--)
             {
                 var child = _cardSpreadContainer.GetChild(i);
-                child.SetParent(null);       // 立即脱离容器层级，避免后续排列搜到残留
-                Destroy(child.gameObject);
+                child.SetParent(null);
+                if (Application.isPlaying) Destroy(child.gameObject);
+                else DestroyImmediate(child.gameObject);
             }
 
             Sprite? cardBack = _tarot?.Deck?.CardBack;
@@ -298,12 +300,13 @@ namespace GeminiLab.Modules.HubUI.Panels
                 var card = draw.Value.Card;
                 var entry = new CollectionEntry
                 {
-                    Id = $"tarot_{card.Id}_{session.SessionDateIso}_{slot}",
+                    Id = $"{TarotIconPrefix}{card.Id}_{session.SessionDateIso}_{slot}",
                     Category = CollectionCategory.Tarot,
                     Title = $"{card.DisplayNameZh} · {slot switch { TarotSlotPosition.Past => "过去", TarotSlotPosition.Present => "当下", _ => "未来" }}",
                     Description = session.Question ?? string.Empty,
                     AcquiredDateIso = session.SessionDateIso,
-                    IconKey = $"tarot_{card.Id}"
+                    IconKey = $"{TarotIconPrefix}{card.Id}",
+                    FortuneLevel = session.SummaryResult?.fortuneLevel ?? 0
                 };
                 _collection.Add(entry);
             }
@@ -315,36 +318,75 @@ namespace GeminiLab.Modules.HubUI.Panels
         {
             if (_historyContentRoot == null || _historyEntryPrefab == null) return;
             for (int i = _historyContentRoot.childCount - 1; i >= 0; i--)
-                Destroy(_historyContentRoot.GetChild(i).gameObject);
+            {
+                var c = _historyContentRoot.GetChild(i).gameObject;
+                if (Application.isPlaying) Destroy(c);
+                else DestroyImmediate(c);
+            }
             if (_collection == null && !ServiceLocator.TryResolve(out _collection)) return;
             if (_tarot == null && !ServiceLocator.TryResolve(out _tarot)) return;
 
             var deck = _tarot?.Deck;
-            var entries = _collection.GetByCategory(CollectionCategory.Tarot)
-                .OrderByDescending(e => e.AcquiredDateIso);
+            var entries = _collection.GetByCategory(CollectionCategory.Tarot);
 
-            foreach (var entry in entries)
+            // Group by session: same date + same question = one session row
+            var groups = entries
+                .GroupBy(e => (e.AcquiredDateIso, e.Description))
+                .OrderByDescending(g => g.Key.AcquiredDateIso);
+
+            foreach (var group in groups)
             {
+                var list = group.ToList();
+                if (list.Count == 0) continue;
+
+                var first = list[0];
+                var dateText = FormatHistoryDate(first.AcquiredDateIso);
+                var typeText = !string.IsNullOrEmpty(first.Description)
+                    ? first.Description : "今日整体运势";
+                var fortuneLevel = list.Max(e => e.FortuneLevel);
+
+                // 3 cards: Past → Present → Future (ordered by slot in IconKey)
+                var cardSprites = new Sprite?[3];
+                for (int i = 0; i < list.Count && i < 3; i++)
+                {
+                    var entry = list[i];
+                    if (deck != null && entry.IconKey.StartsWith(TarotIconPrefix))
+                    {
+                        string cardId = entry.IconKey.Substring(TarotIconPrefix.Length);
+                        cardSprites[i] = deck.Cards.FirstOrDefault(c => c.Id == cardId)?.Artwork;
+                    }
+                }
+
                 var go = Instantiate(_historyEntryPrefab, _historyContentRoot);
                 var item = go.GetComponent<TarotHistoryEntry>();
                 if (item == null) continue;
 
-                Sprite? sprite = null;
-                if (deck != null && entry.IconKey.StartsWith("tarot_"))
-                {
-                    string cardId = entry.IconKey.Substring("tarot_".Length);
-                    sprite = deck.Cards.FirstOrDefault(c => c.Id == cardId)?.Artwork;
-                }
-                item.SetData(entry, sprite);
+                item.SetData(dateText, typeText,
+                    cardSprites[0], cardSprites[1], cardSprites[2], fortuneLevel);
             }
+
+            if (_historyContentRoot is RectTransform rt)
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+        }
+
+        private static string FormatHistoryDate(string isoDate)
+        {
+            if (System.DateTime.TryParse(isoDate, out var dt))
+                return dt.ToString("yyyy/MM/dd");
+            return isoDate;
         }
 
         private void PopulateGuide()
         {
             if (_guideGridRoot == null || _guideCardPrefab == null) return;
             for (int i = _guideGridRoot.childCount - 1; i >= 0; i--)
-                Destroy(_guideGridRoot.GetChild(i).gameObject);
-            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot)) return;
+            {
+                var c = _guideGridRoot.GetChild(i).gameObject;
+                if (Application.isPlaying) Destroy(c);
+                else DestroyImmediate(c);
+            }
+            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot))
+                return;
 
             var deck = _tarot?.Deck;
             if (deck == null) return;
@@ -356,8 +398,8 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 foreach (var e in _collection.GetByCategory(CollectionCategory.Tarot))
                 {
-                    if (e.IconKey.StartsWith("tarot_"))
-                        collectedIds.Add(e.IconKey.Substring("tarot_".Length));
+                    if (e.IconKey.StartsWith(TarotIconPrefix))
+                        collectedIds.Add(e.IconKey.Substring(TarotIconPrefix.Length));
                 }
             }
 
@@ -368,7 +410,11 @@ namespace GeminiLab.Modules.HubUI.Panels
                 if (item == null) continue;
                 bool unlocked = collectedIds.Contains(card.Id);
                 item.SetData(card, unlocked);
+                item.OnClicked += c => _detailPopup?.Show(c);
             }
+
+            if (_guideGridRoot is RectTransform rt)
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
         }
     }
 }

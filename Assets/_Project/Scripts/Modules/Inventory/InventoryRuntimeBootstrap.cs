@@ -28,7 +28,7 @@ namespace GeminiLab.Modules.Inventory
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             if (_catalog == null)
             {

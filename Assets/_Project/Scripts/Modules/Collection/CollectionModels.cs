@@ -16,6 +16,7 @@ namespace GeminiLab.Modules.Collection
         public string Description;
         public string AcquiredDateIso;
         public string IconKey;
+        public int FortuneLevel;
 
         public bool IsEmpty => string.IsNullOrEmpty(Id);
     }

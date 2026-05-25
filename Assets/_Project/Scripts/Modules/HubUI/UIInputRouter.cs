@@ -17,7 +17,7 @@ namespace GeminiLab.Modules.HubUI
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
             ServiceLocator.TryResolve(out _router);
         }
 

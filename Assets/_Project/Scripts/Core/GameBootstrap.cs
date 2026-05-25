@@ -46,7 +46,7 @@ namespace GeminiLab.Core
             }
 
             _initialized = true;
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
             RegisterCoreServices();
         }
 
