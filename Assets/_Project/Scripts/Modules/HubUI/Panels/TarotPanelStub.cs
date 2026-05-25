@@ -44,19 +44,8 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _shuffleButton;
         [SerializeField] private Button? _confirmButton;
 
-        [Header("Reveal 阶段")]
-        [SerializeField] private GameObject? _revealRoot;
-        [SerializeField] private Image? _revealPastImage;
-        [SerializeField] private Image? _revealPresentImage;
-        [SerializeField] private Image? _revealFutureImage;
-        [SerializeField] private ReadingBubble? _pastAngelBubble;
-        [SerializeField] private ReadingBubble? _pastDevilBubble;
-        [SerializeField] private ReadingBubble? _presentAngelBubble;
-        [SerializeField] private ReadingBubble? _presentDevilBubble;
-        [SerializeField] private ReadingBubble? _futureAngelBubble;
-        [SerializeField] private ReadingBubble? _futureDevilBubble;
-        [SerializeField] private Button? _continueButton;
-        [SerializeField] private Button? _finishButton;
+        [Header("Reveal")]
+        [SerializeField] private TarotRevealController? _revealController;
 
         [Header("子视图根节点")]
         [SerializeField] private GameObject? _drawView;
@@ -97,10 +86,23 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_drawButton != null) _drawButton.onClick.AddListener(OnStartDrawClicked);
             if (_shuffleButton != null) _shuffleButton.onClick.AddListener(OnShuffleClicked);
             if (_confirmButton != null) _confirmButton.onClick.AddListener(OnConfirmSelection);
-            if (_continueButton != null) _continueButton.onClick.AddListener(OnContinueReveal);
-            if (_finishButton != null) _finishButton.onClick.AddListener(OnFinish);
 
             _arcLayout = _cardSpreadContainer?.GetComponent<TarotArcLayout>();
+
+            if (_revealController != null)
+            {
+                _revealController.OnRevealComplete += () =>
+                {
+                    SaveToCollection(_session!);
+                    _session = _tarot!.CreateSession(_questionInput?.text);
+                    EnterStage(Stage.Select);
+                };
+                _revealController.OnOpenGuide += () =>
+                {
+                    SaveToCollection(_session!);
+                    SwitchTab(SubView.Guide);
+                };
+            }
         }
 
         protected override void OnDestroy()
@@ -111,8 +113,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_guideBackButton != null) _guideBackButton.onClick.RemoveAllListeners();
             if (_shuffleButton != null) _shuffleButton.onClick.RemoveAllListeners();
             if (_confirmButton != null) _confirmButton.onClick.RemoveAllListeners();
-            if (_continueButton != null) _continueButton.onClick.RemoveAllListeners();
-            if (_finishButton != null) _finishButton.onClick.RemoveAllListeners();
             _cts?.Cancel();
             _cts?.Dispose();
             base.OnDestroy();
@@ -163,13 +163,15 @@ namespace GeminiLab.Modules.HubUI.Panels
             _currentStage = stage;
             if (_idleRoot != null) _idleRoot.SetActive(stage == Stage.Idle);
             if (_selectRoot != null) _selectRoot.SetActive(stage == Stage.Select);
-            if (_revealRoot != null) _revealRoot.SetActive(stage == Stage.Reveal);
 
             switch (stage)
             {
                 case Stage.Idle: break;
                 case Stage.Select: SetupSelectStage(); break;
-                case Stage.Reveal: SetupRevealStage(); break;
+                case Stage.Reveal:
+                    if (_revealController != null && _session != null && _tarot != null)
+                        _revealController.BeginReveal(_session, _tarot);
+                    break;
             }
         }
 
@@ -280,168 +282,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_tarot == null) return;
             _session = _tarot.ConfirmSelection(_session);
             EnterStage(Stage.Reveal);
-        }
-
-        // ======================== Stage.Reveal ========================
-
-        private void SetupRevealStage()
-        {
-            if (_session == null) return;
-
-            // Show selected cards in reveal area
-            ShowCardInRevealSlot(_revealPastImage, _session.PastCard);
-            ShowCardInRevealSlot(_revealPresentImage, _session.PresentCard);
-            ShowCardInRevealSlot(_revealFutureImage, _session.FutureCard);
-
-            // Hide all bubbles
-            HideAllBubbles();
-
-            // Show loading on past slot
-            ShowSlotLoading(TarotSlotPosition.Past);
-
-            // Fire all 6 requests in parallel
-            _cts?.Cancel();
-            _cts = new CancellationTokenSource();
-            _ = FireAllReadingsAsync(_cts.Token);
-
-            _session.RevealedSlotIndex = 0;
-            if (_continueButton != null) _continueButton.gameObject.SetActive(true);
-            if (_finishButton != null) _finishButton.gameObject.SetActive(false);
-        }
-
-        private async Task FireAllReadingsAsync(CancellationToken token)
-        {
-            if (_session == null || _tarot == null) return;
-
-            var tasks = new List<Task>();
-            var slots = new[] { TarotSlotPosition.Past, TarotSlotPosition.Present, TarotSlotPosition.Future };
-            var personas = new[] { (PetId.Angel, TarotOrientation.Upright), (PetId.Devil, TarotOrientation.Reversed) };
-
-            foreach (var slot in slots)
-            {
-                var draw = _session.GetCardAtSlot(slot);
-                if (draw == null) continue;
-                foreach (var (petId, orient) in personas)
-                {
-                    tasks.Add(GetReadingForSlot(slot, draw.Value, petId, orient, token));
-                }
-            }
-
-            await Task.WhenAll(tasks).ConfigureAwait(true);
-        }
-
-        private async Task GetReadingForSlot(TarotSlotPosition slot, TarotDrawResult draw,
-            PetId petId, TarotOrientation orientation, CancellationToken token)
-        {
-            if (_tarot == null) return;
-            try
-            {
-                var reading = await _tarot.RequestReadingAsync(draw, petId, orientation, token)
-                    .ConfigureAwait(true);
-                if (token.IsCancellationRequested) return;
-
-                string key = TarotSession.ReadingKey(slot, petId);
-                if (_session != null) _session.Readings[key] = reading;
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[TarotPanel] Reading failed for {slot} {petId}: {ex.Message}");
-                string key = TarotSession.ReadingKey(slot, petId);
-                var fallback = LocalFallback.Build(draw, petId, orientation);
-                if (_session != null) _session.Readings[key] = fallback;
-            }
-        }
-
-        private void OnContinueReveal()
-        {
-            if (_session == null) return;
-            int idx = _session.RevealedSlotIndex;
-            if (idx >= 3) return;
-
-            var currentSlot = (TarotSlotPosition)idx;
-            RevealSlotReadings(currentSlot);
-            _session.RevealedSlotIndex = idx + 1;
-
-            if (_session.RevealedSlotIndex >= 3)
-            {
-                if (_continueButton != null) _continueButton.gameObject.SetActive(false);
-                if (_finishButton != null) _finishButton.gameObject.SetActive(true);
-            }
-            else
-            {
-                // Show loading for next slot
-                ShowSlotLoading((TarotSlotPosition)_session.RevealedSlotIndex);
-            }
-        }
-
-        private void RevealSlotReadings(TarotSlotPosition slot)
-        {
-            if (_session == null) return;
-
-            string angelKey = TarotSession.ReadingKey(slot, PetId.Angel);
-            string devilKey = TarotSession.ReadingKey(slot, PetId.Devil);
-
-            string slotName = slot switch
-            {
-                TarotSlotPosition.Past => "过去",
-                TarotSlotPosition.Present => "当下",
-                TarotSlotPosition.Future => "未来",
-                _ => ""
-            };
-
-            var (tarotSlot, angelBubble, devilBubble) = GetSlotBubbles(slot);
-            tarotSlot?.ClearLoading();
-
-            if (_session.Readings.TryGetValue(angelKey, out var angelReading))
-                angelBubble?.Show($"天使 · {slotName}", angelReading.Text, isAngel: true);
-            if (_session.Readings.TryGetValue(devilKey, out var devilReading))
-                devilBubble?.Show($"恶魔 · {slotName}", devilReading.Text, isAngel: false);
-        }
-
-        private void ShowSlotLoading(TarotSlotPosition slot)
-        {
-            var (tarotSlot, _, _) = GetSlotBubbles(slot);
-            if (_layoutConfig != null && tarotSlot != null)
-            {
-                string loadingText = _layoutConfig.GetRandomLoadingText(slot, isAngel: true);
-                tarotSlot.ShowLoading(loadingText);
-            }
-        }
-
-        private (TarotSlot?, ReadingBubble?, ReadingBubble?) GetSlotBubbles(TarotSlotPosition slot) => slot switch
-        {
-            TarotSlotPosition.Past => (_pastSlot, _pastAngelBubble, _pastDevilBubble),
-            TarotSlotPosition.Present => (_presentSlot, _presentAngelBubble, _presentDevilBubble),
-            TarotSlotPosition.Future => (_futureSlot, _futureAngelBubble, _futureDevilBubble),
-            _ => (null, null, null)
-        };
-
-        private void ShowCardInRevealSlot(Image? image, TarotDrawResult? draw)
-        {
-            if (image == null || draw == null) return;
-            if (draw.Value.Card.Artwork != null)
-            {
-                image.sprite = draw.Value.Card.Artwork;
-                image.color = Color.white;
-            }
-        }
-
-        private void HideAllBubbles()
-        {
-            _pastAngelBubble?.Hide();
-            _pastDevilBubble?.Hide();
-            _presentAngelBubble?.Hide();
-            _presentDevilBubble?.Hide();
-            _futureAngelBubble?.Hide();
-            _futureDevilBubble?.Hide();
-        }
-
-        private void OnFinish()
-        {
-            if (_session == null) return;
-            SaveToCollection(_session);
-            EnterStage(Stage.Idle);
         }
 
         private void SaveToCollection(TarotSession session)
