@@ -1,6 +1,8 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using GeminiLab.Modules.Pet;
+using UnityEngine;
 
 namespace GeminiLab.Modules.Tarot
 {
@@ -81,6 +83,8 @@ namespace GeminiLab.Modules.Tarot
         /// <summary>key = "past_angel" / "past_devil" / "present_angel" 等</summary>
         public Dictionary<string, TarotReading> Readings = new();
         public int RevealedSlotIndex;
+        /// <summary>总结轮结构化结果（第 7 次 LLM 调用返回）。</summary>
+        public TarotSummaryResult? SummaryResult;
 
         public TarotDrawResult? GetCardAtSlot(TarotSlotPosition slot)
         {
@@ -114,6 +118,58 @@ namespace GeminiLab.Modules.Tarot
             };
             string petName = petId == PetId.Angel ? "angel" : "devil";
             return $"{slotName}_{petName}";
+        }
+    }
+
+    /// <summary>总结轮幸运提示（LLM 结构化返回的子对象）。</summary>
+    [Serializable]
+    public sealed class LuckyHintData
+    {
+        public string color;
+        public string number;
+        public string time;
+        public string action;
+    }
+
+    /// <summary>总结轮 LLM 返回的结构化数据。</summary>
+    [Serializable]
+    public sealed class TarotSummaryResult
+    {
+        public int fortuneLevel;
+        public LuckyHintData luckyHint;
+        public string advice;
+
+        public static TarotSummaryResult FromJson(string json)
+        {
+            try
+            {
+                var result = JsonUtility.FromJson<TarotSummaryResult>(json);
+                if (result == null) return Default();
+                result.fortuneLevel = Mathf.Clamp(result.fortuneLevel, 1, 5);
+                result.luckyHint ??= new LuckyHintData();
+                result.advice ??= string.Empty;
+                return result;
+            }
+            catch (Exception)
+            {
+                return Default();
+            }
+        }
+
+        public static TarotSummaryResult Default()
+        {
+            return new TarotSummaryResult
+            {
+                fortuneLevel = 3,
+                luckyHint = new LuckyHintData
+                {
+                    color = "蓝色",
+                    number = "7",
+                    time = "午后",
+                    action = "保持平常心"
+                },
+                advice = "今日运势平稳，保持平常心，关注身边的小确幸。"
+            };
         }
     }
 }
