@@ -1,6 +1,7 @@
 #nullable enable
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace GeminiLab.Modules.Pet
 {
@@ -80,6 +81,11 @@ namespace GeminiLab.Modules.Pet
                 HideBubbleImmediate();
             }
 
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
             if (!isActiveAndEnabled || !Input.GetMouseButtonDown(0))
             {
                 return;
@@ -125,9 +131,19 @@ namespace GeminiLab.Modules.Pet
             Vector3 screenPoint = Input.mousePosition;
             Vector3 worldPoint3 = Camera.main.ScreenToWorldPoint(screenPoint);
             Vector2 worldPoint = new(worldPoint3.x, worldPoint3.y);
-            if (!_clickCollider.OverlapPoint(worldPoint))
+            _ = TryHandleWorldPoint(worldPoint);
+        }
+
+        public bool TryHandleWorldPoint(Vector2 worldPoint)
+        {
+            if (_clickCollider == null)
             {
-                return;
+                EnsureClickCollider();
+            }
+
+            if (_clickCollider == null || !_clickCollider.OverlapPoint(worldPoint))
+            {
+                return false;
             }
 
             _playerInputController ??= GetComponent<PetPlayerInputController>();
@@ -135,7 +151,7 @@ namespace GeminiLab.Modules.Pet
 
             if (!_enableClickReaction)
             {
-                return;
+                return true;
             }
 
             string expression = ResolveCurrentExpression();
@@ -147,6 +163,7 @@ namespace GeminiLab.Modules.Pet
                 Debug.Log($"[PetClickReaction] Pending click animation state: {animatorStateName}");
             }
             ShowBubble(response);
+            return true;
         }
 
         private void EnsureBubbleVisuals()

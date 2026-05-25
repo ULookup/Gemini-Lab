@@ -149,6 +149,50 @@ namespace GeminiLab.Modules.Pet
             _ = _petController.TryStartPlayerInteraction(request);
         }
 
+        public bool TryHandleWorldPoint(Vector2 worldPoint)
+        {
+            if (!_enableInteraction || !isActiveAndEnabled)
+            {
+                return false;
+            }
+
+            if (_petController == null)
+            {
+                _petController = GetComponent<PetController>();
+            }
+
+            if (_petController == null || !_petController.IsPlayerControlEnabled)
+            {
+                return false;
+            }
+
+            if (!TryGetBindingForWorldPoint(transform.position, worldPoint, out InteractionBinding? binding, out string targetName, out GameObject? targetObject))
+            {
+                return false;
+            }
+
+            PetPlayerInteractionRequest request = new(
+                targetName: !string.IsNullOrWhiteSpace(binding.Label) ? binding.Label : targetName,
+                category: binding.Category,
+                interactionType: binding.InteractionType,
+                animationVariant: ResolveAnimationVariant(binding),
+                animatorStateNameOverride: ResolveAnimatorStateOverride(binding),
+                hideTargetWhileInteracting: binding.HideTargetWhileInteracting,
+                visualHideTarget: binding.HideTargetWhileInteracting ? targetObject : null,
+                additionalVisualHideTargets: binding.AdditionalHideTargets,
+                useTargetSortingWhileInteracting: binding.UseTargetSortingWhileInteracting,
+                visualSortingTarget: binding.UseTargetSortingWhileInteracting ? targetObject : null,
+                usePetPoseOverride: binding.UsePetPoseOverride,
+                useTargetPositionForPetPose: binding.UseTargetPositionForPetPose,
+                petInteractionLocalOffset: binding.PetInteractionLocalOffset,
+                petInteractionWorldPoint: binding.PetInteractionWorldPoint,
+                petInteractionScale: binding.PetInteractionScale,
+                interactionDurationSeconds: binding.InteractionDurationSeconds);
+
+            Debug.Log($"[PetPlayerFurnitureInteraction] Viewport binding label='{binding.Label}' target='{targetName}' variant='{request.AnimationVariant}' animatorState='{request.AnimatorStateNameOverride}'.");
+            return _petController.TryStartPlayerInteraction(request);
+        }
+
         private bool TryGetClosestBinding(Vector2 petPosition, out InteractionBinding? bestBinding, out string bestTargetName, out GameObject? bestTargetObject)
         {
             bestBinding = null;
@@ -171,6 +215,51 @@ namespace GeminiLab.Modules.Pet
                 }
 
                 bestDistance = distance;
+                bestBinding = binding;
+                bestTargetName = targetName;
+                bestTargetObject = targetObject;
+            }
+
+            return bestBinding != null && !string.IsNullOrWhiteSpace(bestTargetName);
+        }
+
+        private bool TryGetBindingForWorldPoint(
+            Vector2 petPosition,
+            Vector2 worldPoint,
+            out InteractionBinding? bestBinding,
+            out string bestTargetName,
+            out GameObject? bestTargetObject)
+        {
+            bestBinding = null;
+            bestTargetName = string.Empty;
+            bestTargetObject = null;
+            float bestScore = float.MaxValue;
+
+            for (int i = 0; i < _bindings.Length; i++)
+            {
+                InteractionBinding binding = _bindings[i];
+                if (!TryResolveInteractionPoint(binding, out Vector2 interactionPoint, out string targetName, out GameObject? targetObject))
+                {
+                    continue;
+                }
+
+                float petDistance = Vector2.Distance(petPosition, interactionPoint);
+                if (petDistance > binding.ActivationDistance)
+                {
+                    continue;
+                }
+
+                if (!DoesWorldPointMatchBinding(binding, worldPoint, interactionPoint, targetObject, out float score))
+                {
+                    continue;
+                }
+
+                if (score >= bestScore)
+                {
+                    continue;
+                }
+
+                bestScore = score;
                 bestBinding = binding;
                 bestTargetName = targetName;
                 bestTargetObject = targetObject;
@@ -289,6 +378,32 @@ namespace GeminiLab.Modules.Pet
             targetName = string.Empty;
             targetObject = null;
             return false;
+        }
+
+        private static bool DoesWorldPointMatchBinding(
+            InteractionBinding binding,
+            Vector2 worldPoint,
+            Vector2 interactionPoint,
+            GameObject? targetObject,
+            out float score)
+        {
+            if (targetObject != null)
+            {
+                Collider2D[] colliders = targetObject.GetComponentsInChildren<Collider2D>(true);
+                for (int i = 0; i < colliders.Length; i++)
+                {
+                    Collider2D collider = colliders[i];
+                    if (collider != null && collider.OverlapPoint(worldPoint))
+                    {
+                        score = 0f;
+                        return true;
+                    }
+                }
+            }
+
+            float hitRadius = Mathf.Max(0.35f, binding.ActivationDistance * 0.5f);
+            score = Vector2.Distance(worldPoint, interactionPoint);
+            return score <= hitRadius;
         }
     }
 

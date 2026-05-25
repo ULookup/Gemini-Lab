@@ -49,6 +49,8 @@ Assets/_Project/Art/Sprites/Pet/README.md
 Assets/_Project/Animations/Pet/Pet_Angel.controller
 Assets/_Project/Animations/Pet/Pet_Devil.controller
 Assets/_Project/Animations/Pet/Pet_Devil_Interact_BesideDoor.anim
+Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture
+Assets/_Project/Scripts/Modules/HubUI/ApartmentViewportInputBridge.cs
 Assets/_Project/Art/Sprites/Environment/ApartmentScene_Extracted/README.md
 Assets/_Project/Audio/README.md
 Assets/_Project/Settings/README.md

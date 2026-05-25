@@ -85,6 +85,7 @@ AI 协作工具链目录。
 - `Apartment_Main.unity` 当前也是玩家控制宠物移动的主验证场景；`Pet_Angel` 已开始通过 `WASD` / 方向键直接控制
 - `2026-05-22` 起，`Apartment_Main.unity` 的 `Pet` 根节点已包含 `Pet_Angel` 与 `Pet_Devil`；当前双宠输入方式为“默认天使可控，点击恶魔后切换恶魔主控”，且未被选中的桌宠保持 `Idle`，不继续自动睡觉
 - `2026-05-22` 起，`Apartment_Main.unity` 中双宠也不再共用同一个移动边界；左侧恶魔区域已新增 `PetMovementBounds_Devil`，供 `Pet_Devil` 单独使用
+- `2026-05-25` 起，`Apartment_Main.unity` 已开始搭建“公寓世界作为 UI 视窗显示”的第一版骨架：`Panel_PetStatus/Content` 下新增 `ApartmentViewportHost` / `ApartmentViewportImage`，并新增独立 `ApartmentViewportCamera` 与 `RenderTexture` 引用落点；当前已补最小输入桥接，支持 viewport 内的桌宠点击与当前宠物的家具交互尝试
 - `Apartment_Main.unity` 当前除可交互家具对象外，还可能包含一个仅承载纯静态补景家具的 `StaticFurnitureDecorOnly` 子节点
 - `StaticFurnitureDecorOnly` 当前不只用于“纯视觉补景”，也开始承载一部分已有独立 Sprite 家具对象；这些对象若需要进入交互系统，必须同步补场景显式绑定，不能只把 Sprite 摆进场景
 - `2026-05-21` 已从 `Apartment_Main.unity` 移除旧的截图式 / 占位 UI 节点与 `SpaceSystemPrototypeRoot` 原型 UI；后续 Apartment UI 需要基于 `Assets/_Project/Art/UI/` 下的新美术资源重新作者化。
