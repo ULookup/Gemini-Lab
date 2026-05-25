@@ -102,6 +102,13 @@ namespace GeminiLab.Modules.Tarot
             {
                 return System.Threading.Tasks.Task.FromResult(LocalFallback.Build(draw, petId, orientation));
             }
+
+            public System.Threading.Tasks.Task<TarotSummaryResult> RequestSummaryAsync(
+                TarotDrawResult past, TarotDrawResult present, TarotDrawResult future,
+                string? question, System.Threading.CancellationToken cancellationToken)
+            {
+                return System.Threading.Tasks.Task.FromResult(TarotSummaryResult.Default());
+            }
         }
     }
 }
