@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace GeminiLab.Modules.Furniture
 {
@@ -58,6 +59,13 @@ namespace GeminiLab.Modules.Furniture
             Vector2 world = Camera.main is null
                 ? Vector2.zero
                 : Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+            // When pointer is over the UI viewport, the viewport bridge owns the click
+            // and forwards the translated world point back into build mode.
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
 
             if (Input.GetMouseButtonDown(0))
             {

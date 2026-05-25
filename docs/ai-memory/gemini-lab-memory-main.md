@@ -189,7 +189,8 @@ Updated: 2026-05-20
   - 其下新增 `ApartmentViewportImage`，当前引用 `Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture`
   - `ArtGenerated` 下新增独立 `ApartmentViewportCamera`，不再依赖挂在 `Pet_Angel` 下的主相机来承担未来视窗职责
   - 后续已补最小输入桥接：当前 `ApartmentViewportInputBridge` 会先转发桌宠点击，再尝试转发到 `PetPlayerFurnitureInteractionController` 的家具交互入口
-  - 这轮仍只完成视窗骨架、最小输入桥接与专用相机落点，尚未补完完整鼠标桥接与最终取景调校
+  - 后续已继续补建造模式桥接：当 `BuildModeController` 开启时，viewport 内左键/右键会优先转发到放置/删除家具入口，并屏蔽旧的全屏 `Camera.main` 鼠标链路双触发
+  - 这轮仍只完成视窗骨架、最小输入桥接、建造模式桥接与专用相机落点，尚未补完完整鼠标桥接与最终取景调校
 - `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 现在都不再是完全空目录，且 `Furniture` / `FurnitureConfig` 这条线已覆盖当前全部家具 Sprite 资源；其他模块仍未完成资产作者化。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。
