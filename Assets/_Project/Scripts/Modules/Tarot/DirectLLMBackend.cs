@@ -58,6 +58,40 @@ namespace GeminiLab.Modules.Tarot
             return new TarotReading(petId, orientation, responseText, isFromGateway: true);
         }
 
+        public async Task<TarotSummaryResult> RequestSummaryAsync(
+            TarotDrawResult past, TarotDrawResult present, TarotDrawResult future,
+            string? question, CancellationToken cancellationToken)
+        {
+            if (!_config.IsConfigured)
+            {
+                return TarotSummaryResult.Default();
+            }
+
+            string systemPrompt = _config.SummarySystemTemplate
+                .Replace("{pastCard}", $"{past.Card.DisplayNameZh} ({past.Card.DisplayNameEn})")
+                .Replace("{presentCard}", $"{present.Card.DisplayNameZh} ({present.Card.DisplayNameEn})")
+                .Replace("{futureCard}", $"{future.Card.DisplayNameZh} ({future.Card.DisplayNameEn})")
+                .Replace("{question}", question ?? "未指定");
+
+            string responseText;
+            try
+            {
+                responseText = await SendRequestAsync(systemPrompt, "请返回 JSON。", cancellationToken)
+                    .ConfigureAwait(false);
+            }
+            catch (OperationCanceledException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[DirectLLM] Summary request failed: {ex.Message}");
+                return TarotSummaryResult.Default();
+            }
+
+            return TarotSummaryResult.FromJson(responseText);
+        }
+
         private string BuildSystemPrompt(PetId petId)
         {
             string template = petId == PetId.Angel
