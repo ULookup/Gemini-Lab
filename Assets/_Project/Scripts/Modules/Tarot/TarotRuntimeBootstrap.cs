@@ -2,6 +2,7 @@
 using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Gateway;
 using GeminiLab.Modules.Pet;
@@ -40,6 +41,12 @@ namespace GeminiLab.Modules.Tarot
             ITarotReadingBackend backend = ResolveBackend();
             var service = new TarotService(_deck, _eventBus, backend);
             ServiceLocator.Register<ITarotService>(service);
+
+            // Register session record store for persistence
+            var recordStore = new TarotSessionRecordStore();
+            ServiceLocator.Register<ITarotSessionRecordStore>(recordStore);
+            if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
+                registry.Register(recordStore);
 
             Debug.Log($"[TarotBootstrap] TarotService registered. Backend: {backend.GetType().Name}");
 
