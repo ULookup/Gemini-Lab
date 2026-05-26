@@ -379,93 +379,41 @@ namespace GeminiLab.Modules.HubUI.Panels
                 if (Application.isPlaying) Destroy(c);
                 else DestroyImmediate(c);
             }
-            if (_collection == null && !ServiceLocator.TryResolve(out _collection)) return;
             if (_tarot == null && !ServiceLocator.TryResolve(out _tarot)) return;
             if (_recordStore == null) ServiceLocator.TryResolve(out _recordStore);
+            if (_recordStore == null) return;
 
             var deck = _tarot?.Deck;
-            var entries = _collection.GetByCategory(CollectionCategory.Tarot);
+            var records = _recordStore.GetAll();
 
-            // Group by session: same date + same question = one session row
-            var groups = entries
-                .GroupBy(e => (e.AcquiredDateIso, e.Description))
-                .OrderByDescending(g => g.Key.AcquiredDateIso);
-
-            // Build session record lookup: (dateIso, question) -> TarotSessionRecord
-            var recordLookup = new Dictionary<(string, string), TarotSessionRecord>();
-            if (_recordStore != null)
+            foreach (var record in records)
             {
-                foreach (var r in _recordStore.GetAll())
+                var dateText = FormatHistoryDate(record.SessionDateIso);
+                var typeText = !string.IsNullOrEmpty(record.Question)
+                    ? record.Question : "今日整体运势";
+
+                Sprite? GetCardSprite(string cardId)
                 {
-                    var key = (r.SessionDateIso, r.Question ?? string.Empty);
-                    if (!recordLookup.ContainsKey(key))
-                        recordLookup[key] = r;
+                    if (deck == null || string.IsNullOrEmpty(cardId)) return null;
+                    return deck.Cards.FirstOrDefault(c => c.Id == cardId)?.Artwork;
                 }
-            }
-
-            foreach (var group in groups)
-            {
-                var list = group.ToList();
-                if (list.Count == 0) continue;
-
-                // Sort by slot position (Past=0, Present=1, Future=2)
-                list.Sort((a, b) =>
-                {
-                    int GetSlot(string id)
-                    {
-                        if (id.EndsWith("Past")) return 0;
-                        if (id.EndsWith("Present")) return 1;
-                        if (id.EndsWith("Future")) return 2;
-                        return 99;
-                    }
-                    return GetSlot(a.Id).CompareTo(GetSlot(b.Id));
-                });
-
-                var first = list[0];
-                var dateText = FormatHistoryDate(first.AcquiredDateIso);
-                var typeText = !string.IsNullOrEmpty(first.Description)
-                    ? first.Description : "今日整体运势";
-                var fortuneLevel = list.Max(e => e.FortuneLevel);
-
-                // 3 cards: Past → Present → Future (ordered by slot in IconKey)
-                var cardSprites = new Sprite?[3];
-                for (int i = 0; i < list.Count && i < 3; i++)
-                {
-                    var entry = list[i];
-                    if (deck != null && entry.IconKey.StartsWith(TarotIconPrefix))
-                    {
-                        string cardId = entry.IconKey.Substring(TarotIconPrefix.Length);
-                        cardSprites[i] = deck.Cards.FirstOrDefault(c => c.Id == cardId)?.Artwork;
-                    }
-                }
-
-                // Lookup session record
-                var recordKey = (first.AcquiredDateIso, first.Description ?? string.Empty);
-                recordLookup.TryGetValue(recordKey, out var matchedRecord);
 
                 var go = Instantiate(_historyEntryPrefab, _historyContentRoot);
                 var item = go.GetComponent<TarotHistoryEntry>();
                 if (item == null) continue;
 
-                var displayFortuneLevel = Mathf.Clamp(fortuneLevel, 0, 5);
+                var displayFortuneLevel = Mathf.Clamp(record.FortuneLevel, 0, 5);
 
                 item.SetData(dateText, typeText,
-                    cardSprites[0], cardSprites[1], cardSprites[2], displayFortuneLevel,
-                    matchedRecord ?? new TarotSessionRecord
-                    {
-                        SessionDateIso = first.AcquiredDateIso,
-                        Question = first.Description ?? string.Empty,
-                        FortuneLevel = fortuneLevel
-                    });
+                    GetCardSprite(record.PastCardId),
+                    GetCardSprite(record.PresentCardId),
+                    GetCardSprite(record.FutureCardId),
+                    displayFortuneLevel,
+                    record);
 
                 if (_historyDetailPopup != null && deck != null)
                 {
-                    var capturedRecord = matchedRecord ?? new TarotSessionRecord
-                    {
-                        SessionDateIso = first.AcquiredDateIso,
-                        Question = first.Description ?? string.Empty,
-                        FortuneLevel = fortuneLevel
-                    };
+                    var capturedRecord = record;
                     var capturedDeck = deck;
                     item.OnClicked += r => _historyDetailPopup.Show(capturedRecord, capturedDeck);
                 }
