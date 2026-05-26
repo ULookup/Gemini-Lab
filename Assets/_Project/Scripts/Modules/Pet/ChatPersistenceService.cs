@@ -66,6 +66,10 @@ namespace GeminiLab.Modules.Pet
                 {
                     _messages.Clear();
                     _messages.AddRange(wrapper.messages);
+                    while (_messages.Count > MaxMessages)
+                    {
+                        _messages.RemoveAt(0);
+                    }
                 }
             }
             catch (Exception ex)

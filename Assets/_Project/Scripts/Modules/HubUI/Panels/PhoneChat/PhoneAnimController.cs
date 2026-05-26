@@ -59,7 +59,7 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
                 t += Time.deltaTime;
                 float p = Mathf.Clamp01(t / _closeDuration);
                 _phoneRect.localScale = Vector3.Lerp(
-                    startScale, Vector3.one * 0.3f, _moveCurve.Evaluate(p));
+                    startScale, Vector3.one * 0.3f, _scaleCurve.Evaluate(p));
                 _phoneRect.anchoredPosition = Vector2.Lerp(
                     startPos, _collapsedAnchoredPosition, _moveCurve.Evaluate(p));
                 _canvasGroup.alpha = Mathf.Lerp(startAlpha, 0f, Mathf.Clamp01(p / 0.8f));

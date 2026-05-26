@@ -123,7 +123,7 @@ namespace GeminiLab.Modules.Pet
             CancellationToken cancellationToken)
         {
             string systemPrompt = BuildSystemPrompt(petId);
-            string userPrompt = BuildUserPrompt(userMessage, otherPetReply);
+            string userPrompt = BuildUserPrompt(userMessage, otherPetReply, history);
 
             if (!_config.IsConfigured)
             {
@@ -205,13 +205,33 @@ namespace GeminiLab.Modules.Pet
             return sb.ToString();
         }
 
-        private static string BuildUserPrompt(string userMessage, string? otherPetReply)
+        private static string BuildUserPrompt(string userMessage, string? otherPetReply,
+            IReadOnlyList<ChatMessage> history)
         {
-            if (string.IsNullOrEmpty(otherPetReply))
+            var sb = new StringBuilder();
+
+            // Include recent conversation history (last 10 turns) for context
+            int start = Math.Max(0, history.Count - 10);
+            for (int i = start; i < history.Count; i++)
             {
-                return $"用户说：{userMessage}";
+                var msg = history[i];
+                string roleLabel = msg.Role switch
+                {
+                    ChatRole.User => "用户",
+                    ChatRole.Angel => "Angel",
+                    ChatRole.Devil => "Devil",
+                    _ => "?"
+                };
+                sb.AppendLine($"{roleLabel}：{msg.Text}");
             }
-            return $"[另一个宠物刚对你说：{otherPetReply}]\n用户说：{userMessage}";
+
+            if (!string.IsNullOrEmpty(otherPetReply))
+            {
+                sb.AppendLine($"[另一个宠物刚对你说：{otherPetReply}]");
+            }
+
+            sb.AppendLine($"用户说：{userMessage}");
+            return sb.ToString();
         }
 
         private async Task<string> SendLLMRequestAsync(

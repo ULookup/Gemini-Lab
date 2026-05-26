@@ -106,15 +106,26 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             persistence.AddMessage(userMsg);
             _messageListView.AddBubble(ChatRole.User, text);
 
-            // Call LLM
+            // Call LLM — capture CTS locally to avoid stale field race
             _currentCts?.Cancel();
-            _currentCts = new CancellationTokenSource();
+            _currentCts?.Dispose();
+            var cts = new CancellationTokenSource();
+            _currentCts = cts;
 
-            var result = await chatService!.SendMessageAsync(text, persistence.History, _currentCts.Token);
+            PetChatResult result;
+            try
+            {
+                result = await chatService!.SendMessageAsync(text, persistence.History, cts.Token);
+            }
+            catch (OperationCanceledException)
+            {
+                _inputHandler.SetWaitingState(false);
+                return;
+            }
 
             _inputHandler.SetWaitingState(false);
 
-            if (_currentCts.IsCancellationRequested) return;
+            if (cts.IsCancellationRequested) return;
 
             if (result.IsCancelled)
             {
