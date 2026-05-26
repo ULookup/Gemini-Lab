@@ -56,6 +56,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [Header("历史记录")]
         [SerializeField] private Transform? _historyContentRoot;
         [SerializeField] private GameObject? _historyEntryPrefab;
+        [SerializeField] private TarotHistoryDetailPopup? _historyDetailPopup;
 
         [Header("图鉴")]
         [SerializeField] private Transform? _guideGridRoot;
@@ -69,6 +70,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         private const string TarotIconPrefix = "tarot_";
         private ITarotService? _tarot;
         private ICollectionService? _collection;
+        private ITarotSessionRecordStore? _recordStore;
         private CancellationTokenSource? _cts;
         private TarotSession? _session;
         private Stage _currentStage;
@@ -138,6 +140,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         {
             if (_tarot == null) ServiceLocator.TryResolve(out _tarot);
             if (_collection == null) ServiceLocator.TryResolve(out _collection);
+            if (_recordStore == null) ServiceLocator.TryResolve(out _recordStore);
         }
 
         // ======================== Tab 切换 ========================
@@ -288,6 +291,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void SaveToCollection(TarotSession session)
         {
+            SaveSessionRecord(session);
             if (_collection == null) return;
 
             var slots = new[] { (TarotSlotPosition.Past, session.PastCard),
@@ -312,6 +316,55 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
         }
 
+        private void SaveSessionRecord(TarotSession session)
+        {
+            if (_recordStore == null) return;
+
+            var reading = new TarotSessionRecord
+            {
+                SessionId = $"tarot_session_{session.SessionDateIso}_{Guid.NewGuid():N}",
+                Question = session.Question ?? string.Empty,
+                SessionDateIso = session.SessionDateIso,
+                FortuneLevel = session.SummaryResult?.fortuneLevel ?? 3,
+                LuckyColor = session.SummaryResult?.luckyHint?.color ?? string.Empty,
+                LuckyNumber = session.SummaryResult?.luckyHint?.number ?? string.Empty,
+                LuckyTime = session.SummaryResult?.luckyHint?.time ?? string.Empty,
+                LuckyAction = session.SummaryResult?.luckyHint?.action ?? string.Empty,
+                Advice = session.SummaryResult?.advice ?? string.Empty
+            };
+
+            FillSlotData(session, TarotSlotPosition.Past,
+                ref reading.PastCardId, ref reading.PastOrientation,
+                ref reading.PastAngelReading, ref reading.PastDevilReading);
+            FillSlotData(session, TarotSlotPosition.Present,
+                ref reading.PresentCardId, ref reading.PresentOrientation,
+                ref reading.PresentAngelReading, ref reading.PresentDevilReading);
+            FillSlotData(session, TarotSlotPosition.Future,
+                ref reading.FutureCardId, ref reading.FutureOrientation,
+                ref reading.FutureAngelReading, ref reading.FutureDevilReading);
+
+            _recordStore.Add(reading);
+        }
+
+        private static void FillSlotData(TarotSession session, TarotSlotPosition slot,
+            ref string cardId, ref string orientation,
+            ref string angelReading, ref string devilReading)
+        {
+            var draw = session.GetCardAtSlot(slot);
+            if (draw == null) return;
+
+            cardId = draw.Value.Card.Id;
+            orientation = draw.Value.Orientation == TarotOrientation.Upright ? "upright" : "reversed";
+
+            string angelKey = TarotSession.ReadingKey(slot, PetId.Angel);
+            string devilKey = TarotSession.ReadingKey(slot, PetId.Devil);
+
+            if (session.Readings.TryGetValue(angelKey, out var ar))
+                angelReading = ar.Text;
+            if (session.Readings.TryGetValue(devilKey, out var dr))
+                devilReading = dr.Text;
+        }
+
         // ======================== Tab 视图 ========================
 
         private void PopulateHistory()
@@ -325,6 +378,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
             if (_collection == null && !ServiceLocator.TryResolve(out _collection)) return;
             if (_tarot == null && !ServiceLocator.TryResolve(out _tarot)) return;
+            if (_recordStore == null) ServiceLocator.TryResolve(out _recordStore);
 
             var deck = _tarot?.Deck;
             var entries = _collection.GetByCategory(CollectionCategory.Tarot);
@@ -333,6 +387,18 @@ namespace GeminiLab.Modules.HubUI.Panels
             var groups = entries
                 .GroupBy(e => (e.AcquiredDateIso, e.Description))
                 .OrderByDescending(g => g.Key.AcquiredDateIso);
+
+            // Build session record lookup: (dateIso, question) -> TarotSessionRecord
+            var recordLookup = new Dictionary<(string, string), TarotSessionRecord>();
+            if (_recordStore != null)
+            {
+                foreach (var r in _recordStore.GetAll())
+                {
+                    var key = (r.SessionDateIso, r.Question ?? string.Empty);
+                    if (!recordLookup.ContainsKey(key))
+                        recordLookup[key] = r;
+                }
+            }
 
             foreach (var group in groups)
             {
@@ -357,12 +423,29 @@ namespace GeminiLab.Modules.HubUI.Panels
                     }
                 }
 
+                // Lookup session record
+                var recordKey = (first.AcquiredDateIso, first.Description ?? string.Empty);
+                recordLookup.TryGetValue(recordKey, out var matchedRecord);
+
                 var go = Instantiate(_historyEntryPrefab, _historyContentRoot);
                 var item = go.GetComponent<TarotHistoryEntry>();
                 if (item == null) continue;
 
                 item.SetData(dateText, typeText,
-                    cardSprites[0], cardSprites[1], cardSprites[2], fortuneLevel);
+                    cardSprites[0], cardSprites[1], cardSprites[2], fortuneLevel,
+                    matchedRecord ?? new TarotSessionRecord
+                    {
+                        SessionDateIso = first.AcquiredDateIso,
+                        Question = first.Description ?? string.Empty,
+                        FortuneLevel = fortuneLevel
+                    });
+
+                if (matchedRecord != null && _historyDetailPopup != null && deck != null)
+                {
+                    var capturedRecord = matchedRecord;
+                    var capturedDeck = deck;
+                    item.OnClicked += r => _historyDetailPopup.Show(capturedRecord, capturedDeck);
+                }
             }
 
             if (_historyContentRoot is RectTransform rt)
