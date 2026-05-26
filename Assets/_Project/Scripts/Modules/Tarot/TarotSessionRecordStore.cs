@@ -21,6 +21,7 @@ namespace GeminiLab.Modules.Tarot
 
         public void Add(TarotSessionRecord record)
         {
+            if (record is null) return;
             if (string.IsNullOrEmpty(record.SessionId)) return;
             int existing = _records.FindIndex(r => r.SessionId == record.SessionId);
             if (existing >= 0)
@@ -31,8 +32,9 @@ namespace GeminiLab.Modules.Tarot
 
         public IReadOnlyList<TarotSessionRecord> GetAll()
         {
-            _records.Sort((a, b) => string.Compare(b.SessionDateIso, a.SessionDateIso, StringComparison.Ordinal));
-            return _records;
+            var sorted = new List<TarotSessionRecord>(_records);
+            sorted.Sort((a, b) => string.Compare(b.SessionDateIso, a.SessionDateIso, StringComparison.Ordinal));
+            return sorted;
         }
 
         public bool Remove(string sessionId)
