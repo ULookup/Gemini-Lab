@@ -322,7 +322,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
             var reading = new TarotSessionRecord
             {
-                SessionId = $"tarot_session_{session.SessionDateIso}_{Guid.NewGuid():N}",
+                SessionId = $"tarot_session_{session.SessionDateIso}_{session.Question ?? ""}",
                 Question = session.Question ?? string.Empty,
                 SessionDateIso = session.SessionDateIso,
                 FortuneLevel = session.SummaryResult?.fortuneLevel ?? 3,
@@ -405,6 +405,19 @@ namespace GeminiLab.Modules.HubUI.Panels
                 var list = group.ToList();
                 if (list.Count == 0) continue;
 
+                // Sort by slot position (Past=0, Present=1, Future=2)
+                list.Sort((a, b) =>
+                {
+                    int GetSlot(string id)
+                    {
+                        if (id.EndsWith("Past")) return 0;
+                        if (id.EndsWith("Present")) return 1;
+                        if (id.EndsWith("Future")) return 2;
+                        return 99;
+                    }
+                    return GetSlot(a.Id).CompareTo(GetSlot(b.Id));
+                });
+
                 var first = list[0];
                 var dateText = FormatHistoryDate(first.AcquiredDateIso);
                 var typeText = !string.IsNullOrEmpty(first.Description)
@@ -431,8 +444,10 @@ namespace GeminiLab.Modules.HubUI.Panels
                 var item = go.GetComponent<TarotHistoryEntry>();
                 if (item == null) continue;
 
+                var displayFortuneLevel = Mathf.Clamp(fortuneLevel, 0, 5);
+
                 item.SetData(dateText, typeText,
-                    cardSprites[0], cardSprites[1], cardSprites[2], fortuneLevel,
+                    cardSprites[0], cardSprites[1], cardSprites[2], displayFortuneLevel,
                     matchedRecord ?? new TarotSessionRecord
                     {
                         SessionDateIso = first.AcquiredDateIso,
@@ -440,9 +455,14 @@ namespace GeminiLab.Modules.HubUI.Panels
                         FortuneLevel = fortuneLevel
                     });
 
-                if (matchedRecord != null && _historyDetailPopup != null && deck != null)
+                if (_historyDetailPopup != null && deck != null)
                 {
-                    var capturedRecord = matchedRecord;
+                    var capturedRecord = matchedRecord ?? new TarotSessionRecord
+                    {
+                        SessionDateIso = first.AcquiredDateIso,
+                        Question = first.Description ?? string.Empty,
+                        FortuneLevel = fortuneLevel
+                    };
                     var capturedDeck = deck;
                     item.OnClicked += r => _historyDetailPopup.Show(capturedRecord, capturedDeck);
                 }
