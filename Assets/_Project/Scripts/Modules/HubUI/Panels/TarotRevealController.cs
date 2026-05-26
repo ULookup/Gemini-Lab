@@ -121,6 +121,11 @@ namespace GeminiLab.Modules.HubUI.Panels
                 StartCoroutine(CrossfadeImage(_summaryPlaceholder, toAlpha: 1f, _fadeDuration));
             }
 
+            SetButtonAlpha(_redrawButton, 0f);
+            SetButtonAlpha(_openGuideButton, 0f);
+            if (_redrawButton != null) _redrawButton.interactable = false;
+            if (_openGuideButton != null) _openGuideButton.interactable = false;
+
             _cts?.Cancel();
             _cts = new CancellationTokenSource();
             _ = FireAllReadingsAsync(_cts.Token);
