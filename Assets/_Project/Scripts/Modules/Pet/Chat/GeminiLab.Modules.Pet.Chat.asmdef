@@ -1,0 +1,19 @@
+{
+  "name": "GeminiLab.Modules.Pet.Chat",
+  "rootNamespace": "GeminiLab.Modules.Pet",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.Pet",
+    "GeminiLab.Modules.Pet.Personality",
+    "GeminiLab.Modules.Tarot"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
