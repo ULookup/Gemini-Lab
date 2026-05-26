@@ -55,6 +55,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         [Header("历史记录")]
         [SerializeField] private Transform? _historyContentRoot;
+        [SerializeField] private Button? _historyBackButton;
         [SerializeField] private GameObject? _historyEntryPrefab;
         [SerializeField] private TarotHistoryDetailPopup? _historyDetailPopup;
 
@@ -85,6 +86,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_historyButton != null) _historyButton.onClick.AddListener(() => SwitchTab(SubView.History));
             if (_guideButton != null) _guideButton.onClick.AddListener(() => SwitchTab(SubView.Guide));
             if (_guideBackButton != null) _guideBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
+            if (_historyBackButton != null) _historyBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
 
             if (_drawButton != null) _drawButton.onClick.AddListener(OnStartDrawClicked);
             if (_shuffleButton != null) _shuffleButton.onClick.AddListener(OnShuffleClicked);
@@ -114,6 +116,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_historyButton != null) _historyButton.onClick.RemoveAllListeners();
             if (_guideButton != null) _guideButton.onClick.RemoveAllListeners();
             if (_guideBackButton != null) _guideBackButton.onClick.RemoveAllListeners();
+            if (_historyBackButton != null) _historyBackButton.onClick.RemoveAllListeners();
             if (_shuffleButton != null) _shuffleButton.onClick.RemoveAllListeners();
             if (_confirmButton != null) _confirmButton.onClick.RemoveAllListeners();
             _cts?.Cancel();
