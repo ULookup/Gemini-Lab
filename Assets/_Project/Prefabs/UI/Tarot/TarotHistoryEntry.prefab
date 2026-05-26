@@ -896,7 +896,7 @@ MonoBehaviour:
   _cardImage2: {fileID: 8705283394370646457}
   _cardImage3: {fileID: 147227339397430922}
   _starsText: {fileID: 3750775521609688989}
-  _button: {fileID: 0}
+  _button: {fileID: 1419631432856783737}
 --- !u!114 &7412058202777035194
 MonoBehaviour:
   m_ObjectHideFlags: 0
