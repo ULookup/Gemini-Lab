@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections;
 using System.Threading;
 using GeminiLab.Modules.Pet;
