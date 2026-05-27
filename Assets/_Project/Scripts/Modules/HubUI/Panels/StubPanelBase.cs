@@ -1,4 +1,5 @@
 #nullable enable
+using System.Collections;
 using GeminiLab.Core;
 using GeminiLab.Core.UI;
 using UnityEngine;
@@ -30,8 +31,14 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
         }
 
-        protected virtual void OnEnable()
+        protected virtual void Start()
         {
+            StartCoroutine(DelayedRegister());
+        }
+
+        private IEnumerator DelayedRegister()
+        {
+            yield return null;
             TryRegister();
         }
 
