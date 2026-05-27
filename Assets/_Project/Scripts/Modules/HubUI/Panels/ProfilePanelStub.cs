@@ -47,10 +47,12 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private IPetRoster? _roster;
         private IDisposable? _snapshotSub;
+        private IDisposable? _matrixSub;
 
         protected override void OnDestroy()
         {
             _snapshotSub?.Dispose();
+            _matrixSub?.Dispose();
             base.OnDestroy();
         }
 
@@ -67,6 +69,8 @@ namespace GeminiLab.Modules.HubUI.Panels
             base.OnClose();
             _snapshotSub?.Dispose();
             _snapshotSub = null;
+            _matrixSub?.Dispose();
+            _matrixSub = null;
         }
 
         private void ResolveServicesIfNeeded()
@@ -81,6 +85,20 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 _snapshotSub = bus.Subscribe<PetRuntimeSnapshotChangedEvent>(OnSnapshotChanged);
             }
+
+            // Subscribe to personality evolution changes (re-sub on every open)
+            if (_matrixSub == null &&
+                ServiceLocator.TryResolve(out IPersonalityEvolutionService? evolution) &&
+                evolution != null)
+            {
+                evolution.MatrixChanged += OnMatrixChanged;
+                _matrixSub = new ActionDisposable(() => evolution.MatrixChanged -= OnMatrixChanged);
+            }
+        }
+
+        private void OnMatrixChanged(PetId _, PersonalityVector __)
+        {
+            RefreshAll();
         }
 
         private void OnSnapshotChanged(PetRuntimeSnapshotChangedEvent _)
