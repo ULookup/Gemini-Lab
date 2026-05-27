@@ -26,6 +26,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private TMP_Text? _angelMoodText;
         [SerializeField] private Image? _angelEnergyIcon;
         [SerializeField] private TMP_Text? _angelEnergyText;
+        [SerializeField] private Image? _angelEnergyFill;
         [SerializeField] private Image? _angelRelationIcon;
         [SerializeField] private TMP_Text? _angelRelationText;
 
@@ -36,6 +37,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private TMP_Text? _evilMoodText;
         [SerializeField] private Image? _evilEnergyIcon;
         [SerializeField] private TMP_Text? _evilEnergyText;
+        [SerializeField] private Image? _evilEnergyFill;
         [SerializeField] private Image? _evilRelationIcon;
         [SerializeField] private TMP_Text? _evilRelationText;
 
@@ -88,12 +90,12 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void RefreshAll()
         {
-            RefreshPet(PetId.Angel, _angelMoodText, _angelEnergyText, _angelRelationText, _angelRadar);
-            RefreshPet(PetId.Devil, _evilMoodText, _evilEnergyText, _evilRelationText, _evilRadar);
+            RefreshPet(PetId.Angel, _angelMoodText, _angelEnergyText, _angelRelationText, _angelRadar, _angelEnergyFill);
+            RefreshPet(PetId.Devil, _evilMoodText, _evilEnergyText, _evilRelationText, _evilRadar, _evilEnergyFill);
         }
 
         private void RefreshPet(PetId id, TMP_Text? moodText, TMP_Text? energyText,
-            TMP_Text? relationText, PersonalityRadarGraphic? radar)
+            TMP_Text? relationText, PersonalityRadarGraphic? radar, Image? energyFill)
         {
             if (_roster != null)
             {
@@ -102,6 +104,7 @@ namespace GeminiLab.Modules.HubUI.Panels
                 {
                     if (moodText != null) moodText.text = Mathf.RoundToInt(data.Mood).ToString();
                     if (energyText != null) energyText.text = Mathf.RoundToInt(data.Energy).ToString();
+                    if (energyFill != null) energyFill.fillAmount = data.Energy / 100f;
                 }
             }
             if (relationText != null) relationText.text = "--";
