@@ -33,6 +33,15 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
         }
 
+        protected virtual void Start()
+        {
+            if (_router == null && ServiceLocator.TryResolve(out IUIRouter? router))
+            {
+                _router = router;
+                _router.Register(this);
+            }
+        }
+
         protected virtual void OnDestroy()
         {
             if (ServiceLocator.TryResolve(out IUIRouter? router))
