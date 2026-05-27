@@ -12,6 +12,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _closeButton;
 
         private IUIRouter? _router;
+        private bool _registered;
         public abstract PanelId Id { get; }
 
         protected virtual void Awake()
@@ -21,11 +22,7 @@ namespace GeminiLab.Modules.HubUI.Panels
                 _content.SetActive(false);
             }
 
-            if (ServiceLocator.TryResolve(out IUIRouter? router))
-            {
-                _router = router;
-                _router.Register(this);
-            }
+            TryRegister();
 
             if (_closeButton is not null)
             {
@@ -33,13 +30,18 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
         }
 
-        protected virtual void Start()
+        protected virtual void OnEnable()
         {
-            if (_router == null && ServiceLocator.TryResolve(out IUIRouter? router))
-            {
-                _router = router;
-                _router.Register(this);
-            }
+            TryRegister();
+        }
+
+        private void TryRegister()
+        {
+            if (_registered) return;
+            if (!ServiceLocator.TryResolve(out IUIRouter? router) || router is null) return;
+            _router = router;
+            _router.Register(this);
+            _registered = true;
         }
 
         protected virtual void OnDestroy()
