@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-05-23
+# Updated: 2026-05-27
 
 AGENTS.md
 docs/current-task-card.md
@@ -41,6 +41,8 @@ Assets/_Project/Scenes/Apartment/Apartment_Main.unity
 Assets/_Project/Scenes/Desktop/Desktop_Overlay.unity
 Assets/_Project/Prefabs/README.md
 Assets/_Project/Prefabs/Furniture
+Assets/_Project/Prefabs/UI/Panels/README.md
+Assets/_Project/Prefabs/UI/Widgets/README.md
 Assets/_Project/ScriptableObjects/README.md
 Assets/_Project/ScriptableObjects/FurnitureConfig
 Assets/_Project/Art/README.md
@@ -49,8 +51,16 @@ Assets/_Project/Art/Sprites/Pet/README.md
 Assets/_Project/Animations/Pet/Pet_Angel.controller
 Assets/_Project/Animations/Pet/Pet_Devil.controller
 Assets/_Project/Animations/Pet/Pet_Devil_Interact_BesideDoor.anim
+Assets/_Project/Animations/Pet/Pet_Devil_Interact_Write.anim
+Assets/_Project/Animations/Pet/Pet_Devil_Interact_PlayingMusic.anim
 Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture
+Assets/_Project/Scripts/Modules/HubUI/GeminiLab.Modules.HubUI.asmdef
 Assets/_Project/Scripts/Modules/HubUI/ApartmentViewportInputBridge.cs
+Assets/_Project/Scripts/Modules/HubUI/SidebarController.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/StubPanelBase.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/ProfilePanelStub.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/TarotPanelStub.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/InventoryPanelStub.cs
 Assets/_Project/Art/Sprites/Environment/ApartmentScene_Extracted/README.md
 Assets/_Project/Audio/README.md
 Assets/_Project/Settings/README.md
@@ -76,6 +86,7 @@ Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs
 Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs
 Assets/_Project/Scripts/Modules/UI/StatusPanelController.cs
 Assets/_Project/Tests/EditMode/GeminiLab.Tests.EditMode.asmdef
+Assets/_Project/Tests/EditMode/ApartmentViewportInputBridgeTests.cs
 Assets/_Project/Tests/EditMode/PetPlayerInputControllerTests.cs
 Assets/_Project/Tests/EditMode/PetPlayerFurnitureInteractionControllerTests.cs
 Assets/_Project/Tests/EditMode/PetClickResponseLibraryTests.cs

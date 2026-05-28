@@ -5,7 +5,9 @@
 
 ## 当前真实状态
 - `Furniture/` 当前已为 `Assets/_Project/Art/Sprites/Furniture/**/` 下的全部 `49` 个家具 Sprite 资源生成对应 prefab。
-- 这些 prefab 目前主要服务于家具作者化与场景稳态接线；`Pet/`、`UI/`、`Environment/`、`FX/` 仍未落到真实 prefab 交付。
+- `UI/Tarot/` 当前已有 `TarotHistoryEntry.prefab` 与 `TarotGuideCard.prefab` 两个真实 prefab。
+- `UI/Panels/` 与 `UI/Widgets/` 当前已建立 README 工程落点说明，但尚未沉淀正式 UI prefab；本轮不绑定任何具体 UI 美术资源。
+- 这些 prefab 目前主要服务于家具作者化、塔罗小控件与场景稳态接线；`Pet/`、`Environment/`、`FX/` 仍未落到真实 prefab 交付。
 
 ## 子目录规划
 

@@ -19,6 +19,7 @@ namespace GeminiLab.Modules.HubUI
 
         [Header("Tab 按钮")]
         [SerializeField] private Button? _tabPetStatus;
+        [SerializeField] private Button? _tabSpaceSys;
         [SerializeField] private Button? _tabTarot;
         [SerializeField] private Button? _tabCollection;
         [SerializeField] private Button? _tabInventory;
@@ -31,6 +32,7 @@ namespace GeminiLab.Modules.HubUI
         private IUIRouter? _router;
         private EventBus? _eventBus;
         private IDisposable? _panelClosedSub;
+        private IDisposable? _panelOpenedSub;
         private bool _expanded = true;
 
         private PanelId? _activePanelId;
@@ -39,13 +41,10 @@ namespace GeminiLab.Modules.HubUI
 
         private void Awake()
         {
-            ServiceLocator.TryResolve(out _router);
-            ServiceLocator.TryResolve(out _eventBus);
-
-            if (_eventBus is not null)
-            {
-                _panelClosedSub = _eventBus.Subscribe<UIPanelClosedEvent>(OnPanelClosed);
-            }
+            _router = ResolveOrCreateRouter();
+            _eventBus = ResolveOrCreateEventBus();
+            _panelClosedSub = _eventBus.Subscribe<UIPanelClosedEvent>(OnPanelClosed);
+            _panelOpenedSub = _eventBus.Subscribe<UIPanelOpenedEvent>(OnPanelOpened);
 
             BuildTabMap();
 
@@ -56,6 +55,8 @@ namespace GeminiLab.Modules.HubUI
 
             if (_tabPetStatus is not null)
                 _tabPetStatus.onClick.AddListener(() => OpenPanel(PanelId.PetStatus));
+            if (_tabSpaceSys is not null)
+                _tabSpaceSys.onClick.AddListener(() => OpenPanel(PanelId.SpaceSys));
             if (_tabTarot is not null)
                 _tabTarot.onClick.AddListener(() => OpenPanel(PanelId.Tarot));
             if (_tabCollection is not null)
@@ -71,6 +72,7 @@ namespace GeminiLab.Modules.HubUI
         private void OnDestroy()
         {
             _panelClosedSub?.Dispose();
+            _panelOpenedSub?.Dispose();
         }
 
         public void Toggle()
@@ -82,6 +84,7 @@ namespace GeminiLab.Modules.HubUI
         private void BuildTabMap()
         {
             AddTab(PanelId.PetStatus, _tabPetStatus);
+            AddTab(PanelId.SpaceSys, _tabSpaceSys);
             AddTab(PanelId.Tarot, _tabTarot);
             AddTab(PanelId.Collection, _tabCollection);
             AddTab(PanelId.Inventory, _tabInventory);
@@ -98,11 +101,7 @@ namespace GeminiLab.Modules.HubUI
 
         private void OpenPanel(PanelId id)
         {
-            if (_router is null && !ServiceLocator.TryResolve(out _router))
-            {
-                Debug.LogWarning($"[Sidebar] 未找到 IUIRouter，无法打开 {id}");
-                return;
-            }
+            _router ??= ResolveOrCreateRouter();
 
             if (_activePanelId == id)
             {
@@ -115,8 +114,25 @@ namespace GeminiLab.Modules.HubUI
                 _router!.Close(_activePanelId.Value);
             }
 
-            _router!.Open(id);
-            _activePanelId = id;
+            if (_router!.Open(id))
+            {
+                _activePanelId = id;
+                RefreshTabHighlight();
+            }
+            else
+            {
+                Debug.LogWarning($"[Sidebar] 面板尚未注册，无法打开 {id}");
+            }
+        }
+
+        private void OnPanelOpened(UIPanelOpenedEvent e)
+        {
+            if (!_tabMap.ContainsKey(e.Id))
+            {
+                return;
+            }
+
+            _activePanelId = e.Id;
             RefreshTabHighlight();
         }
 
@@ -148,6 +164,31 @@ namespace GeminiLab.Modules.HubUI
             pos.x = targetX;
             _panelRoot.anchoredPosition = pos;
             _ = instant;
+        }
+
+        private static EventBus ResolveOrCreateEventBus()
+        {
+            if (ServiceLocator.TryResolve(out EventBus? eventBus) && eventBus is not null)
+            {
+                return eventBus;
+            }
+
+            eventBus = new EventBus();
+            ServiceLocator.Register(eventBus);
+            return eventBus;
+        }
+
+        private static IUIRouter ResolveOrCreateRouter()
+        {
+            if (ServiceLocator.TryResolve(out IUIRouter? router) && router is not null)
+            {
+                return router;
+            }
+
+            EventBus eventBus = ResolveOrCreateEventBus();
+            router = new UIRouter(eventBus);
+            ServiceLocator.Register<IUIRouter>(router);
+            return router;
         }
     }
 }

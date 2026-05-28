@@ -161,6 +161,9 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_tarot == null)
             {
                 SetDrawButton("塔罗未就绪", interactable: false);
+                ClearCardDisplay();
+                SetReadingText(_angelReadingText, "塔罗服务尚未注册。");
+                SetReadingText(_devilReadingText, "请确认 Boot 场景已初始化 TarotRuntimeBootstrap。");
                 return;
             }
 
@@ -285,8 +288,17 @@ namespace GeminiLab.Modules.HubUI.Panels
                 Destroy(_historyContentRoot.GetChild(i).gameObject);
             }
 
-            if (_collection == null && !ServiceLocator.TryResolve(out _collection)) return;
-            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot)) return;
+            if (_collection == null && !ServiceLocator.TryResolve(out _collection))
+            {
+                Debug.LogWarning("[TarotPanel] CollectionService 未就绪，历史记录暂不可用");
+                return;
+            }
+
+            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot))
+            {
+                Debug.LogWarning("[TarotPanel] TarotService 未就绪，历史记录暂不可用");
+                return;
+            }
 
             var deck = _tarot?.Deck;
             var entries = _collection.GetByCategory(CollectionCategory.Tarot)
@@ -324,7 +336,11 @@ namespace GeminiLab.Modules.HubUI.Panels
                 Destroy(_guideGridRoot.GetChild(i).gameObject);
             }
 
-            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot)) return;
+            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot))
+            {
+                Debug.LogWarning("[TarotPanel] TarotService 未就绪，图鉴暂不可用");
+                return;
+            }
 
             var deck = _tarot?.Deck;
             if (deck == null) return;

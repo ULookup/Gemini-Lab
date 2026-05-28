@@ -10,7 +10,8 @@
     "GeminiLab.Modules.Gateway",
     "GeminiLab.Modules.UI",
     "GeminiLab.Modules.DesktopOverlay",
-    "GeminiLab.Modules.Travel"
+    "GeminiLab.Modules.Travel",
+    "GeminiLab.Modules.HubUI"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

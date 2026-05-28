@@ -86,6 +86,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             var toggleBtn = MakeTab(sidebarGo, uiLayer, "Btn_Toggle", "<<");
             var petStatusBtn = MakeTab(sidebarGo, uiLayer, "Btn_PetStatus", "Status");
+            var spaceSysBtn = MakeTab(sidebarGo, uiLayer, "Btn_SpaceSys", "Space");
             var tarotBtn = MakeTab(sidebarGo, uiLayer, "Btn_Tarot", "Tarot");
             var collectionBtn = MakeTab(sidebarGo, uiLayer, "Btn_Collection", "Collection");
             var inventoryBtn = MakeTab(sidebarGo, uiLayer, "Btn_Inventory", "Inventory");
@@ -98,14 +99,16 @@ namespace GeminiLab.Editor.SceneBootstrap
             so.FindProperty("_expandedX").floatValue = 0f;
             so.FindProperty("_collapsedX").floatValue = -200f;
             so.FindProperty("_tabPetStatus").objectReferenceValue = petStatusBtn;
+            so.FindProperty("_tabSpaceSys").objectReferenceValue = spaceSysBtn;
             so.FindProperty("_tabTarot").objectReferenceValue = tarotBtn;
             so.FindProperty("_tabCollection").objectReferenceValue = collectionBtn;
             so.FindProperty("_tabInventory").objectReferenceValue = inventoryBtn;
             so.FindProperty("_tabGarden").objectReferenceValue = gardenBtn;
             so.ApplyModifiedProperties();
 
-            // 5 panels — stretch fullscreen (anchor 0,0→1,1)
+            // 6 panels — stretch fullscreen (anchor 0,0→1,1)
             CreateStubPanel<ProfilePanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Profile");
+            CreateStubPanel<SpaceSysPanelStub>(canvasGo, uiLayer, "Panel_SpaceSys", "Space System");
             CreateStubPanel<TarotPanelStub>(canvasGo, uiLayer, "Panel_Tarot", "Tarot (WIP)");
             CreateStubPanel<CollectionPanelStub>(canvasGo, uiLayer, "Panel_Collection", "Collection (WIP)");
             CreateStubPanel<InventoryPanelStub>(canvasGo, uiLayer, "Panel_Inventory", "Inventory (WIP)");
@@ -144,7 +147,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.LogWarning("[ApartmentSidebarAuthoring] Sidebar + 5 panels + portal 已重建（全屏面板 + 子 Canvas 分层）。" +
+            Debug.LogWarning("[ApartmentSidebarAuthoring] Sidebar + 6 panels + portal 已重建（全屏面板 + 子 Canvas 分层）。" +
                              "各 Panel 现为占位 stub，如需恢复真实 UI 请依次重跑 " +
                              "Author Inventory + Collection Panels / Author Garden Panel。");
         }
