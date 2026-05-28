@@ -28,6 +28,12 @@ namespace GeminiLab.Modules.Tarot
         [Tooltip("逆位关键词，用于 Gateway prompt 与占位解读")]
         [SerializeField] private string[] _reversedKeywords = System.Array.Empty<string>();
 
+        [Tooltip("正位详细描述，用于图鉴详情弹窗")]
+        [SerializeField] private string _uprightDescription = string.Empty;
+
+        [Tooltip("逆位详细描述，用于图鉴详情弹窗")]
+        [SerializeField] private string _reversedDescription = string.Empty;
+
         [Tooltip("卡面 Sprite；美术交付后替换")]
         [SerializeField] private Sprite? _artwork;
 
@@ -37,6 +43,8 @@ namespace GeminiLab.Modules.Tarot
         public string DisplayNameEn => _displayNameEn;
         public System.Collections.Generic.IReadOnlyList<string> UprightKeywords => _uprightKeywords;
         public System.Collections.Generic.IReadOnlyList<string> ReversedKeywords => _reversedKeywords;
+        public string UprightDescription => _uprightDescription;
+        public string ReversedDescription => _reversedDescription;
         public Sprite? Artwork => _artwork;
 
         public System.Collections.Generic.IReadOnlyList<string> GetKeywords(TarotOrientation orientation)

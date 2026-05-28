@@ -18,7 +18,7 @@ namespace GeminiLab.Modules.Pet.Personality
 
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             if (_rules == null)
             {

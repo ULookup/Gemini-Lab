@@ -93,6 +93,13 @@ namespace GeminiLab.Modules.Tarot
             return sb.ToString();
         }
 
+        public Task<TarotSummaryResult> RequestSummaryAsync(
+            TarotDrawResult past, TarotDrawResult present, TarotDrawResult future,
+            string? question, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(TarotSummaryResult.Default());
+        }
+
         [Serializable]
         private struct PersonaHint
         {

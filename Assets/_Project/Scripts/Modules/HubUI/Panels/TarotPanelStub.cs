@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -16,79 +17,108 @@ using UnityEngine.UI;
 namespace GeminiLab.Modules.HubUI.Panels
 {
     /// <summary>
-    /// 塔罗面板：三个子页签 —— 抽塔罗 / 历史记录 / 塔罗图鉴。
+    /// 塔罗面板：3 阶段状态机 —— Idle / Select / Reveal。
     /// </summary>
     public sealed class TarotPanelStub : StubPanelBase
     {
         public override PanelId Id => PanelId.Tarot;
 
+        private enum Stage { Idle, Select, Reveal }
         private enum SubView { Draw, History, Guide }
 
-        [Header("Tab 按钮")]
-        [SerializeField] private Button? _chouTarotButton;
-        [SerializeField] private Button? _historyButton;
-        [SerializeField] private Button? _guideButton;
+        // ---- Inspector 绑定 ----
+        [Header("Idle 阶段")]
+        [SerializeField] private Button? _drawButton;       // "开始抽牌"
+        [SerializeField] private Button? _historyButton;     // "历史记录"
+        [SerializeField] private Button? _guideButton;       // "塔罗图鉴"
+        [SerializeField] private GameObject? _idleRoot;
+
+        [Header("Select 阶段")]
+        [SerializeField] private GameObject? _selectRoot;
+        [SerializeField] private Transform? _cardSpreadContainer; // TarotArcLayout 挂这里
+        [SerializeField] private GameObject? _cardSelectablePrefab;
+        [SerializeField] private TarotSlot? _pastSlot;
+        [SerializeField] private TarotSlot? _presentSlot;
+        [SerializeField] private TarotSlot? _futureSlot;
+        [SerializeField] private Button? _shuffleButton;
+        [SerializeField] private Button? _confirmButton;
+
+        [Header("Reveal")]
+        [SerializeField] private GameObject? _revealRoot;
+        [SerializeField] private TarotRevealController? _revealController;
 
         [Header("子视图根节点")]
         [SerializeField] private GameObject? _drawView;
         [SerializeField] private GameObject? _historyView;
         [SerializeField] private GameObject? _guideView;
+        [SerializeField] private Button? _guideBackButton;
 
-        [Header("Tab 高亮色")]
-        [SerializeField] private Color _activeTabColor = new Color(1f, 0.85f, 0.3f, 1f);
-        [SerializeField] private Color _inactiveTabColor = new Color(0.7f, 0.7f, 0.7f, 0.6f);
-
-        // ---- 抽卡视图 ----
-        [Header("卡面")]
-        [SerializeField] private Image? _cardImage;
-        [SerializeField] private TMP_Text? _cardTitleText;
-        [SerializeField] private TMP_Text? _cardOrientationText;
-
-        [Header("操作")]
-        [SerializeField] private Button? _drawButton;
-        [SerializeField] private TMP_Text? _drawButtonLabel;
-
-        [Header("解读气泡")]
-        [SerializeField] private TMP_Text? _angelReadingText;
-        [SerializeField] private TMP_Text? _devilReadingText;
-
-        // ---- 历史记录视图 ----
         [Header("历史记录")]
         [SerializeField] private Transform? _historyContentRoot;
+        [SerializeField] private Button? _historyBackButton;
         [SerializeField] private GameObject? _historyEntryPrefab;
+        [SerializeField] private TarotHistoryDetailPopup? _historyDetailPopup;
 
-        // ---- 图鉴视图 ----
         [Header("图鉴")]
         [SerializeField] private Transform? _guideGridRoot;
         [SerializeField] private GameObject? _guideCardPrefab;
+        [SerializeField] private TarotCardDetailPopup? _detailPopup;
 
+        [Header("Layout")]
+        [SerializeField] private TarotLayoutSO? _layoutConfig;
+
+        // ---- 运行态 ----
+        private const string TarotIconPrefix = "tarot_";
         private ITarotService? _tarot;
         private ICollectionService? _collection;
+        private ITarotSessionRecordStore? _recordStore;
         private CancellationTokenSource? _cts;
-        private TarotDrawResult? _currentDraw;
+        private TarotSession? _session;
+        private Stage _currentStage;
         private SubView _currentTab;
-        private Dictionary<SubView, Image?> _tabImages = new();
+        private TarotArcLayout? _arcLayout;
 
         protected override void Awake()
         {
             base.Awake();
-
             EnsureServices();
-            CacheTabImages();
 
-            if (_chouTarotButton != null) _chouTarotButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
             if (_historyButton != null) _historyButton.onClick.AddListener(() => SwitchTab(SubView.History));
             if (_guideButton != null) _guideButton.onClick.AddListener(() => SwitchTab(SubView.Guide));
+            if (_guideBackButton != null) _guideBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
+            if (_historyBackButton != null) _historyBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
 
-            if (_drawButton != null) _drawButton.onClick.AddListener(OnDrawClicked);
+            if (_drawButton != null) _drawButton.onClick.AddListener(OnStartDrawClicked);
+            if (_shuffleButton != null) _shuffleButton.onClick.AddListener(OnShuffleClicked);
+            if (_confirmButton != null) _confirmButton.onClick.AddListener(OnConfirmSelection);
+
+            _arcLayout = _cardSpreadContainer?.GetComponent<TarotArcLayout>();
+
+            if (_revealController != null)
+            {
+                _revealController.OnRevealComplete += () =>
+                {
+                    SaveToCollection(_session!);
+                    _session = _tarot!.CreateSession(null);
+                    EnterStage(Stage.Select);
+                };
+                _revealController.OnOpenGuide += () =>
+                {
+                    SaveToCollection(_session!);
+                    SwitchTab(SubView.Guide);
+                };
+            }
         }
 
         protected override void OnDestroy()
         {
-            if (_drawButton != null) _drawButton.onClick.RemoveListener(OnDrawClicked);
-            if (_chouTarotButton != null) _chouTarotButton.onClick.RemoveAllListeners();
+            if (_drawButton != null) _drawButton.onClick.RemoveAllListeners();
             if (_historyButton != null) _historyButton.onClick.RemoveAllListeners();
             if (_guideButton != null) _guideButton.onClick.RemoveAllListeners();
+            if (_guideBackButton != null) _guideBackButton.onClick.RemoveAllListeners();
+            if (_historyBackButton != null) _historyBackButton.onClick.RemoveAllListeners();
+            if (_shuffleButton != null) _shuffleButton.onClick.RemoveAllListeners();
+            if (_confirmButton != null) _confirmButton.onClick.RemoveAllListeners();
             _cts?.Cancel();
             _cts?.Dispose();
             base.OnDestroy();
@@ -107,17 +137,13 @@ namespace GeminiLab.Modules.HubUI.Panels
             _cts?.Cancel();
         }
 
+        // ======================== Init ========================
+
         private void EnsureServices()
         {
             if (_tarot == null) ServiceLocator.TryResolve(out _tarot);
             if (_collection == null) ServiceLocator.TryResolve(out _collection);
-        }
-
-        private void CacheTabImages()
-        {
-            _tabImages[SubView.Draw] = _chouTarotButton?.GetComponent<Image>();
-            _tabImages[SubView.History] = _historyButton?.GetComponent<Image>();
-            _tabImages[SubView.Guide] = _guideButton?.GetComponent<Image>();
+            if (_recordStore == null) ServiceLocator.TryResolve(out _recordStore);
         }
 
         // ======================== Tab 切换 ========================
@@ -125,237 +151,324 @@ namespace GeminiLab.Modules.HubUI.Panels
         private void SwitchTab(SubView tab)
         {
             _currentTab = tab;
-
             if (_drawView != null) _drawView.SetActive(tab == SubView.Draw);
             if (_historyView != null) _historyView.SetActive(tab == SubView.History);
             if (_guideView != null) _guideView.SetActive(tab == SubView.Guide);
 
-            RefreshTabHighlight();
-
             switch (tab)
             {
-                case SubView.Draw:
-                    RefreshDrawView();
-                    break;
-                case SubView.History:
-                    PopulateHistory();
-                    break;
-                case SubView.Guide:
-                    PopulateGuide();
-                    break;
+                case SubView.Draw: EnterStage(Stage.Idle); break;
+                case SubView.History: PopulateHistory(); break;
+                case SubView.Guide: PopulateGuide(); break;
             }
         }
 
-        private void RefreshTabHighlight()
+        // ======================== Stage 切换 ========================
+
+        private void EnterStage(Stage stage)
         {
-            foreach (var (tab, img) in _tabImages)
+            _currentStage = stage;
+            if (_idleRoot != null) _idleRoot.SetActive(stage == Stage.Idle);
+            if (_selectRoot != null) _selectRoot.SetActive(stage == Stage.Select);
+            if (_revealRoot != null) _revealRoot.SetActive(stage == Stage.Reveal);
+
+            switch (stage)
             {
-                if (img != null) img.color = tab == _currentTab ? _activeTabColor : _inactiveTabColor;
+                case Stage.Idle: break;
+                case Stage.Select: SetupSelectStage(); break;
+                case Stage.Reveal:
+                    if (_revealController != null && _session != null && _tarot != null)
+                        _revealController.BeginReveal(_session, _tarot);
+                    break;
             }
         }
 
-        // ======================== 抽卡视图 ========================
+        // ======================== Stage.Idle ========================
 
-        private void RefreshDrawView()
-        {
-            if (_tarot == null)
-            {
-                SetDrawButton("塔罗未就绪", interactable: false);
-                ClearCardDisplay();
-                SetReadingText(_angelReadingText, "塔罗服务尚未注册。");
-                SetReadingText(_devilReadingText, "请确认 Boot 场景已初始化 TarotRuntimeBootstrap。");
-                return;
-            }
-
-            if (_tarot.CanDrawToday())
-            {
-                SetDrawButton("抽今日塔罗", interactable: true);
-                ClearCardDisplay();
-                ClearReadings();
-            }
-            else
-            {
-                SetDrawButton("今天已抽过，明天再来", interactable: false);
-            }
-        }
-
-        private void OnDrawClicked()
+        private void OnStartDrawClicked()
         {
             if (_tarot == null) return;
-            if (!_tarot.CanDrawToday()) return;
-
-            var draw = _tarot.DrawDaily();
-            if (draw == null)
-            {
-                SetDrawButton("抽卡失败", interactable: false);
-                return;
-            }
-
-            _currentDraw = draw.Value;
-            ShowCard(_currentDraw.Value);
-            SetDrawButton("今天已抽过，明天再来", interactable: false);
-
-            _cts?.Cancel();
-            _cts = new CancellationTokenSource();
-            _ = RequestDualReadingsAsync(_currentDraw.Value, _cts.Token);
+            _session = _tarot.CreateSession(null);
+            EnterStage(Stage.Select);
         }
 
-        private async Task RequestDualReadingsAsync(TarotDrawResult draw, CancellationToken token)
+        // ======================== Stage.Select ========================
+
+        private void SetupSelectStage()
         {
+            if (_session == null) return;
+            if (_pastSlot != null) _pastSlot.Initialize(TarotSlotPosition.Past, "过去");
+            if (_presentSlot != null) _presentSlot.Initialize(TarotSlotPosition.Present, "当下");
+            if (_futureSlot != null) _futureSlot.Initialize(TarotSlotPosition.Future, "未来");
+
+            BuildCardSpread(_session.CandidateCards);
+        }
+
+        private void BuildCardSpread(List<TarotCardSO> cards)
+        {
+            if (_cardSpreadContainer == null || _cardSelectablePrefab == null) return;
+
+            for (int i = _cardSpreadContainer.childCount - 1; i >= 0; i--)
+            {
+                var child = _cardSpreadContainer.GetChild(i);
+                child.SetParent(null);
+                if (Application.isPlaying) Destroy(child.gameObject);
+                else DestroyImmediate(child.gameObject);
+            }
+
+            Sprite? cardBack = _tarot?.Deck?.CardBack;
+
+            foreach (var card in cards)
+            {
+                var go = Instantiate(_cardSelectablePrefab, _cardSpreadContainer);
+                var selectable = go.GetComponent<TarotCardSelectable>();
+                if (selectable != null)
+                {
+                    selectable.SetCard(card, cardBack);
+                    selectable.OnClicked += OnCardClicked;
+                }
+            }
+
+            if (_arcLayout != null)
+                StartCoroutine(_arcLayout.ArrangeWithAppear(0.05f));
+        }
+
+        private void OnCardClicked(TarotCardSO card)
+        {
+            if (_session == null || _tarot == null) return;
+            if (_session.PickedCount >= 3) return;
+
+            // Find the clicked card's selectable
+            var selectables = _cardSpreadContainer?.GetComponentsInChildren<TarotCardSelectable>();
+            TarotCardSelectable? clicked = null;
+            if (selectables != null)
+            {
+                foreach (var s in selectables)
+                    if (s.CardData == card) { clicked = s; break; }
+            }
+
+            _session = _tarot.PickCard(_session, card);
+
+            var slotPos = (TarotSlotPosition)(_session.PickedCount - 1);
+            var slot = GetSlot(slotPos);
+
+            if (clicked != null && slot != null)
+            {
+                // Flip to face + fly to slot
+                clicked.FlipToFace(true);
+                var slotRt = slot.GetComponent<RectTransform>();
+                if (slotRt != null)
+                    StartCoroutine(clicked.FlyToSlot(slotRt, _layoutConfig?.CardFlyDuration ?? 0.5f, () =>
+                    {
+                        slot.PlaceCard(card);
+                    }));
+            }
+            else if (slot != null)
+            {
+                slot.PlaceCard(card);
+            }
+        }
+
+        private TarotSlot? GetSlot(TarotSlotPosition pos) => pos switch
+        {
+            TarotSlotPosition.Past => _pastSlot,
+            TarotSlotPosition.Present => _presentSlot,
+            TarotSlotPosition.Future => _futureSlot,
+            _ => null
+        };
+
+        private void OnShuffleClicked()
+        {
+            if (_session == null || _tarot == null) return;
+            _session = _tarot.ShuffleCards(_session);
+            SetupSelectStage();
+        }
+
+        private void OnConfirmSelection()
+        {
+            if (_session == null || _session.PickedCount < 3) return;
             if (_tarot == null) return;
-
-            var angelTask = _tarot.RequestReadingAsync(draw, PetId.Angel, TarotOrientation.Upright, token);
-            var devilTask = _tarot.RequestReadingAsync(draw, PetId.Devil, TarotOrientation.Reversed, token);
-
-            SetReadingText(_angelReadingText, "（天使正在看牌…）");
-            SetReadingText(_devilReadingText, "（恶魔正在看牌…）");
-
-            try
-            {
-                var angel = await angelTask.ConfigureAwait(true);
-                if (token.IsCancellationRequested) return;
-                SetReadingText(_angelReadingText, angel.Text);
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[TarotPanel] angel reading failed: {ex.Message}");
-                SetReadingText(_angelReadingText, "（天使暂时无法开口。）");
-            }
-
-            try
-            {
-                var devil = await devilTask.ConfigureAwait(true);
-                if (token.IsCancellationRequested) return;
-                SetReadingText(_devilReadingText, devil.Text);
-            }
-            catch (OperationCanceledException) { }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[TarotPanel] devil reading failed: {ex.Message}");
-                SetReadingText(_devilReadingText, "（恶魔扭过脸不说话。）");
-            }
+            _session = _tarot.ConfirmSelection(_session);
+            EnterStage(Stage.Reveal);
         }
 
-        private void ShowCard(TarotDrawResult draw)
+        private void SaveToCollection(TarotSession session)
         {
-            if (_cardImage != null && draw.Card.Artwork != null)
+            SaveSessionRecord(session);
+            if (_collection == null) return;
+
+            var slots = new[] { (TarotSlotPosition.Past, session.PastCard),
+                                (TarotSlotPosition.Present, session.PresentCard),
+                                (TarotSlotPosition.Future, session.FutureCard) };
+
+            foreach (var (slot, draw) in slots)
             {
-                _cardImage.sprite = draw.Card.Artwork;
-                _cardImage.color = Color.white;
+                if (draw == null) continue;
+                var card = draw.Value.Card;
+                var entry = new CollectionEntry
+                {
+                    Id = $"{TarotIconPrefix}{card.Id}_{session.SessionDateIso}_{slot}",
+                    Category = CollectionCategory.Tarot,
+                    Title = $"{card.DisplayNameZh} · {slot switch { TarotSlotPosition.Past => "过去", TarotSlotPosition.Present => "当下", _ => "未来" }}",
+                    Description = session.Question ?? string.Empty,
+                    AcquiredDateIso = session.SessionDateIso,
+                    IconKey = $"{TarotIconPrefix}{card.Id}",
+                    FortuneLevel = session.SummaryResult?.fortuneLevel ?? 0
+                };
+                _collection.Add(entry);
             }
-            if (_cardTitleText != null)
+        }
+
+        private void SaveSessionRecord(TarotSession session)
+        {
+            if (_recordStore == null) return;
+
+            var reading = new TarotSessionRecord
             {
-                _cardTitleText.text = $"{draw.Card.DisplayNameZh} · {draw.Card.DisplayNameEn}";
-            }
-            if (_cardOrientationText != null)
-            {
-                _cardOrientationText.text = draw.Orientation == TarotOrientation.Upright ? "正位" : "逆位";
-            }
+                SessionId = $"tarot_session_{session.SessionDateIso}_{session.Question ?? ""}",
+                Question = session.Question ?? string.Empty,
+                SessionDateIso = session.SessionDateIso,
+                FortuneLevel = session.SummaryResult?.fortuneLevel ?? 3,
+                LuckyColor = session.SummaryResult?.luckyHint?.color ?? string.Empty,
+                LuckyNumber = session.SummaryResult?.luckyHint?.number ?? string.Empty,
+                LuckyTime = session.SummaryResult?.luckyHint?.time ?? string.Empty,
+                LuckyAction = session.SummaryResult?.luckyHint?.action ?? string.Empty,
+                Advice = session.SummaryResult?.advice ?? string.Empty
+            };
+
+            FillSlotData(session, TarotSlotPosition.Past,
+                ref reading.PastCardId, ref reading.PastOrientation,
+                ref reading.PastAngelReading, ref reading.PastDevilReading);
+            FillSlotData(session, TarotSlotPosition.Present,
+                ref reading.PresentCardId, ref reading.PresentOrientation,
+                ref reading.PresentAngelReading, ref reading.PresentDevilReading);
+            FillSlotData(session, TarotSlotPosition.Future,
+                ref reading.FutureCardId, ref reading.FutureOrientation,
+                ref reading.FutureAngelReading, ref reading.FutureDevilReading);
+
+            _recordStore.Add(reading);
         }
 
-        private void ClearCardDisplay()
+        private static void FillSlotData(TarotSession session, TarotSlotPosition slot,
+            ref string cardId, ref string orientation,
+            ref string angelReading, ref string devilReading)
         {
-            if (_cardTitleText != null) _cardTitleText.text = "—";
-            if (_cardOrientationText != null) _cardOrientationText.text = "";
+            var draw = session.GetCardAtSlot(slot);
+            if (draw == null) return;
+
+            cardId = draw.Value.Card.Id;
+            orientation = draw.Value.Orientation == TarotOrientation.Upright ? "upright" : "reversed";
+
+            string angelKey = TarotSession.ReadingKey(slot, PetId.Angel);
+            string devilKey = TarotSession.ReadingKey(slot, PetId.Devil);
+
+            if (session.Readings.TryGetValue(angelKey, out var ar))
+                angelReading = ar.Text;
+            if (session.Readings.TryGetValue(devilKey, out var dr))
+                devilReading = dr.Text;
         }
 
-        private void ClearReadings()
-        {
-            SetReadingText(_angelReadingText, "");
-            SetReadingText(_devilReadingText, "");
-        }
-
-        private void SetDrawButton(string label, bool interactable)
-        {
-            if (_drawButtonLabel != null) _drawButtonLabel.text = label;
-            if (_drawButton != null) _drawButton.interactable = interactable;
-        }
-
-        private static void SetReadingText(TMP_Text? tmp, string text)
-        {
-            if (tmp != null) tmp.text = text;
-        }
-
-        // ======================== 历史记录视图 ========================
+        // ======================== Tab 视图 ========================
 
         private void PopulateHistory()
         {
             if (_historyContentRoot == null || _historyEntryPrefab == null) return;
-
             for (int i = _historyContentRoot.childCount - 1; i >= 0; i--)
             {
-                Destroy(_historyContentRoot.GetChild(i).gameObject);
+                var c = _historyContentRoot.GetChild(i).gameObject;
+                if (Application.isPlaying) Destroy(c);
+                else DestroyImmediate(c);
             }
-
-            if (_collection == null && !ServiceLocator.TryResolve(out _collection))
-            {
-                Debug.LogWarning("[TarotPanel] CollectionService 未就绪，历史记录暂不可用");
-                return;
-            }
-
-            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot))
-            {
-                Debug.LogWarning("[TarotPanel] TarotService 未就绪，历史记录暂不可用");
-                return;
-            }
+            if (_tarot == null && !ServiceLocator.TryResolve(out _tarot)) return;
+            if (_recordStore == null) ServiceLocator.TryResolve(out _recordStore);
+            if (_recordStore == null) return;
 
             var deck = _tarot?.Deck;
-            var entries = _collection.GetByCategory(CollectionCategory.Tarot)
-                .OrderByDescending(e => e.AcquiredDateIso);
+            var records = _recordStore.GetAll();
 
-            foreach (var entry in entries)
+            foreach (var record in records)
             {
+                var dateText = FormatHistoryDate(record.SessionDateIso);
+                var typeText = !string.IsNullOrEmpty(record.Question)
+                    ? record.Question : "今日整体运势";
+
+                Sprite? GetCardSprite(string cardId)
+                {
+                    if (deck == null || string.IsNullOrEmpty(cardId)) return null;
+                    return deck.Cards.FirstOrDefault(c => c.Id == cardId)?.Artwork;
+                }
+
                 var go = Instantiate(_historyEntryPrefab, _historyContentRoot);
                 var item = go.GetComponent<TarotHistoryEntry>();
-                if (item == null)
-                {
-                    Debug.LogWarning("[TarotPanel] HistoryEntry prefab 缺少 TarotHistoryEntry 组件");
-                    continue;
-                }
+                if (item == null) continue;
 
-                Sprite? sprite = null;
-                if (deck != null && entry.IconKey.StartsWith("tarot_"))
-                {
-                    string cardId = entry.IconKey.Substring("tarot_".Length);
-                    sprite = deck.Cards.FirstOrDefault(c => c.Id == cardId)?.Artwork;
-                }
+                var displayFortuneLevel = Mathf.Clamp(record.FortuneLevel, 0, 5);
 
-                item.SetData(entry, sprite);
+                item.SetData(dateText, typeText,
+                    GetCardSprite(record.PastCardId),
+                    GetCardSprite(record.PresentCardId),
+                    GetCardSprite(record.FutureCardId),
+                    displayFortuneLevel,
+                    record);
+
+                if (_historyDetailPopup != null && deck != null)
+                {
+                    var capturedRecord = record;
+                    var capturedDeck = deck;
+                    item.OnClicked += r => _historyDetailPopup.Show(capturedRecord, capturedDeck);
+                }
             }
+
+            if (_historyContentRoot is RectTransform rt)
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
         }
 
-        // ======================== 图鉴视图 ========================
+        private static string FormatHistoryDate(string isoDate)
+        {
+            if (System.DateTime.TryParse(isoDate, out var dt))
+                return dt.ToString("yyyy/MM/dd");
+            return isoDate;
+        }
 
         private void PopulateGuide()
         {
             if (_guideGridRoot == null || _guideCardPrefab == null) return;
-
             for (int i = _guideGridRoot.childCount - 1; i >= 0; i--)
             {
-                Destroy(_guideGridRoot.GetChild(i).gameObject);
+                var c = _guideGridRoot.GetChild(i).gameObject;
+                if (Application.isPlaying) Destroy(c);
+                else DestroyImmediate(c);
             }
-
             if (_tarot == null && !ServiceLocator.TryResolve(out _tarot))
-            {
-                Debug.LogWarning("[TarotPanel] TarotService 未就绪，图鉴暂不可用");
                 return;
-            }
 
             var deck = _tarot?.Deck;
             if (deck == null) return;
+
+            // Collection-based: show all 22, mark locked/unlocked
+            var collectedIds = new HashSet<string>();
+            if (_collection == null) ServiceLocator.TryResolve(out _collection);
+            if (_collection != null)
+            {
+                foreach (var e in _collection.GetByCategory(CollectionCategory.Tarot))
+                {
+                    if (e.IconKey.StartsWith(TarotIconPrefix))
+                        collectedIds.Add(e.IconKey.Substring(TarotIconPrefix.Length));
+                }
+            }
 
             foreach (var card in deck.Cards)
             {
                 var go = Instantiate(_guideCardPrefab, _guideGridRoot);
                 var item = go.GetComponent<TarotGuideCard>();
-                if (item == null)
-                {
-                    Debug.LogWarning("[TarotPanel] GuideCard prefab 缺少 TarotGuideCard 组件");
-                    continue;
-                }
-                item.SetData(card);
+                if (item == null) continue;
+                bool unlocked = collectedIds.Contains(card.Id);
+                item.SetData(card, unlocked);
+                item.OnClicked += c => _detailPopup?.Show(c);
             }
+
+            if (_guideGridRoot is RectTransform rt)
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
         }
     }
 }

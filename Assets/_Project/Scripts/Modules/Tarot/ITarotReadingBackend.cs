@@ -15,5 +15,12 @@ namespace GeminiLab.Modules.Tarot
             PetId petId,
             TarotOrientation orientation,
             CancellationToken cancellationToken);
+
+        /// <summary>
+        /// 请求总结轮结构化运势解读。传入三张已选牌 + 用户问题。
+        /// </summary>
+        Task<TarotSummaryResult> RequestSummaryAsync(
+            TarotDrawResult past, TarotDrawResult present, TarotDrawResult future,
+            string? question, CancellationToken cancellationToken);
     }
 }

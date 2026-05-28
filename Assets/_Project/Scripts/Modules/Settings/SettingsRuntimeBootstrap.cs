@@ -14,7 +14,7 @@ namespace GeminiLab.Modules.Settings
     {
         private void Awake()
         {
-            DontDestroyOnLoad(gameObject);
+            if (Application.isPlaying) DontDestroyOnLoad(gameObject);
 
             ServiceLocator.TryResolve(out EventBus? eventBus);
             var service = new SettingsService(eventBus);
