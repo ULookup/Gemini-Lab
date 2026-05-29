@@ -36,7 +36,7 @@ namespace GeminiLab.Modules.Tarot
             var session = new TarotSession
             {
                 Question = question ?? string.Empty,
-                SessionDateIso = System.DateTime.Now.ToString("yyyy-MM-dd"),
+                SessionDateIso = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 CandidateCards = PickRandomCards(11)
             };
             return session;

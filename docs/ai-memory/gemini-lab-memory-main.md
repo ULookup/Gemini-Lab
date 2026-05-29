@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-05-20
+Updated: 2026-05-27
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -168,12 +168,18 @@ Updated: 2026-05-20
     - 新增 `Pet_Angel_Sleep.anim`
     - `Pet_Angel.controller` 新增 `Idle_Front / Idle_Back / Idle_Side / Sleep`
     - `PetController` 当前会在静止时切到 `Idle_*`，在 `SleepingState` 时切到 `Sleep`
-- `2026-05-21` 已清理 `Apartment_Main.unity` 中旧的占位 UI：
+- `2026-05-26` 已完成 Apartment UI 的 P0 清理收口：`Apartment_Main.unity` 中旧的占位 UI 残留已从场景真实移除：
   - 已移除 `TopLeft_StatusPanel`
   - 已移除 `Right_InventoryPanel`
   - 已移除 `BottomRight_PersonalityRadar`
   - 已移除旧的 `SpaceSystemPrototypeRoot` 原型 UI
-  - 后续 UI 制作改用 `Assets/_Project/Art/UI/` 下的新美术资源重新搭建
+  - 当前保留的新主界面骨架包括 `Panel_PetStatus`、`Panel_SpaceSys`、`Sidebar`、`SidebarOverlay`、`ApartmentViewportHost`、`ApartmentViewportImage` 与 `ApartmentViewportCamera`
+  - 公寓 viewport 当前归属 `Panel_SpaceSys`，不再挂在 `Profile / Panel_PetStatus`
+  - 后续 UI 制作继续改用 `Assets/_Project/Art/UI/` 下的新美术资源做正式作者化
+- `2026-05-26` 已撤回 Apartment UI 的 `P1 + P3` 资料卡美术资源绑定尝试：
+  - `Apartment_Main.unity` 中 `Panel_PetStatus` 不再保留刚才绑定的 `profile` 贴图、宠物正面待机预览 Sprite、雷达配色与尺寸微调
+  - 具体 UI 美术资源选择、贴图映射与最终视觉作者化后续由人工完成
+  - AI 后续只继续承接弱视觉或非美术资源相关的逻辑、结构、输入桥接、验证与文档任务
 - `2026-05-22` 已把 `Pet_Devil` 接入 `Apartment_Main.unity`：
   - 公寓场景里的 `Pet` 根节点现在包含 `Pet_Angel` 与 `Pet_Devil`
   - `Pet_Devil` 已接入自己的 `Pet_Devil.controller` 与恶魔 `Move / Idle / Sleep` 动画资源
@@ -184,6 +190,24 @@ Updated: 2026-05-20
   - 新增 `Assets/_Project/Animations/Pet/Pet_Devil_Interact_BesideDoor.anim`
   - `Pet_Devil.controller` 的 `Interact_BesideDoor` 已改接恶魔自己的 clip，不再继续引用天使门边动画
   - `Apartment_Main.unity` 中恶魔现有 `门边 / Interact_BesideDoor / beside door` 触发方式保持不变
+- `2026-05-27` 已把恶魔两条新的自交互动画接入 Apartment 原型：
+  - 新增 `Assets/_Project/Animations/Pet/Pet_Devil_Interact_Write.anim`
+  - 新增 `Assets/_Project/Animations/Pet/Pet_Devil_Interact_PlayingMusic.anim`
+  - `Pet_Devil.controller` 的 `Interact_Write` 与 `Interact_PlayingMusic` 已改接恶魔自己的 clip，不再继续引用天使对应交互动画像
+  - `Apartment_Main.unity` 中恶魔现有玩家交互绑定已改成 `画画 / 玩掌机`：`画画` 对应 `家具_休闲_画架_恶魔_01` 的交互点并坐到 `家具_装饰_椅子_恶魔_01`，`玩掌机` 坐到 `家具_装饰_沙发_恶魔_02`
+  - 为保证这两条交互时恶魔不会被指定家具遮挡，当前场景绑定已关闭它们的 `UseTargetSortingWhileInteracting`，沿用恶魔自身较高的默认排序层
+- `2026-05-25` 已为 Apartment 场景补出第一版 viewport 结构骨架：
+  - `Panel_SpaceSys/Content` 下新增 `ApartmentViewportHost`
+  - 其下新增 `ApartmentViewportImage`，当前引用 `Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture`
+  - `ArtGenerated` 下新增独立 `ApartmentViewportCamera`，不再依赖挂在 `Pet_Angel` 下的主相机来承担未来视窗职责
+  - 后续已补最小输入桥接：当前 `ApartmentViewportInputBridge` 会先转发桌宠点击，再尝试转发到 `PetPlayerFurnitureInteractionController` 的家具交互入口
+  - 后续已继续补建造模式桥接：当 `BuildModeController` 开启时，viewport 内左键/右键会优先转发到放置/删除家具入口，并屏蔽旧的全屏 `Camera.main` 鼠标链路双触发
+  - `2026-05-26` 已对非美术 UI 技术链路做一轮收口：viewport 坐标转换抽成可测试方法，点击只在 RawImage 矩形内生效，建造模式开启时会吞掉 viewport 点击并优先交给 `BuildModeController`
+  - `2026-05-26` 已补 `HubUI` 对 `Furniture` 的 asmdef 显式依赖，并新增 `ApartmentViewportInputBridgeTests` 覆盖坐标转换基础规则
+  - `2026-05-26` 已补 `SidebarController` / `StubPanelBase` 的 `IUIRouter` / `EventBus` 兜底注册，便于直接打开 `Apartment_Main` 调试时面板切换仍可工作
+  - `2026-05-26` 已补 `ProfilePanelStub`、`TarotPanelStub`、`InventoryPanelStub` 的服务缺失 / 空数据兜底；其中 `InventoryPanelStub` 未绑定 `_emptyHint` 时会复用 Tooltip 区域显示空状态
+  - `2026-05-26` 已建立 `Assets/_Project/Prefabs/UI/Panels` 与 `Assets/_Project/Prefabs/UI/Widgets` 的 README 工程落点；本轮未绑定任何新 UI 美术资源，也未制作正式 UI prefab
+  - 本轮 `git diff --check` 通过；由于当前 shell 找不到 Unity Editor / `unity-mcp-cli`，Unity Test Runner 与 PlayMode 仍需在 Unity 内补验，结果已写入 `docs/manual-validation-checklist.md`
 - `Assets/_Project/Prefabs/` 与 `Assets/_Project/ScriptableObjects/` 现在都不再是完全空目录，且 `Furniture` / `FurnitureConfig` 这条线已覆盖当前全部家具 Sprite 资源；其他模块仍未完成资产作者化。
 - README 系列文档描述的目标状态仍然大于当前实现范围，阅读时必须显式区分“已实现事实”和“规划目标”。
 - 项目本地 skill 目录当前仍保持 `.agents/skills/` 与 `.cursor/skills/` 镜像关系，当前统计为 `72` 项。

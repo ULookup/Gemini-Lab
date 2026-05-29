@@ -1,6 +1,7 @@
 #nullable enable
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace GeminiLab.Modules.Furniture
 {
@@ -14,6 +15,8 @@ namespace GeminiLab.Modules.Furniture
         private IFurnitureService? _furnitureService;
         private bool _isBuildMode;
         private int _selectedIndex;
+
+        public bool IsBuildModeEnabled => _isBuildMode;
 
         private void Awake()
         {
@@ -57,15 +60,43 @@ namespace GeminiLab.Modules.Furniture
                 ? Vector2.zero
                 : Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
+            // When pointer is over the UI viewport, the viewport bridge owns the click
+            // and forwards the translated world point back into build mode.
+            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            {
+                return;
+            }
+
             if (Input.GetMouseButtonDown(0))
             {
-                FurnitureDefinitionSO selected = palette[Mathf.Clamp(_selectedIndex, 0, palette.Count - 1)];
-                _ = _furnitureService.TryPlaceFurniture(selected, world, 0f, out Furniture? _, out string _);
+                _ = TryHandleViewportWorldPoint(world, isPrimaryAction: true);
             }
             else if (Input.GetMouseButtonDown(1))
             {
-                _ = _furnitureService.TryRemoveNearestFurniture(world, 1.2f, out string _);
+                _ = TryHandleViewportWorldPoint(world, isPrimaryAction: false);
             }
+        }
+
+        public bool TryHandleViewportWorldPoint(Vector2 worldPoint, bool isPrimaryAction)
+        {
+            if (!_isBuildMode || _furnitureService is null)
+            {
+                return false;
+            }
+
+            IReadOnlyList<FurnitureDefinitionSO> palette = _furnitureService.GetBuildPalette();
+            if (palette.Count == 0)
+            {
+                return false;
+            }
+
+            if (isPrimaryAction)
+            {
+                FurnitureDefinitionSO selected = palette[Mathf.Clamp(_selectedIndex, 0, palette.Count - 1)];
+                return _furnitureService.TryPlaceFurniture(selected, worldPoint, 0f, out Furniture? _, out string _);
+            }
+
+            return _furnitureService.TryRemoveNearestFurniture(worldPoint, 1.2f, out string _);
         }
     }
 }

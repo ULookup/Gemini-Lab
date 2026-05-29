@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-05-11
+Updated: 2026-05-27
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -142,6 +142,9 @@ Updated: 2026-05-11
 | `SceneFurnitureDefinitionHint` 配置的类别和 Buff 会优先于名称推断生效 |  |  |
 | 睡眠交互 / 装饰观察 / 休闲交互 三种交互类型会正确传递到运行时摘要与状态面板 |  |  |
 | 镜子 / 地毯 / 沙发 / 凳子 / 椅子 / 画架 / 照片板 已进入对象级交互链路，且在场景中位置可达、不会明显错位 |  |  |
+| 当前主控切到 `Pet_Devil` 后，靠近恶魔画架或点击其附近交互点并按 `F`，会播放 `画画` 并坐到 `家具_装饰_椅子_恶魔_01` |  |  |
+| 当前主控切到 `Pet_Devil` 后，靠近恶魔沙发或点击其附近交互点并按 `F`，会播放 `玩掌机` 并停在 `家具_装饰_沙发_恶魔_02` |  |  |
+| 恶魔播放 `画画` 与 `玩掌机` 时，人物始终显示在对应家具上方，不会被椅子 / 画架 / 沙发遮挡 |  |  |
 | 窗台 / 床上玩偶 / 沙发上枕头 已使用更贴近对象语义的交互类型，而不是继续借用植物或沙发语义 |  |  |
 
 ## D. Phase 3 Gateway 与 AI 交互（后续规划）
@@ -165,6 +168,25 @@ Updated: 2026-05-11
 | 旅行指令可以触发离场与回归 |  |  |
 | 相册与旅行小记可展示 |  |  |
 | 公寓模式与 Overlay 模式切换正常 |  |  |
+
+## E2. Apartment UI 非美术技术收口（2026-05-26）
+适用范围：
+- 本节只验证非美术技术链路，不验证 `profile`、`spacesystem`、`tarot` 美术资源落图。
+- 当前脚本级静态检查已执行：`git diff --check` 通过。
+- 当前未能在本机调用 Unity Editor / `unity-mcp-cli` 实跑 Unity Test Runner，EditMode / PlayMode 结果需在 Unity 内补验。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `ApartmentViewportInputBridge.TryLocalPointToViewportPoint` 对视窗中心点、越界点、无效 Rect 有 EditMode 测试覆盖 | 未验证 | 已新增测试文件，但需在 Unity Test Runner 中运行确认 |
+| viewport 点击只在点落入 `ApartmentViewportImage` 矩形内时转换到世界坐标 | 未验证 | 需在 PlayMode 点击视窗四角和视窗外区域 |
+| 建造模式开启时，viewport 左键/右键优先交给 `BuildModeController`，不再继续触发桌宠或家具点击链路 | 未验证 | 需在 PlayMode 分别验证放置、删除、非建造模式点击 |
+| 侧边栏在直接打开 `Apartment_Main` 调试时仍能解析或创建 `IUIRouter` / `EventBus` | 未验证 | 需在不经 Boot 直接 Play 的场景中验证 |
+| 侧边栏切换 `PetStatus`、`SpaceSys`、`Tarot`、`Inventory` 时，高亮状态与面板开关同步 | 未验证 | 需在 PlayMode 逐项点击侧边栏 |
+| `PetStatus` 在 `IPetRoster` 未就绪或缺宠物数据时显示 `--`，不残留旧值 | 未验证 | 需在服务缺失或调试场景中验证 |
+| `Tarot` 在 `ITarotService` / `ICollectionService` 未就绪时给出明确提示或 Warning | 未验证 | 需在 Boot 缺失和正常 Boot 两种路径验证 |
+| `Inventory` 在物品栏为空或服务未注册时显示明确空状态，且不依赖新美术资源 | 未验证 | 当前未绑定 `_emptyHint` 时会复用 Tooltip 文本区域 |
+| `Assets/_Project/Prefabs/UI/Panels` 与 `Assets/_Project/Prefabs/UI/Widgets` 已建立工程落点说明 | 通过 | 只建立 README 与 `.meta`，未制作实际 UI prefab |
+| `GeminiLab.Modules.HubUI.asmdef` 已显式引用 `GeminiLab.Modules.Furniture` | 通过 | 解决 viewport 桥接引用 `BuildModeController` 的工程依赖 |
 
 ## F. 美术与资源替换
 | 检查项 | 结果 | 备注 |

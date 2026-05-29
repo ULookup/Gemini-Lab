@@ -28,6 +28,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private TMP_Text? _tooltipName;
         [SerializeField] private TMP_Text? _tooltipCategory;
         [SerializeField] private TMP_Text? _tooltipText;
+        [SerializeField] private TMP_Text? _emptyHint;
 
         [Header("道具目录")]
         [SerializeField] private ItemCatalogSO? _catalog;
@@ -85,12 +86,20 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
             _spawned.Clear();
 
-            if (_service == null) return;
+            if (_service == null)
+            {
+                SetEmptyHint("物品栏服务尚未注册。");
+                return;
+            }
 
+            int count = 0;
             foreach (var stack in _service.GetAllStacks())
             {
                 SpawnSlot(stack);
+                count++;
             }
+
+            SetEmptyHint(count == 0 ? "物品栏暂时为空。" : string.Empty);
         }
 
         private void SpawnSlot(ItemStack stack)
@@ -179,6 +188,32 @@ namespace GeminiLab.Modules.HubUI.Panels
         internal void HideTooltip()
         {
             if (_tooltipRoot != null) _tooltipRoot.SetActive(false);
+        }
+
+        private void SetEmptyHint(string message)
+        {
+            if (_emptyHint != null)
+            {
+                _emptyHint.text = message;
+                _emptyHint.gameObject.SetActive(!string.IsNullOrWhiteSpace(message));
+                return;
+            }
+
+            if (_tooltipRoot == null)
+            {
+                return;
+            }
+
+            bool hasMessage = !string.IsNullOrWhiteSpace(message);
+            _tooltipRoot.SetActive(hasMessage);
+            if (!hasMessage)
+            {
+                return;
+            }
+
+            if (_tooltipName != null) _tooltipName.text = "物品栏";
+            if (_tooltipCategory != null) _tooltipCategory.text = string.Empty;
+            if (_tooltipText != null) _tooltipText.text = message;
         }
     }
 }
