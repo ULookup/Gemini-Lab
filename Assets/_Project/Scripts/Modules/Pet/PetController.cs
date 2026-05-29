@@ -1130,7 +1130,7 @@ namespace GeminiLab.Modules.Pet
 
             return _context?.RuntimeData.TargetFurnitureInteractionType switch
             {
-                FurnitureInteractionType.PlayHarp => InteractReadStateName,
+                FurnitureInteractionType.PlayHarp => InteractPlayingMusicStateName,
                 FurnitureInteractionType.PlayGuitar => InteractReadStateName,
                 FurnitureInteractionType.PaintAtEasel => InteractReadStateName,
                 FurnitureInteractionType.ViewPhotoBoard => InteractReadStateName,
