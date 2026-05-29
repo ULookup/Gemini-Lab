@@ -4,6 +4,7 @@
   "references": [
     "GeminiLab.Core",
     "GeminiLab.Modules.UI",
+    "GeminiLab.Modules.Furniture",
     "GeminiLab.Modules.Pet",
     "GeminiLab.Modules.Pet.Chat",
     "GeminiLab.Modules.Pet.Personality",

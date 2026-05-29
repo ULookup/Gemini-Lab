@@ -124,7 +124,16 @@ namespace GeminiLab.Modules.HubUI.Panels
                     if (energyText != null) energyText.text = Mathf.RoundToInt(data.Energy).ToString();
                     if (energyFill != null) energyFill.fillAmount = data.Energy / 100f;
                 }
+                else
+                {
+                    SetUnavailableText(moodText, energyText);
+                }
             }
+            else
+            {
+                SetUnavailableText(moodText, energyText);
+            }
+
             if (relationText != null) relationText.text = "--";
 
             if (radar != null && ServiceLocator.TryResolve(out IPersonalityEvolutionService? evolution) && evolution != null)
@@ -141,6 +150,12 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 radar.SetValues(new List<float> { 0f, 0f, 0f, 0f, 0f, 0f, 0f });
             }
+        }
+
+        private static void SetUnavailableText(TMP_Text? moodText, TMP_Text? energyText)
+        {
+            if (moodText != null) moodText.text = "--";
+            if (energyText != null) energyText.text = "--";
         }
     }
 }
