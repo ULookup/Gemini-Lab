@@ -49,10 +49,24 @@ namespace GeminiLab.Editor.SceneBootstrap
 
                 if (!bootWasLoaded)
                 {
+                    if (Application.isPlaying)
+                    {
+                        // Play 模式下用运行时 API 加载；Awake 会自动触发，无需反射调用
+                        SceneManager.LoadScene(
+                            System.IO.Path.GetFileNameWithoutExtension(BootScenePath),
+                            LoadSceneMode.Additive);
+                        return;
+                    }
+
                     EditorSceneManager.OpenScene(BootScenePath, OpenSceneMode.Additive);
                 }
+                else if (Application.isPlaying)
+                {
+                    // Play 模式下 Boot 已由构建管线加载，Awake 已触发，无需额外初始化
+                    return;
+                }
 
-                // 无论 Boot 是否已加载，域重载后都需要重新初始化
+                // 编辑器域重载后，通过反射手动触发 Awake 和 UI 预填充
                 EditorApplication.delayCall += () =>
                 {
                     InitBootstraps();
