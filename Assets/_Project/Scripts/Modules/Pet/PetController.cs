@@ -22,7 +22,13 @@ namespace GeminiLab.Modules.Pet
             "家具_竖琴_天使_01",
             "家具_装饰_盆栽_天使_02",
             "家具_装饰_凳子_天使_01",
-            "家具_装饰_桌面雕塑左_天使_01"
+            "家具_装饰_桌面雕塑左_天使_01",
+            "家具_装饰_床头柜镜台_天使_01"
+        };
+
+        private static readonly HashSet<string> AlwaysOnTopFurnitureDefinitionIds = new()
+        {
+            "家具_装饰_床头柜镜台_天使_01"
         };
 
         private const string MoveFrontStateName = "Move_Front";
@@ -245,11 +251,18 @@ namespace GeminiLab.Modules.Pet
             int resolvedSortingOrder = _defaultSortingOrder + _sortingOrderOffset;
             if (TryGetDynamicOcclusionFurniture(out GeminiLab.Modules.Furniture.Furniture? furniture))
             {
-                float petAnchorY = ResolveSortingAnchorY();
                 int furnitureSortingOrder = furniture.CurrentSortingOrder;
-                resolvedSortingOrder = petAnchorY <= furniture.SortingAnchorY
-                    ? furnitureSortingOrder + 1
-                    : furnitureSortingOrder - 1;
+                if (IsAlwaysOnTopFurniture(furniture))
+                {
+                    resolvedSortingOrder = furnitureSortingOrder + 1;
+                }
+                else
+                {
+                    float petAnchorY = ResolveSortingAnchorY();
+                    resolvedSortingOrder = petAnchorY <= furniture.SortingAnchorY
+                        ? furnitureSortingOrder + 1
+                        : furnitureSortingOrder - 1;
+                }
             }
 
             _spriteRenderer.sortingOrder = resolvedSortingOrder;
@@ -319,9 +332,11 @@ namespace GeminiLab.Modules.Pet
                     continue;
                 }
 
+                bool isAlwaysOnTopFurniture = IsAlwaysOnTopFurniture(furniture);
+
                 bool overlapsHorizontally =
-                    petBounds.max.x >= furnitureBounds.min.x - 0.2f &&
-                    petBounds.min.x <= furnitureBounds.max.x + 0.2f;
+                    petBounds.max.x >= furnitureBounds.min.x - GetHorizontalCandidatePadding(isAlwaysOnTopFurniture) &&
+                    petBounds.min.x <= furnitureBounds.max.x + GetHorizontalCandidatePadding(isAlwaysOnTopFurniture);
                 if (!overlapsHorizontally)
                 {
                     continue;
@@ -329,14 +344,26 @@ namespace GeminiLab.Modules.Pet
 
                 float furnitureAnchorY = furniture.SortingAnchorY;
                 float verticalDistance = Mathf.Abs(petAnchorY - furnitureAnchorY);
-                float maxVerticalDistance = petBounds.extents.y + furnitureBounds.extents.y + 0.8f;
+                float maxVerticalDistance = petBounds.extents.y + furnitureBounds.extents.y + GetVerticalCandidatePadding(isAlwaysOnTopFurniture);
                 if (verticalDistance > maxVerticalDistance)
                 {
                     continue;
                 }
 
-                Vector2 closestPoint = furnitureBounds.ClosestPoint(petCenter);
+                Bounds scoringBounds = furnitureBounds;
+                if (isAlwaysOnTopFurniture)
+                {
+                    // Keep small seat/table props competitive even when a nearby large bed or instrument also overlaps.
+                    scoringBounds.Expand(new Vector3(0.8f, 0.8f, 0f));
+                }
+
+                Vector2 closestPoint = scoringBounds.ClosestPoint(petCenter);
                 float distanceScore = Vector2.SqrMagnitude(petCenter - closestPoint);
+
+                if (isAlwaysOnTopFurniture)
+                {
+                    distanceScore *= 0.0001f;
+                }
 
                 if (distanceScore < bestScore)
                 {
@@ -373,6 +400,23 @@ namespace GeminiLab.Modules.Pet
             string definitionId = furniture.DefinitionId;
             return !string.IsNullOrWhiteSpace(definitionId) &&
                    DynamicOcclusionFurnitureDefinitionIds.Contains(definitionId);
+        }
+
+        private static bool IsAlwaysOnTopFurniture(GeminiLab.Modules.Furniture.Furniture furniture)
+        {
+            string definitionId = furniture.DefinitionId;
+            return !string.IsNullOrWhiteSpace(definitionId) &&
+                   AlwaysOnTopFurnitureDefinitionIds.Contains(definitionId);
+        }
+
+        private static float GetHorizontalCandidatePadding(bool isAlwaysOnTopFurniture)
+        {
+            return isAlwaysOnTopFurniture ? 0.9f : 0.2f;
+        }
+
+        private static float GetVerticalCandidatePadding(bool isAlwaysOnTopFurniture)
+        {
+            return isAlwaysOnTopFurniture ? 1.4f : 0.8f;
         }
 
         private void TryAutoBindSortingAnchor()
@@ -956,14 +1000,14 @@ namespace GeminiLab.Modules.Pet
             if (request.VisualSortingTarget.TryGetComponent(out SortingGroup sortingGroup))
             {
                 _spriteRenderer.sortingLayerID = sortingGroup.sortingLayerID;
-                _spriteRenderer.sortingOrder = sortingGroup.sortingOrder;
+                _spriteRenderer.sortingOrder = sortingGroup.sortingOrder + request.SortingOrderOffsetWhileInteracting;
                 return;
             }
 
             if (request.VisualSortingTarget.TryGetComponent(out SpriteRenderer targetRenderer))
             {
                 _spriteRenderer.sortingLayerID = targetRenderer.sortingLayerID;
-                _spriteRenderer.sortingOrder = targetRenderer.sortingOrder;
+                _spriteRenderer.sortingOrder = targetRenderer.sortingOrder + request.SortingOrderOffsetWhileInteracting;
             }
         }
 

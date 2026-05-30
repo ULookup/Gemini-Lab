@@ -106,6 +106,14 @@ namespace GeminiLab.Modules.Furniture
 
         private void EnsurePresentation()
         {
+            if (TryGetComponent(out SortingGroup sg) && sg != null
+                && TryGetComponent(out SpriteRenderer sr) && sr != null
+                && sg.sortingOrder == sr.sortingOrder
+                && sg.sortingOrder != 0)
+            {
+                sr.sortingOrder = 0;
+            }
+
             bool preserveScenePresentation = ShouldPreserveScenePresentation();
             if (_useDynamicSortingRule || preserveScenePresentation)
             {

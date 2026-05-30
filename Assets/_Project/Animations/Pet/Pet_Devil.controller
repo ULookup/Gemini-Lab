@@ -59,7 +59,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Interact_BesideDoor
+  m_Name: Interact_左右看
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -98,7 +98,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: e0f487d465d84c6c82e7e56e39cd0309, type: 2}
+  m_Motion: {fileID: 7400000, guid: 7e58f8b5b54a4918a4d7d1a72f6d2e3c, type: 2}
   m_Tag:
   m_SpeedParameter:
   m_MirrorParameter:
@@ -150,7 +150,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: 4f5a2cb8f6de4f8bbf3b0d0011aa1001, type: 2}
+  m_Motion: {fileID: 7400000, guid: 4d87e6d1bccc48c6806254240c0e586f, type: 2}
   m_Tag:
   m_SpeedParameter:
   m_MirrorParameter:
@@ -163,7 +163,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Interact_PlayingMusic
+  m_Name: Interact_玩掌机
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []
@@ -189,7 +189,7 @@ AnimatorState:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Interact_Write
+  m_Name: Interact_画画
   m_Speed: 1
   m_CycleOffset: 0
   m_Transitions: []

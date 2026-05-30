@@ -35,7 +35,10 @@ namespace GeminiLab.Modules.Pet
             [SerializeField] private float _activationDistance = 1.5f;
             [SerializeField] private bool _hideTargetWhileInteracting;
             [SerializeField] private GameObject[] _additionalHideTargets = Array.Empty<GameObject>();
+            [SerializeField] private GameObject? _sortingTarget;
+            [SerializeField] private string _fallbackSortingTargetName = string.Empty;
             [SerializeField] private bool _useTargetSortingWhileInteracting;
+            [SerializeField] private int _sortingOrderOffsetWhileInteracting;
             [SerializeField] private bool _usePetPoseOverride;
             [SerializeField] private bool _useTargetPositionForPetPose;
             [SerializeField] private Vector2 _petInteractionLocalOffset;
@@ -55,7 +58,10 @@ namespace GeminiLab.Modules.Pet
             public float ActivationDistance => Mathf.Max(0.1f, _activationDistance);
             public bool HideTargetWhileInteracting => _hideTargetWhileInteracting;
             public GameObject[] AdditionalHideTargets => _additionalHideTargets;
+            public GameObject? SortingTarget => _sortingTarget;
+            public string FallbackSortingTargetName => _fallbackSortingTargetName;
             public bool UseTargetSortingWhileInteracting => _useTargetSortingWhileInteracting;
+            public int SortingOrderOffsetWhileInteracting => _sortingOrderOffsetWhileInteracting;
             public bool UsePetPoseOverride => _usePetPoseOverride;
             public bool UseTargetPositionForPetPose => _useTargetPositionForPetPose;
             public Vector2 PetInteractionLocalOffset => _petInteractionLocalOffset;
@@ -70,6 +76,11 @@ namespace GeminiLab.Modules.Pet
             public void SetResolvedTarget(GameObject target)
             {
                 _target = target;
+            }
+
+            public void SetResolvedSortingTarget(GameObject sortingTarget)
+            {
+                _sortingTarget = sortingTarget;
             }
 
             public bool TryGetPreferredAnimation(out string animatorStateName, out string variantKey)
@@ -127,6 +138,10 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
+            GameObject? sortingTarget = binding.UseTargetSortingWhileInteracting
+                ? ResolveSortingTarget(binding, targetObject)
+                : null;
+
             PetPlayerInteractionRequest request = new(
                 targetName: !string.IsNullOrWhiteSpace(binding.Label) ? binding.Label : targetName,
                 category: binding.Category,
@@ -137,7 +152,8 @@ namespace GeminiLab.Modules.Pet
                 visualHideTarget: binding.HideTargetWhileInteracting ? targetObject : null,
                 additionalVisualHideTargets: binding.AdditionalHideTargets,
                 useTargetSortingWhileInteracting: binding.UseTargetSortingWhileInteracting,
-                visualSortingTarget: binding.UseTargetSortingWhileInteracting ? targetObject : null,
+                visualSortingTarget: sortingTarget,
+                sortingOrderOffsetWhileInteracting: binding.SortingOrderOffsetWhileInteracting,
                 usePetPoseOverride: binding.UsePetPoseOverride,
                 useTargetPositionForPetPose: binding.UseTargetPositionForPetPose,
                 petInteractionLocalOffset: binding.PetInteractionLocalOffset,
@@ -171,6 +187,10 @@ namespace GeminiLab.Modules.Pet
                 return false;
             }
 
+            GameObject? sortingTarget = binding.UseTargetSortingWhileInteracting
+                ? ResolveSortingTarget(binding, targetObject)
+                : null;
+
             PetPlayerInteractionRequest request = new(
                 targetName: !string.IsNullOrWhiteSpace(binding.Label) ? binding.Label : targetName,
                 category: binding.Category,
@@ -181,7 +201,8 @@ namespace GeminiLab.Modules.Pet
                 visualHideTarget: binding.HideTargetWhileInteracting ? targetObject : null,
                 additionalVisualHideTargets: binding.AdditionalHideTargets,
                 useTargetSortingWhileInteracting: binding.UseTargetSortingWhileInteracting,
-                visualSortingTarget: binding.UseTargetSortingWhileInteracting ? targetObject : null,
+                visualSortingTarget: sortingTarget,
+                sortingOrderOffsetWhileInteracting: binding.SortingOrderOffsetWhileInteracting,
                 usePetPoseOverride: binding.UsePetPoseOverride,
                 useTargetPositionForPetPose: binding.UseTargetPositionForPetPose,
                 petInteractionLocalOffset: binding.PetInteractionLocalOffset,
@@ -286,12 +307,30 @@ namespace GeminiLab.Modules.Pet
 
         private static GameObject? ResolveTarget(InteractionBinding binding)
         {
-            if (binding.Target != null)
+            return ResolveSceneObject(binding.Target, binding.FallbackTargetName, binding.SetResolvedTarget);
+        }
+
+        private static GameObject? ResolveSortingTarget(InteractionBinding binding, GameObject? defaultTargetObject)
+        {
+            GameObject? sortingTarget = ResolveSceneObject(
+                binding.SortingTarget,
+                binding.FallbackSortingTargetName,
+                binding.SetResolvedSortingTarget);
+
+            return sortingTarget ?? defaultTargetObject;
+        }
+
+        private static GameObject? ResolveSceneObject(
+            GameObject? directTarget,
+            string fallbackTargetName,
+            Action<GameObject>? cacheResolvedTarget)
+        {
+            if (directTarget != null)
             {
-                return binding.Target;
+                return directTarget;
             }
 
-            if (string.IsNullOrWhiteSpace(binding.FallbackTargetName))
+            if (string.IsNullOrWhiteSpace(fallbackTargetName))
             {
                 return null;
             }
@@ -301,23 +340,23 @@ namespace GeminiLab.Modules.Pet
             {
                 GameObject candidate = sceneObjects[i];
                 if (candidate.TryGetComponent(out SceneFurnitureDefinitionHint hint) &&
-                    string.Equals(hint.DefinitionId, binding.FallbackTargetName, StringComparison.Ordinal))
+                    string.Equals(hint.DefinitionId, fallbackTargetName, StringComparison.Ordinal))
                 {
-                    binding.SetResolvedTarget(candidate);
+                    cacheResolvedTarget?.Invoke(candidate);
                     return candidate;
                 }
 
                 if (candidate.TryGetComponent(out SpriteRenderer renderer) &&
                     renderer.sprite != null &&
-                    string.Equals(renderer.sprite.name, binding.FallbackTargetName, StringComparison.Ordinal))
+                    string.Equals(renderer.sprite.name, fallbackTargetName, StringComparison.Ordinal))
                 {
-                    binding.SetResolvedTarget(candidate);
+                    cacheResolvedTarget?.Invoke(candidate);
                     return candidate;
                 }
 
-                if (string.Equals(candidate.name, binding.FallbackTargetName, StringComparison.Ordinal))
+                if (string.Equals(candidate.name, fallbackTargetName, StringComparison.Ordinal))
                 {
-                    binding.SetResolvedTarget(candidate);
+                    cacheResolvedTarget?.Invoke(candidate);
                     return candidate;
                 }
             }
@@ -326,23 +365,23 @@ namespace GeminiLab.Modules.Pet
             {
                 GameObject candidate = sceneObjects[i];
                 if (candidate.TryGetComponent(out SceneFurnitureDefinitionHint hint) &&
-                    hint.DefinitionId.Contains(binding.FallbackTargetName, StringComparison.Ordinal))
+                    hint.DefinitionId.Contains(fallbackTargetName, StringComparison.Ordinal))
                 {
-                    binding.SetResolvedTarget(candidate);
+                    cacheResolvedTarget?.Invoke(candidate);
                     return candidate;
                 }
 
                 if (candidate.TryGetComponent(out SpriteRenderer renderer) &&
                     renderer.sprite != null &&
-                    renderer.sprite.name.Contains(binding.FallbackTargetName, StringComparison.Ordinal))
+                    renderer.sprite.name.Contains(fallbackTargetName, StringComparison.Ordinal))
                 {
-                    binding.SetResolvedTarget(candidate);
+                    cacheResolvedTarget?.Invoke(candidate);
                     return candidate;
                 }
 
-                if (candidate.name.Contains(binding.FallbackTargetName, StringComparison.Ordinal))
+                if (candidate.name.Contains(fallbackTargetName, StringComparison.Ordinal))
                 {
-                    binding.SetResolvedTarget(candidate);
+                    cacheResolvedTarget?.Invoke(candidate);
                     return candidate;
                 }
             }
@@ -420,6 +459,7 @@ namespace GeminiLab.Modules.Pet
             GameObject[]? additionalVisualHideTargets,
             bool useTargetSortingWhileInteracting,
             GameObject? visualSortingTarget,
+            int sortingOrderOffsetWhileInteracting,
             bool usePetPoseOverride,
             bool useTargetPositionForPetPose,
             Vector2 petInteractionLocalOffset,
@@ -437,6 +477,7 @@ namespace GeminiLab.Modules.Pet
             AdditionalVisualHideTargets = additionalVisualHideTargets ?? Array.Empty<GameObject>();
             UseTargetSortingWhileInteracting = useTargetSortingWhileInteracting;
             VisualSortingTarget = visualSortingTarget;
+            SortingOrderOffsetWhileInteracting = sortingOrderOffsetWhileInteracting;
             UsePetPoseOverride = usePetPoseOverride;
             UseTargetPositionForPetPose = useTargetPositionForPetPose;
             PetInteractionLocalOffset = petInteractionLocalOffset;
@@ -455,6 +496,7 @@ namespace GeminiLab.Modules.Pet
         public GameObject[] AdditionalVisualHideTargets { get; }
         public bool UseTargetSortingWhileInteracting { get; }
         public GameObject? VisualSortingTarget { get; }
+        public int SortingOrderOffsetWhileInteracting { get; }
         public bool UsePetPoseOverride { get; }
         public bool UseTargetPositionForPetPose { get; }
         public Vector2 PetInteractionLocalOffset { get; }
