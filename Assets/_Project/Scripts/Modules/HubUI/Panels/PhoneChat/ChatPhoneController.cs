@@ -33,6 +33,8 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             _collapsedButtonRoot.SetActive(true);
             _closeButton.SetActive(false);
             _inputHandler.OnSubmitMessage += HandleUserMessage;
+            _collapsedButtonRoot.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(OnCollapsedButtonClicked);
+            _closeButton.GetComponent<UnityEngine.UI.Button>().onClick.AddListener(ClosePhone);
         }
 
         private async void Start()

@@ -1710,7 +1710,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -33}
+  m_AnchoredPosition: {x: 0, y: -33.000122}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &143193600
@@ -6664,8 +6664,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.000026703, y: 0.000015259}
-  m_SizeDelta: {x: 1568.923, y: 2843.673}
+  m_AnchoredPosition: {x: 0.000015259, y: -26.922}
+  m_SizeDelta: {x: 526.631, y: 954.519}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &414638638
 MonoBehaviour:
@@ -6713,9 +6713,9 @@ CanvasGroup:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 414638636}
   m_Enabled: 1
-  m_Alpha: 1
-  m_Interactable: 1
-  m_BlocksRaycasts: 1
+  m_Alpha: 0
+  m_Interactable: 0
+  m_BlocksRaycasts: 0
   m_IgnoreParentGroups: 0
 --- !u!1 &419413070
 GameObject:
@@ -8115,8 +8115,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a313c8d962bc67d4594340dda94bec83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _config: {fileID: 0}
-  _personality: {fileID: 0}
+  _config: {fileID: 11400000, guid: 71ae029310f9d8449965a9e094ca2ed9, type: 2}
+  _personality: {fileID: 11400000, guid: 1ecede15733b42244a1305f7645463bd, type: 2}
   _movementController: {fileID: 9100000, guid: ba46f117e79c2504888c585f53d1ecf8, type: 2}
   _sideFramesFaceLeft: 1
   _movementBounds: {fileID: 2102000002}
@@ -14516,8 +14516,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a313c8d962bc67d4594340dda94bec83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _config: {fileID: 0}
-  _personality: {fileID: 0}
+  _config: {fileID: 11400000, guid: 71ae029310f9d8449965a9e094ca2ed9, type: 2}
+  _personality: {fileID: 11400000, guid: 844d776109915fc4092eeee43b3d825a, type: 2}
   _movementController: {fileID: 9100000, guid: 49dff8841cae4cc7ae3247d5c623213b, type: 2}
   _sideFramesFaceLeft: 1
   _movementBounds: {fileID: 2102000012}
@@ -18722,7 +18722,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 8, y: -19.999878}
+  m_AnchoredPosition: {x: 8, y: -19.999817}
   m_SizeDelta: {x: 50, y: 20}
   m_Pivot: {x: 0, y: 0}
 --- !u!114 &1241949509

@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b1fa3a54ddfbc7c49beb25460f5dd1d5, type: 3}
+  m_Name: PetStateValueConfig
+  m_EditorClassIdentifier: 
+  InitialMood: 60
+  InitialEnergy: 100
+  InitialSatiety: 75
+  SleepEnterEnergyThreshold: 25
+  SleepExitEnergyThreshold: 70
+  DaytimeBedSeekEnergyThreshold: 15
+  NighttimeBedSeekEnergyThreshold: 40
+  LeisureSeekMoodThreshold: 85
+  NightHourStart: 22
+  NightHourEnd: 6
+  AwakeEnergyDecayPerSecond: 0.005
+  SleepingEnergyRecoveryPerSecond: 0.1
+  MoodRecoveryPerSecond: 0.005
+  SatietyDecayPerSecond: 0.005
+  LowSatietyMoodPenaltyPerSecond: 0.3
+  LowEnergyMoodPenaltyPerSecond: 0.3
+  MoodRecoveryPenaltyFactor: 0.2
+  ForceWakeMoodPenalty: 30
+  WorkStateTimeoutSeconds: 30
