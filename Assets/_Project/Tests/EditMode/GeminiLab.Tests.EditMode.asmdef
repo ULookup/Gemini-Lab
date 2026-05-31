@@ -11,8 +11,8 @@
     "GeminiLab.Modules.UI",
     "GeminiLab.Modules.DesktopOverlay",
     "GeminiLab.Modules.Travel",
-    "GeminiLab.Modules.HubUI",
-    "GeminiLab.Modules.Tarot"
+    "GeminiLab.Modules.Tarot",
+    "GeminiLab.Modules.HubUI"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"
