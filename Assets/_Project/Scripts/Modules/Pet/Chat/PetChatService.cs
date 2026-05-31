@@ -326,7 +326,9 @@ namespace GeminiLab.Modules.Pet
 
             // Remove markdown code blocks first
             string trimmed = raw.Trim();
-            if (trimmed.StartsWith("```")) trimmed = trimmed[3..];
+            if (trimmed.StartsWith("```json")) trimmed = trimmed[7..];
+            else if (trimmed.StartsWith("```")) trimmed = trimmed[3..];
+            trimmed = trimmed.TrimEnd();
             if (trimmed.EndsWith("```")) trimmed = trimmed[..^3];
             trimmed = trimmed.Trim();
 

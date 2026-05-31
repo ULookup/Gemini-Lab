@@ -30,6 +30,12 @@ namespace GeminiLab.Modules.Pet
         public ChatPersistenceService()
         {
             ServiceLocator.Register<IChatPersistenceService>(this);
+            // Clear persisted history from previous play session so every run starts fresh
+            if (File.Exists(FilePath))
+            {
+                try { File.Delete(FilePath); }
+                catch (Exception ex) { Debug.LogWarning($"[ChatPersistence] Failed to clear old history: {ex.Message}"); }
+            }
         }
 
         public void AddMessage(ChatMessage message)
