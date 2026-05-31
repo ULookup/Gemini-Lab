@@ -22,5 +22,8 @@ namespace GeminiLab.Modules.Pet.Personality
         /// 重复调用会覆盖。
         /// </summary>
         void SetInitialMatrix(PetId petId, PersonalityVector initial);
+
+        /// <summary>对某宠物的性格施加增量（Clamp 到 [-1,1]）。</summary>
+        void ApplyDelta(PetId petId, PersonalityVector delta);
     }
 }

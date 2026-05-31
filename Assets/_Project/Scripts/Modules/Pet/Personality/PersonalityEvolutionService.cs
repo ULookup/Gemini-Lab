@@ -132,12 +132,17 @@ namespace GeminiLab.Modules.Pet.Personality
             };
         }
 
-        private void ApplyDelta(PetId petId, PersonalityVector delta)
+        public void ApplyDelta(PetId petId, PersonalityVector delta)
         {
             var current = _matrices.TryGetValue(petId, out var v) ? v : default;
             var next = (current + delta).Clamp();
             _matrices[petId] = next;
             MatrixChanged?.Invoke(petId, next);
+        }
+
+        void IPersonalityEvolutionService.ApplyDelta(PetId petId, PersonalityVector delta)
+        {
+            ApplyDelta(petId, delta);
         }
 
         // ---- IPersistentService ----

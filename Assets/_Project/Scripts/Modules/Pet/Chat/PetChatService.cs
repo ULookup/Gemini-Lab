@@ -20,10 +20,27 @@ namespace GeminiLab.Modules.Pet
             CancellationToken cancellationToken = default);
     }
 
+    [Serializable]
+    public sealed class ChatStatChanges
+    {
+        public float mood;
+        public float energy;
+        public float relation;
+        public float kindness;
+        public float evilness;
+        public float calmness;
+        public float bravery;
+        public float shyness;
+        public float integrity;
+        public float curiosity;
+    }
+
     public sealed class PetChatResult
     {
         public string AngelReply = string.Empty;
         public string DevilReply = string.Empty;
+        public ChatStatChanges? AngelStatChanges;
+        public ChatStatChanges? DevilStatChanges;
         public bool IsAngelFallback;
         public bool IsDevilFallback;
         public bool IsCancelled;
@@ -99,23 +116,25 @@ namespace GeminiLab.Modules.Pet
 
             if (TryGetPet(firstPet, out _))
             {
-                (string reply, bool isFallback) = await RequestPetReplyAsync(
+                (string reply, ChatStatChanges? stats, bool isFallback) = await RequestPetReplyAsync(
                     firstPet, userMessage, history, null, cancellationToken);
                 firstReply = reply;
-                SetResult(result, firstPet, reply, isFallback);
+                SetResult(result, firstPet, reply, stats, isFallback);
+                ApplyStatChanges(firstPet, stats);
             }
 
             if (TryGetPet(secondPet, out _))
             {
-                (string reply, bool isFallback) = await RequestPetReplyAsync(
+                (string reply, ChatStatChanges? stats, bool isFallback) = await RequestPetReplyAsync(
                     secondPet, userMessage, history, firstReply, cancellationToken);
-                SetResult(result, secondPet, reply, isFallback);
+                SetResult(result, secondPet, reply, stats, isFallback);
+                ApplyStatChanges(secondPet, stats);
             }
 
             return result;
         }
 
-        private async Task<(string reply, bool isFallback)> RequestPetReplyAsync(
+        private async Task<(string reply, ChatStatChanges? stats, bool isFallback)> RequestPetReplyAsync(
             PetId petId,
             string userMessage,
             IReadOnlyList<ChatMessage> history,
@@ -127,7 +146,7 @@ namespace GeminiLab.Modules.Pet
 
             if (!_config.IsConfigured)
             {
-                return (GetFallback(petId), true);
+                return (GetFallback(petId), null, true);
             }
 
             try
@@ -136,22 +155,22 @@ namespace GeminiLab.Modules.Pet
                 cts.CancelAfter(TimeSpan.FromSeconds(_timeoutSeconds));
 
                 string response = await SendLLMRequestAsync(systemPrompt, userPrompt, cts.Token);
-                string cleaned = CleanResponse(response);
+                var (cleaned, stats) = ExtractStatChanges(response);
                 if (string.IsNullOrWhiteSpace(cleaned))
                 {
-                    return (GetFallback(petId), true);
+                    return (GetFallback(petId), null, true);
                 }
-                return (cleaned, false);
+                return (cleaned, stats, false);
             }
             catch (OperationCanceledException)
             {
                 if (cancellationToken.IsCancellationRequested) throw;
-                return (GetFallback(petId), true);
+                return (GetFallback(petId), null, true);
             }
             catch (Exception ex)
             {
                 Debug.LogWarning($"[PetChat] LLM request failed for {petId}: {ex.Message}");
-                return (GetFallback(petId), true);
+                return (GetFallback(petId), null, true);
             }
         }
 
@@ -200,7 +219,20 @@ namespace GeminiLab.Modules.Pet
             sb.AppendLine("- 回复可以提及你当前的状态（比如累了就说累）");
             sb.AppendLine("- 用口语化中文回复");
             sb.AppendLine("- 可以适当接上一句话茬（如果另一个宠物刚说过话）");
-            sb.AppendLine("- 不要使用任何 markup 或 JSON，只输出纯文本回复");
+            sb.AppendLine();
+            sb.AppendLine("## 数值变化（必须输出）");
+            sb.AppendLine("根据用户说的话对你产生的影响，在回复末尾附上数值变化 JSON。");
+            sb.AppendLine("格式：---STATS---换行后接一个 JSON 对象，再换行---END---");
+            sb.AppendLine("示例：");
+            sb.AppendLine("---STATS---");
+            sb.AppendLine("{\"mood\":3,\"energy\":-2,\"relation\":1,\"kindness\":0,\"evilness\":0,\"calmness\":0,\"bravery\":0,\"shyness\":0,\"integrity\":0,\"curiosity\":0}");
+            sb.AppendLine("---END---");
+            sb.AppendLine("规则：");
+            sb.AppendLine("- mood/energy/relation 每次变化不超过 ±8，通常在 ±3 以内");
+            sb.AppendLine("- 性格维度（kindness/evilness/calmness/bravery/shyness/integrity/curiosity）变化在 ±0.1 以内，通常为 0");
+            sb.AppendLine("- 只在对话内容与性格相关时才修改性格维度（如用户赞扬善良 → kindness +0.05）");
+            sb.AppendLine("- 如果用户的话对你完全没有影响，所有值填 0");
+            sb.AppendLine("- 不要输出任何格式以外的内容，不要输出 markdown 代码块");
 
             return sb.ToString();
         }
@@ -288,25 +320,97 @@ namespace GeminiLab.Modules.Pet
             return pool[UnityEngine.Random.Range(0, pool.Length)];
         }
 
-        private static string CleanResponse(string raw)
+        private static (string cleaned, ChatStatChanges? stats) ExtractStatChanges(string raw)
         {
-            if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
+            if (string.IsNullOrWhiteSpace(raw)) return (string.Empty, null);
+
+            // Remove markdown code blocks first
             string trimmed = raw.Trim();
             if (trimmed.StartsWith("```")) trimmed = trimmed[3..];
             if (trimmed.EndsWith("```")) trimmed = trimmed[..^3];
-            return trimmed.Trim();
+            trimmed = trimmed.Trim();
+
+            const string marker = "---STATS---";
+            const string endMarker = "---END---";
+            int statsStart = trimmed.LastIndexOf(marker, StringComparison.Ordinal);
+            int statsEnd = trimmed.LastIndexOf(endMarker, StringComparison.Ordinal);
+
+            if (statsStart >= 0 && statsEnd > statsStart)
+            {
+                string jsonPart = trimmed[(statsStart + marker.Length)..statsEnd].Trim();
+                string reply = trimmed[..statsStart].Trim();
+
+                try
+                {
+                    var stats = JsonUtility.FromJson<ChatStatChanges>(jsonPart);
+                    return (reply, stats);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning($"[PetChat] Failed to parse stat changes: {ex.Message}");
+                    return (reply, null);
+                }
+            }
+
+            return (trimmed, null);
         }
 
-        private static void SetResult(PetChatResult result, PetId petId, string reply, bool isFallback)
+        private static void ApplyStatChanges(PetId petId, ChatStatChanges? stats)
+        {
+            if (stats == null) return;
+
+            // Apply runtime stat deltas via IPetRoster
+            if (ServiceLocator.TryResolve<IPetRoster>(out var roster))
+            {
+                var data = roster!.TryGet(petId);
+                if (data != null)
+                {
+                    data.Mood = Mathf.Clamp(data.Mood + stats.mood, 0f, 100f);
+                    data.Energy = Mathf.Clamp(data.Energy + stats.energy, 0f, 100f);
+                    data.Relation = Mathf.Clamp(data.Relation + stats.relation, 0f, 100f);
+                }
+            }
+
+            // Apply personality deltas via IPersonalityEvolutionService
+            var personalityDelta = new PersonalityVector
+            {
+                Kindness = stats.kindness,
+                Evilness = stats.evilness,
+                Calmness = stats.calmness,
+                Bravery = stats.bravery,
+                Shyness = stats.shyness,
+                Integrity = stats.integrity,
+                Curiosity = stats.curiosity
+            };
+
+            bool hasPersonalityDelta =
+                Mathf.Abs(personalityDelta.Kindness) > 0.0001f ||
+                Mathf.Abs(personalityDelta.Evilness) > 0.0001f ||
+                Mathf.Abs(personalityDelta.Calmness) > 0.0001f ||
+                Mathf.Abs(personalityDelta.Bravery) > 0.0001f ||
+                Mathf.Abs(personalityDelta.Shyness) > 0.0001f ||
+                Mathf.Abs(personalityDelta.Integrity) > 0.0001f ||
+                Mathf.Abs(personalityDelta.Curiosity) > 0.0001f;
+
+            if (hasPersonalityDelta &&
+                ServiceLocator.TryResolve<IPersonalityEvolutionService>(out var evolution))
+            {
+                evolution!.ApplyDelta(petId, personalityDelta);
+            }
+        }
+
+        private static void SetResult(PetChatResult result, PetId petId, string reply, ChatStatChanges? stats, bool isFallback)
         {
             if (petId == PetId.Angel)
             {
                 result.AngelReply = reply;
+                result.AngelStatChanges = stats;
                 result.IsAngelFallback = isFallback;
             }
             else
             {
                 result.DevilReply = reply;
+                result.DevilStatChanges = stats;
                 result.IsDevilFallback = isFallback;
             }
         }
