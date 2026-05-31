@@ -24,6 +24,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private PersonalityRadarGraphic? _angelRadar;
         [SerializeField] private Image? _angelMoodIcon;
         [SerializeField] private TMP_Text? _angelMoodText;
+        [SerializeField] private Image? _angelMoodFill;
         [SerializeField] private Image? _angelEnergyIcon;
         [SerializeField] private TMP_Text? _angelEnergyText;
         [SerializeField] private Image? _angelEnergyFill;
@@ -35,11 +36,15 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private PersonalityRadarGraphic? _evilRadar;
         [SerializeField] private Image? _evilMoodIcon;
         [SerializeField] private TMP_Text? _evilMoodText;
+        [SerializeField] private Image? _evilMoodFill;
         [SerializeField] private Image? _evilEnergyIcon;
         [SerializeField] private TMP_Text? _evilEnergyText;
         [SerializeField] private Image? _evilEnergyFill;
         [SerializeField] private Image? _evilRelationIcon;
         [SerializeField] private TMP_Text? _evilRelationText;
+
+        [Header("Relation 共享")]
+        [SerializeField] private Image? _relationFill;
 
         [Header("宠物立绘（中心）")]
         [SerializeField] private Image? _angelPetImage;
@@ -108,12 +113,15 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void RefreshAll()
         {
-            RefreshPet(PetId.Angel, _angelMoodText, _angelEnergyText, _angelRelationText, _angelRadar, _angelEnergyFill);
-            RefreshPet(PetId.Devil, _evilMoodText, _evilEnergyText, _evilRelationText, _evilRadar, _evilEnergyFill);
+            RefreshPet(PetId.Angel, _angelMoodText, _angelMoodFill, _angelEnergyText, _angelEnergyFill, _angelRadar);
+            RefreshPet(PetId.Devil, _evilMoodText, _evilMoodFill, _evilEnergyText, _evilEnergyFill, _evilRadar);
+            RefreshRelation();
         }
 
-        private void RefreshPet(PetId id, TMP_Text? moodText, TMP_Text? energyText,
-            TMP_Text? relationText, PersonalityRadarGraphic? radar, Image? energyFill)
+        private void RefreshPet(PetId id,
+            TMP_Text? moodText, Image? moodFill,
+            TMP_Text? energyText, Image? energyFill,
+            PersonalityRadarGraphic? radar)
         {
             if (_roster != null)
             {
@@ -121,6 +129,7 @@ namespace GeminiLab.Modules.HubUI.Panels
                 if (data != null)
                 {
                     if (moodText != null) moodText.text = Mathf.RoundToInt(data.Mood).ToString();
+                    if (moodFill != null) moodFill.fillAmount = data.Mood / 100f;
                     if (energyText != null) energyText.text = Mathf.RoundToInt(data.Energy).ToString();
                     if (energyFill != null) energyFill.fillAmount = data.Energy / 100f;
                 }
@@ -133,8 +142,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 SetUnavailableText(moodText, energyText);
             }
-
-            if (relationText != null) relationText.text = "--";
 
             if (radar != null && ServiceLocator.TryResolve(out IPersonalityEvolutionService? evolution) && evolution != null)
             {
@@ -150,6 +157,23 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 radar.SetValues(new List<float> { 0f, 0f, 0f, 0f, 0f, 0f, 0f });
             }
+        }
+
+        private void RefreshRelation()
+        {
+            float? relation = null;
+            if (_roster != null)
+            {
+                var data = _roster.TryGet(PetId.Angel) ?? _roster.TryGet(PetId.Devil);
+                if (data != null) relation = data.Relation;
+            }
+
+            if (_angelRelationText != null)
+                _angelRelationText.text = relation.HasValue ? Mathf.RoundToInt(relation.Value).ToString() : "--";
+            if (_evilRelationText != null)
+                _evilRelationText.text = relation.HasValue ? Mathf.RoundToInt(relation.Value).ToString() : "--";
+            if (_relationFill != null)
+                _relationFill.fillAmount = (relation ?? 0f) / 100f;
         }
 
         private static void SetUnavailableText(TMP_Text? moodText, TMP_Text? energyText)

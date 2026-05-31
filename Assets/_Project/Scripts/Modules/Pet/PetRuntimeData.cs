@@ -24,6 +24,9 @@ namespace GeminiLab.Modules.Pet
         [Range(0f, 100f)]
         public float Satiety = 75f;
 
+        [Range(0f, 100f)]
+        public float Relation = 50f;
+
         public float TimeInCurrentState;
 
         public float RuntimeTimeSeconds;
