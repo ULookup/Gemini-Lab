@@ -30,7 +30,7 @@ namespace GeminiLab.Modules.Collection
             { "postcard", "partner_tag" },
             { "sticker", "partner_tag" },
             { "angel_badge", "angel_tag" },
-            { "evil_badge", "evil_tag" }
+            { "evil_badge", "devil_tag" }
         };
 
         public static readonly Dictionary<string, string> CollectibleNames = new()

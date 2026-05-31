@@ -10,7 +10,7 @@ namespace GeminiLab.Modules.Collection
     {
         private readonly EventBus? _eventBus;
 
-        public CoinService(EventBus? eventBus) { _eventBus = eventBus; }
+        public CoinService(EventBus? eventBus) { _eventBus = eventBus; Balance = 200; }
 
         public string Key => "coin";
 
