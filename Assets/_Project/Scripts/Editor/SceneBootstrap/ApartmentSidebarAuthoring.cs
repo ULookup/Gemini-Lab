@@ -110,7 +110,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             CreateStubPanel<ProfilePanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Profile");
             CreateStubPanel<SpaceSysPanelStub>(canvasGo, uiLayer, "Panel_SpaceSys", "Space System");
             CreateStubPanel<TarotPanelStub>(canvasGo, uiLayer, "Panel_Tarot", "Tarot (WIP)");
-            CreateStubPanel<CollectionPanelStub>(canvasGo, uiLayer, "Panel_Collection", "Collection (WIP)");
+            CreateStubPanel<GachaPanelController>(canvasGo, uiLayer, "Panel_Collection", "Collection (WIP)");
             CreateStubPanel<InventoryPanelStub>(canvasGo, uiLayer, "Panel_Inventory", "Inventory (WIP)");
             CreateStubPanel<GardenPanelStub>(canvasGo, uiLayer, "Panel_Garden", "Garden (WIP)");
 

@@ -20,6 +20,7 @@ namespace GeminiLab.Tests.EditMode
                 mood: 66f,
                 energy: 82f,
                 satiety: 71f,
+                relation: 50f,
                 workRequested: false,
                 targetFurnitureId: "bed_01",
                 targetFurnitureCategory: FurnitureCategory.Bed,

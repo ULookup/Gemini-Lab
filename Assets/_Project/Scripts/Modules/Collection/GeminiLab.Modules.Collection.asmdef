@@ -3,7 +3,8 @@
   "rootNamespace": "GeminiLab.Modules.Collection",
   "references": [
     "GeminiLab.Core",
-    "GeminiLab.Modules.Tarot"
+    "GeminiLab.Modules.Tarot",
+    "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

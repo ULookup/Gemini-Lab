@@ -8,6 +8,7 @@ namespace GeminiLab.Modules.Collection
         Travel = 0,       // 旅行照片 / 纪念物
         Tarot = 1,        // 塔罗抽卡记录
         GardenHarvest = 2,// 花园首次收获
+        GachaCollectible = 4,// 抽卡收藏品
         Misc = 9
     }
 }

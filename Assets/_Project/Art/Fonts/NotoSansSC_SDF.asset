@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71c1514a6bd24e1e882cebbe1904ce04, type: 3}
   m_Name: NotoSansSC_SDF
   m_EditorClassIdentifier: 
-  hashCode: 0
+  hashCode: 1121463851
   material: {fileID: 0}
-  materialHashCode: -2006316128
+  materialHashCode: 1583328555
   m_Version: 1.1.0
   m_SourceFontFileGUID: 07d3899367212094cb3c08a018abfa91
   m_SourceFontFile_EditorRef: {fileID: 12800000, guid: 07d3899367212094cb3c08a018abfa91, type: 3}
@@ -87,7 +87,8 @@ MonoBehaviour:
     kerningPairs: []
   m_FontFeatureTable:
     m_GlyphPairAdjustmentRecords: []
-  fallbackFontAssets: []
+  fallbackFontAssets:
+  - {fileID: 11400000, guid: c6af9a7ff307ccd4997b45281d62d353, type: 2}
   m_FallbackFontAssetTable: []
   m_CreationSettings:
     sourceFontFileName: 

@@ -15,6 +15,7 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
         public event Action<string>? OnSubmitMessage;
 
         private bool _isWaitingReply;
+        private Coroutine? _timeoutRoutine;
 
         private void Awake()
         {
@@ -25,6 +26,7 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
         private void OnDestroy()
         {
             _inputField.onSubmit.RemoveListener(HandleSubmit);
+            if (_timeoutRoutine != null) StopCoroutine(_timeoutRoutine);
         }
 
         private void HandleSubmit(string text)
@@ -45,9 +47,15 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             _inputField.interactable = !waiting;
             _typingIndicator.SetActive(waiting);
 
+            if (_timeoutRoutine != null)
+            {
+                StopCoroutine(_timeoutRoutine);
+                _timeoutRoutine = null;
+            }
+
             if (waiting)
             {
-                StartCoroutine(TypingTimeoutRoutine());
+                _timeoutRoutine = StartCoroutine(TypingTimeoutRoutine());
             }
         }
 
