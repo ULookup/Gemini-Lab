@@ -1632,6 +1632,7 @@ namespace GeminiLab.Modules.Pet
                 runtime.Mood,
                 runtime.Energy,
                 runtime.Satiety,
+                runtime.Relation,
                 runtime.WorkRequested,
                 runtime.TargetFurnitureId,
                 runtime.TargetFurnitureCategory,
