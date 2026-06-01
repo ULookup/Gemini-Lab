@@ -38,8 +38,11 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _confirmButton;
         [SerializeField] private Button? _drawAgainButton;
 
+        [Header("动画")]
+        [SerializeField] private float _drawAnimDuration = 1.5f;
+
         [Header("奖励图标")]
-        [SerializeField] private Vector2 _rewardIconSize = new(240, 201);
+        [SerializeField] private Vector2 _rewardIconSize = new(480, 402);
 
         private IGachaService? _gacha;
         private ICoinService? _coin;
@@ -213,7 +216,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             StopAllCoroutines();
             var result = _gacha.PullSingle();
             if (result.Items.Length == 0) return;
-            ShowReward(result);
+            StartCoroutine(ShowRewardAfterAnim(result));
         }
 
         private void OnMultiDraw()
@@ -238,12 +241,19 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 var result = _gacha!.PullSingle();
                 if (result.Items.Length == 0) break;
+                yield return new WaitForSeconds(_drawAnimDuration);
                 ShowReward(result);
                 yield return new WaitForSeconds(showSeconds);
                 CloseReward();
                 if (i < count - 1)
                     yield return new WaitForSeconds(gapSeconds);
             }
+        }
+
+        private IEnumerator ShowRewardAfterAnim(GachaResult result)
+        {
+            yield return new WaitForSeconds(_drawAnimDuration);
+            ShowReward(result);
         }
 
         private void ShowReward(GachaResult result)

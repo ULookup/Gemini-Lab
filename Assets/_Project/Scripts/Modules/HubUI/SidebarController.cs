@@ -69,6 +69,11 @@ namespace GeminiLab.Modules.HubUI
             ApplyState(instant: true);
         }
 
+        private void Start()
+        {
+            OpenPanel(PanelId.PetStatus);
+        }
+
         private void OnDestroy()
         {
             _panelClosedSub?.Dispose();
