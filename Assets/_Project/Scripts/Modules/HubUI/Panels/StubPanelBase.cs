@@ -10,7 +10,7 @@ namespace GeminiLab.Modules.HubUI.Panels
     public abstract class StubPanelBase : MonoBehaviour, IUIPanel
     {
         [SerializeField] private GameObject? _content;
-        [SerializeField] private Button? _closeButton;
+        [SerializeField] protected Button? _closeButton;
 
         private IUIRouter? _router;
         public abstract PanelId Id { get; }

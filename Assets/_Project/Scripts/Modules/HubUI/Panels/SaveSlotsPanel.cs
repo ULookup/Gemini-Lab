@@ -25,7 +25,6 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Transform? _slotContainer;
 
         [Header("操作")]
-        [SerializeField] private Button? _closeButton;
         [SerializeField] private TMP_Text? _statusText;
 
         private readonly List<SlotRow> _rows = new();
@@ -44,7 +43,6 @@ namespace GeminiLab.Modules.HubUI.Panels
         protected override void Awake()
         {
             base.Awake();
-            if (_closeButton != null) _closeButton.onClick.AddListener(CloseSelf);
         }
 
         public override void OnOpen(object? payload)

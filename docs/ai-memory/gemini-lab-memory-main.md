@@ -81,6 +81,9 @@ Updated: 2026-05-27
 - 当前仓库已经从“文档与工程骨架先行”推进到“文档 + 原型实现并行”阶段。
 - `AGENTS.md`、`docs/` 与 `docs/ai-memory/` 于 2026-04-21 建立；2026-04-27 完成 fork 主线同步并补齐 Git 工作流文档。
 - `Assets/_Project/` 下已经存在真实运行时代码、场景、asmdef、测试程序集、示例美术资源与动画资源。
+- `2026-06-02` 已新增 `Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs`，用于把 `Assets/Plugins/NuGet` 下由 Unity MCP 依赖解析器落地的 `McpPlugin / SignalR / Microsoft.Extensions.*` DLL 统一校正为 `Editor-only`，避免 Windows Player Build 在 Burst AOT 阶段因带版本号文件名的预编译程序集解析失败。
+- `2026-06-02` 同日先把 4 个 Unity MCP 注册表包嵌入到了 `Packages/`，随后又按“临时停用、保留恢复能力”的方案把它们从 `Packages/` 软移出到 `PackageBackups/MCP-disabled-2026-06-02/`；当前停用范围仅限 `com.ivanmurzak.unity.mcp`、`com.ivanmurzak.unity.mcp.animation`、`com.ivanmurzak.unity.mcp.particlesystem`、`com.ivanmurzak.unity.mcp.probuilder`，`Packages/SkillsForUnity` 明确保留不动。
+- `2026-06-02` 同日又把 `Assets/Plugins/NuGet` 及其 `.meta` 从活动资源路径软移出到 `PackageBackups/NuGet-disabled-2026-06-02/`，并清掉了 `ProjectSettings/ProjectSettings.asset` 中 `Standalone` 的 `UNITY_MCP_READY`；当前这样做是为了让 Burst 不再从活动项目路径扫描到 `ReflectorNet / SignalR / Microsoft.Extensions.*` 残留 DLL。
 - `2026-04-28` 已开始推进任务 1：现有场景家具接入 `FurnitureService`，并让 Apartment 场景里的状态/库存/概览面板显示真实运行时数据。
 - `2026-04-28` 已完成任务 2 的首轮范围确认，并把现有 `Move` 动画 controller 显式绑定到 `Apartment_Main.unity` 中的 `Pet_Angel`。
 - `2026-04-28` 已基于新增美术资源补上两个交互动画 clip：`Interact_Read` 与 `Interact_BesideDoor`，并把它们接进现有 `Pet_Angel.controller`。
@@ -223,9 +226,9 @@ Updated: 2026-05-27
 4. 当前 Apartment 原型里的桌宠主行动方式已经调整为“玩家直接控制移动优先”，不再把自主寻路 / 大模型驱动行为作为当前阶段默认验证目标。
 5. `Packages/manifest.json` 当前已经包含：
    - `com.unity.ai.navigation`
-   - `com.ivanmurzak.unity.mcp`
-   - `com.ivanmurzak.unity.mcp.particlesystem`
-   - `com.ivanmurzak.unity.mcp.animation`
+   - `com.besty.unity-skills`
+   - 4 个 Unity MCP 包当前已从 `Packages/manifest.json` 临时移除，并备份到 `PackageBackups/MCP-disabled-2026-06-02/`
+   - `Assets/Plugins/NuGet` 当前也已临时移出到 `PackageBackups/NuGet-disabled-2026-06-02/`
 6. 当前原型里仍存在多处“占位实现 / 运行时兜底”：
    - `NavigationService` 与 `NavMesh2DRebaker` 目前更接近占位导航层，不是完整 2D NavMesh 方案
    - `WindowModeAdapter` 目前只提供模式状态与点击穿透标记，没有真正的原生透明窗口实现

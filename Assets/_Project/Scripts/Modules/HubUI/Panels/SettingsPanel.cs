@@ -30,7 +30,6 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         [Header("操作")]
         [SerializeField] private Button? _resetButton;
-        [SerializeField] private Button? _closeButton;
 
         private ISettingsService? _service;
         private bool _suppressCallbacks;
@@ -45,7 +44,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_fullscreen != null) _fullscreen.onValueChanged.AddListener(_ => OnChanged());
             if (_desktopOverlay != null) _desktopOverlay.onValueChanged.AddListener(_ => OnChanged());
             if (_resetButton != null) _resetButton.onClick.AddListener(OnReset);
-            if (_closeButton != null) _closeButton.onClick.AddListener(OnCloseClicked);
         }
 
         public override void OnOpen(object? payload)
@@ -60,14 +58,6 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_service != null)
             {
                 Bind(_service.Current);
-            }
-        }
-
-        private void OnCloseClicked()
-        {
-            if (ServiceLocator.TryResolve(out IUIRouter? router) && router is not null)
-            {
-                router.Close(Id);
             }
         }
 

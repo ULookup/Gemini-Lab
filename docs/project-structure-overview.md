@@ -41,8 +41,13 @@ Unity 项目主资源目录。
 
 当前已知重点：
 - 已有 Unity MCP 相关包
+- 当前 `Packages/` 内保留的是嵌入式 `SkillsForUnity`
+- 4 个 Unity MCP 包当前已临时移出到 `PackageBackups/MCP-disabled-2026-06-02/`，不再作为活动包参与解析
+- `Assets/Plugins/NuGet` 当前也已临时移出到 `PackageBackups/NuGet-disabled-2026-06-02/`，避免 Burst 从活动资源路径扫描到 MCP 残留 DLL
 - 已有 `com.unity.ai.navigation`
 - 有嵌入式 `SkillsForUnity`
+- 已补 `Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs`，用于阻止 MCP 依赖解析器落地到 `Assets/Plugins/NuGet` 的外部 DLL 进入正式 Player 构建
+- 若后续要恢复 MCP，需把这 4 个包目录移回 `Packages/` 并把对应依赖加回 `Packages/manifest.json`
 
 ### `ProjectSettings/`
 Unity 项目级设置目录。

@@ -66,6 +66,7 @@ Updated: 2026-05-27
 - `Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs`
 - `Assets/_Project/Scripts/Editor/Pet/PetMoveAnimationSetupEditor.cs`
 - `Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs`
+- `Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs`
@@ -86,7 +87,11 @@ Updated: 2026-05-27
 ### 想看包依赖和工具链
 - `Packages/manifest.json`
 - `Packages/packages-lock.json`
+- `Packages/SkillsForUnity/`
+- `PackageBackups/MCP-disabled-2026-06-02/`
+- `PackageBackups/NuGet-disabled-2026-06-02/`
 - `ProjectSettings/ProjectVersion.txt`
+- `Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs`
 - `.cursor/mcp.json`
 - `.cursor/skills/`
 - `.agents/skills/`
@@ -159,6 +164,10 @@ Updated: 2026-05-27
   - `Assets/_Project/Art/Sprites/Furniture/**/` 当前已开始承接从 `公寓场景.psd` 派生出来、准备用于家具系统接线的独立 Sprite，后续按中文语义命名维护
 - `Packages/`
   - 包依赖与嵌入式包
+  - 当前保留的关键本地包是 `SkillsForUnity`
+- `PackageBackups/`
+  - 当前用于临时停用并备份 4 个 Unity MCP 包
+  - 当前还用于暂存从 `Assets/Plugins/NuGet` 软移出的 MCP NuGet DLL 目录
 - `ProjectSettings/`
   - Unity 项目级设置
 
@@ -175,7 +184,10 @@ Updated: 2026-05-27
 10. `2026-05-25` 起，Apartment 场景已开始搭第一版 `viewport` 结构：当前 `ApartmentViewportHost` 与 `ApartmentViewportImage` 已归属 `Panel_SpaceSys/Content`，并新增 `ArtGenerated/ApartmentViewportCamera`；当前 `RenderTexture` 资产路径为 `Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture`。同日已补 `ApartmentViewportInputBridge`，当前可把 viewport 内点击先桥接到桌宠点击，再桥接到当前宠物的家具交互链路；当 `BuildModeController` 开启时，也会优先桥接到建造模式的放置/删除家具入口。
 11. `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前已经从旧的平铺命名，切换为 `正面 / 背面 / 侧面` 三个子目录；对应导入链路由 `PetMoveAnimationSetupEditor` 兼容新旧两套来源。
 12. `Assets/_Project/Art/Sprites/Pet/Frames/Interact/` 当前两组交互帧已经统一改为规范命名：`Pet_Angel_Interact_Read_0001...` 与 `Pet_Angel_Interact_BesideDoor_0001...`，不再使用 `IMG_986x.PNG`。
-13. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
+13. `2026-06-02` 起，项目已补一条 Windows 构建防护：`Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs` 会把 `Assets/Plugins/NuGet` 下由 Unity MCP 依赖解析器解压出的 `McpPlugin / SignalR / Microsoft.Extensions.*` DLL 统一校正为 `Editor-only`，避免它们以 Player 插件身份进入 Bee / Burst 构建链。
+14. `2026-06-02` 同日，项目又把 4 个 Unity MCP 包临时从 `Packages/` 移到了 `PackageBackups/MCP-disabled-2026-06-02/`，并从 `Packages/manifest.json` 取消引用；当前保留不动的是 `Packages/SkillsForUnity`。
+15. `2026-06-02` 同日，项目还把 `Assets/Plugins/NuGet` 整个目录及其 `.meta` 软移出到了 `PackageBackups/NuGet-disabled-2026-06-02/`，并清空了 `ProjectSettings/ProjectSettings.asset` 里的 `Standalone` `UNITY_MCP_READY`，用于让 Windows Build 不再继续命中这批 MCP NuGet 残留 DLL。
+16. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
 12. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
    - 有些对象已经进入对象级交互类型，却未必已经摆进 `Apartment_Main.unity`
    - 场景绑定里的定义 ID、类别和交互类型需要持续与真实 Sprite 资源名保持一致，不能把 `WorkDesk` 类资源误绑成装饰类
