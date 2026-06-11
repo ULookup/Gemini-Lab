@@ -30,13 +30,38 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
 
         private void Awake()
         {
+            Debug.Log($"[PhoneChat] Awake — _collapsedButtonRoot={_collapsedButtonRoot}, _closeButton={_closeButton}, _inputHandler={_inputHandler}, _animController={_animController}, _messageListView={_messageListView}");
+
+            if (_collapsedButtonRoot == null) { Debug.LogError("[PhoneChat] _collapsedButtonRoot is null!"); return; }
+            if (_closeButton == null) { Debug.LogError("[PhoneChat] _closeButton is null!"); return; }
+
             _collapsedButtonRoot.SetActive(true);
             _closeButton.SetActive(false);
-            _inputHandler.OnSubmitMessage += HandleUserMessage;
+
+            if (_inputHandler != null)
+                _inputHandler.OnSubmitMessage += HandleUserMessage;
+
             var collapsedBtn = _collapsedButtonRoot.GetComponent<UnityEngine.UI.Button>();
-            if (collapsedBtn != null) collapsedBtn.onClick.AddListener(OnCollapsedButtonClicked);
+            if (collapsedBtn != null)
+            {
+                collapsedBtn.onClick.AddListener(OnCollapsedButtonClicked);
+                Debug.Log("[PhoneChat] CollapsedButton listener added");
+            }
+            else
+            {
+                Debug.LogError("[PhoneChat] No Button component on _collapsedButtonRoot!");
+            }
+
             var closeBtn = _closeButton.GetComponent<UnityEngine.UI.Button>();
-            if (closeBtn != null) closeBtn.onClick.AddListener(ClosePhone);
+            if (closeBtn != null)
+            {
+                closeBtn.onClick.AddListener(ClosePhone);
+                Debug.Log("[PhoneChat] CloseButton listener added");
+            }
+            else
+            {
+                Debug.LogError("[PhoneChat] No Button component on _closeButton!");
+            }
         }
 
         private async void Start()
@@ -72,12 +97,14 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
 
         public void OnCollapsedButtonClicked()
         {
+            Debug.Log($"[PhoneChat] OnCollapsedButtonClicked — CurrentState={CurrentState}");
             if (CurrentState != PhoneState.Collapsed) return;
             StartCoroutine(OpenRoutine());
         }
 
         public void ClosePhone()
         {
+            Debug.Log($"[PhoneChat] ClosePhone — CurrentState={CurrentState}");
             if (CurrentState != PhoneState.Open) return;
             StartCoroutine(CloseRoutine());
         }
@@ -105,8 +132,16 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
 
         private async void HandleUserMessage(string text)
         {
-            if (!Core.ServiceLocator.TryResolve<IPetChatService>(out var chatService)) return;
-            if (!Core.ServiceLocator.TryResolve<IChatPersistenceService>(out var persistence)) return;
+            if (!Core.ServiceLocator.TryResolve<IPetChatService>(out var chatService))
+            {
+                Debug.LogWarning("[PhoneChat] IPetChatService not registered — cannot process message");
+                return;
+            }
+            if (!Core.ServiceLocator.TryResolve<IChatPersistenceService>(out var persistence))
+            {
+                Debug.LogWarning("[PhoneChat] IChatPersistenceService not registered — cannot process message");
+                return;
+            }
 
             // Add user message bubble
             var userMsg = new ChatMessage(ChatRole.User, text);

@@ -17,6 +17,9 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
         [SerializeField] private GameObject _emptyHint = null!;
         [SerializeField] private int _maxVisibleBubbles = 50;
 
+        [Header("编辑器预览")]
+        [SerializeField] private bool _showPreview = true;
+
         private readonly List<GameObject> _activeBubbles = new();
 
         public void AddBubble(ChatRole role, string text)
@@ -109,5 +112,62 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
                 _ => null
             };
         }
+
+#if UNITY_EDITOR
+        private readonly List<GameObject> _previewBubbles = new();
+        private bool _previewShown;
+
+        public void ShowEditorPreview()
+        {
+            if (_previewShown) return;
+            if (!_showPreview) return;
+            _previewShown = true;
+
+            ClearEditorPreview();
+
+            var samples = new (ChatRole, string)[]
+            {
+                (ChatRole.Angel, "今天也请保持好心情哦～我一直都在呢 🌸"),
+                (ChatRole.User, "今天有什么好的建议吗？"),
+                (ChatRole.Devil, "啧，又来找我了？直接说吧，别拐弯抹角的。"),
+            };
+
+            foreach (var (role, text) in samples)
+            {
+                var prefab = GetPrefab(role);
+                if (prefab == null) continue;
+
+                var bubble = Instantiate(prefab, _contentRect);
+                bubble.hideFlags = HideFlags.DontSaveInEditor | HideFlags.NotEditable;
+                var bubbleRT = (RectTransform)bubble.transform;
+                bubbleRT.anchorMin = new Vector2(0f, 0.5f);
+                bubbleRT.anchorMax = new Vector2(1f, 0.5f);
+                bubbleRT.pivot = new Vector2(0f, 0.5f);
+                bubbleRT.offsetMin = new Vector2(8f, bubbleRT.offsetMin.y);
+                bubbleRT.offsetMax = new Vector2(-8f, bubbleRT.offsetMax.y);
+
+                var tmp = bubble.GetComponentInChildren<TMP_Text>();
+                if (tmp != null) tmp.text = text;
+
+                _previewBubbles.Add(bubble);
+            }
+
+            if (_previewBubbles.Count > 0 && _emptyHint != null)
+                _emptyHint.SetActive(false);
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_contentRect);
+        }
+
+        public void ClearEditorPreview()
+        {
+            _previewShown = false;
+            foreach (var b in _previewBubbles)
+            {
+                if (b != null) DestroyImmediate(b);
+            }
+            _previewBubbles.Clear();
+            if (_emptyHint != null) _emptyHint.SetActive(true);
+        }
+#endif
     }
 }

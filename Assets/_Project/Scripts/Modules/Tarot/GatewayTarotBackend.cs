@@ -81,7 +81,7 @@ namespace GeminiLab.Modules.Tarot
             StringBuilder sb = new();
             sb.AppendLine("[System]");
             sb.AppendLine(persona);
-            sb.AppendLine("用 2-3 句中文给出今日塔罗解读，不超过 80 个汉字。");
+            sb.AppendLine("用 2-3 句中文给出今日塔罗解读，不超过 100 个汉字。");
             sb.AppendLine();
             sb.AppendLine("[User]");
             sb.Append("我今天抽到了：").Append(draw.Card.DisplayNameZh).Append("（").Append(draw.Card.DisplayNameEn).Append("），").Append(orient).AppendLine("。");

@@ -108,11 +108,7 @@ namespace GeminiLab.Modules.HubUI
         {
             _router ??= ResolveOrCreateRouter();
 
-            if (_activePanelId == id)
-            {
-                _router!.Close(id);
-                return;
-            }
+            if (_activePanelId == id) return;
 
             if (_activePanelId is not null)
             {
@@ -154,9 +150,10 @@ namespace GeminiLab.Modules.HubUI
         {
             foreach (var (id, btn) in _tabMap)
             {
+                var isActive = id == _activePanelId;
                 if (_tabBgMap.TryGetValue(btn, out var img))
                 {
-                    img.color = id == _activePanelId ? _activeTabColor : _inactiveTabColor;
+                    img.color = isActive ? _activeTabColor : _inactiveTabColor;
                 }
             }
         }

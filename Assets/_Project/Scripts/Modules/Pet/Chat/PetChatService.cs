@@ -79,6 +79,7 @@ namespace GeminiLab.Modules.Pet
 
             if (!hasAngel && !hasDevil)
             {
+                Debug.Log("[PetChat] No pets in roster — both are away");
                 return new PetChatResult
                 {
                     AngelReply = "（宠物不在家...）",
@@ -127,6 +128,7 @@ namespace GeminiLab.Modules.Pet
 
             if (!_config.IsConfigured)
             {
+                Debug.Log($"[PetChat] LLM not configured for {petId}, using fallback");
                 return (GetFallback(petId), true);
             }
 
@@ -135,10 +137,13 @@ namespace GeminiLab.Modules.Pet
                 using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
                 cts.CancelAfter(TimeSpan.FromSeconds(_timeoutSeconds));
 
+                Debug.Log($"[PetChat] Sending LLM request for {petId}...");
                 string response = await SendLLMRequestAsync(systemPrompt, userPrompt, cts.Token);
+                Debug.Log($"[PetChat] LLM response for {petId}: {(string.IsNullOrWhiteSpace(response) ? "<empty>" : response[..Math.Min(response.Length, 50)])}...");
                 string cleaned = CleanResponse(response);
                 if (string.IsNullOrWhiteSpace(cleaned))
                 {
+                    Debug.LogWarning($"[PetChat] Empty/cleaned response for {petId}, using fallback");
                     return (GetFallback(petId), true);
                 }
                 return (cleaned, false);
@@ -195,7 +200,7 @@ namespace GeminiLab.Modules.Pet
 
             sb.AppendLine();
             sb.AppendLine("## 回复规则");
-            sb.AppendLine("- 回复要简短自然，2-4句话，不要超过 80 个字");
+            sb.AppendLine("- 回复要简短自然，2-4句话，不要超过 60 个字");
             sb.AppendLine("- 回复要符合你的性格，保持角色一致性");
             sb.AppendLine("- 回复可以提及你当前的状态（比如累了就说累）");
             sb.AppendLine("- 用口语化中文回复");
@@ -245,7 +250,7 @@ namespace GeminiLab.Modules.Pet
                     new LLMMessage { role = "system", content = systemPrompt },
                     new LLMMessage { role = "user", content = userPrompt }
                 },
-                max_tokens = 200
+                max_tokens = 180
             };
 
             string json = JsonUtility.ToJson(body);

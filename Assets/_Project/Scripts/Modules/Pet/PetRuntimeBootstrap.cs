@@ -16,11 +16,26 @@ namespace GeminiLab.Modules.Pet
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void EnsurePetServices()
         {
+            bool rosterWasMissing = false;
             if (!ServiceLocator.TryResolve(out IPetRoster? roster) || roster is null)
             {
                 roster = new PetRoster();
                 ServiceLocator.Register(roster);
+                rosterWasMissing = true;
                 Debug.Log("[PetRuntimeBootstrap] PetRoster registered.");
+            }
+
+            if (rosterWasMissing)
+            {
+                var controllers = Object.FindObjectsByType<PetController>(FindObjectsSortMode.None);
+                foreach (var ctrl in controllers)
+                {
+                    if (ctrl.RuntimeData != null)
+                    {
+                        roster!.Register(ctrl.PetId, ctrl.RuntimeData);
+                        Debug.Log($"[PetRuntimeBootstrap] Late-registered {ctrl.PetId} (missed roster during Awake)");
+                    }
+                }
             }
 
             if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null
