@@ -16,8 +16,8 @@ namespace GeminiLab.Modules.Collection
         [SerializeField] private int _maxAmount = 40;
         [SerializeField] private float _lifetimeSeconds = 5f;
         [SerializeField] private Vector2 _randomOffset = new(0.5f, 0.5f);
-        [SerializeField] private string _coinSpritePath = "Sprites/Collection/collection_system/coin_button";
-
+        [SerializeField] private string _coinSpritePath = "Sprites/Collection/collection_system/apple";
+        [SerializeField] private Transform[] _petTargets;
         private ICoinService? _coinService;
         private Coroutine? _dropRoutine;
 
@@ -26,6 +26,7 @@ namespace GeminiLab.Modules.Collection
             ServiceLocator.TryResolve(out _coinService);
             if (_coinService == null)
             {
+                Debug.LogError("[CoinDropController] 找不到 ICoinService，所以脚本被禁用了", this);
                 enabled = false;
                 return;
             }
@@ -48,6 +49,9 @@ namespace GeminiLab.Modules.Collection
 
         private void SpawnCoin()
         {
+            if (_petTargets == null || _petTargets.Length == 0) return;
+
+            Transform pet = _petTargets[Random.Range(0, _petTargets.Length)];
             int amount = Random.Range(_minAmount, _maxAmount + 1);
             var sprite = Resources.Load<Sprite>(_coinSpritePath);
             if (sprite == null) return;

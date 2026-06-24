@@ -42,7 +42,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private float _drawAnimDuration = 1.5f;
 
         [Header("奖励图标")]
-        [SerializeField] private Vector2 _rewardIconSize = new(480, 402);
+        [SerializeField] private Vector2 _rewardIconSize = new(256, 256);
 
         private IGachaService? _gacha;
         private ICoinService? _coin;
