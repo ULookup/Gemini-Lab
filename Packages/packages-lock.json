@@ -9,6 +9,12 @@
         "com.unity.timeline": "1.7.7"
       }
     },
+    "com.kirurobo.uniwinc": {
+      "version": "file:D:/unity3d/plugins/UniWindowController-main/UniWinC/Assets/Kirurobo/UniWindowController",
+      "depth": 0,
+      "source": "local",
+      "dependencies": {}
+    },
     "com.unity.2d.animation": {
       "version": "9.2.0",
       "depth": 1,
