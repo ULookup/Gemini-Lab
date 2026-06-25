@@ -5361,7 +5361,7 @@ MonoBehaviour:
   _confirmButton: {fileID: 714213577}
   _drawAgainButton: {fileID: 1315306183}
   _drawAnimDuration: 1.5
-  _rewardIconSize: {x: 256, y: 256}
+  _rewardIconSize: {x: 256, y: 230}
 --- !u!1 &386126679
 GameObject:
   m_ObjectHideFlags: 0
@@ -14933,7 +14933,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &1044771794
 RectTransform:
   m_ObjectHideFlags: 0
