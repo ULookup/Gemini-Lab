@@ -50,6 +50,9 @@ namespace GeminiLab.Modules.Pet
 
         private static void EnsurePlaceholderPet()
         {
+            if (!DebugDisplaySettingsSO.Instance.IsPlaceholderObjectsEnabled)
+                return;
+
             if (Object.FindFirstObjectByType<PetController>() is not null)
             {
                 return;
