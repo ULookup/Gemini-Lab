@@ -1,5 +1,6 @@
 #nullable enable
 using System;
+using GeminiLab;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -55,6 +56,12 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void ApplyPreview()
         {
+            if (!DebugDisplaySettingsSO.Instance.IsTarotPreviewEnabled)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
             if (_personaLabel != null)
             {
                 _personaLabel.text = string.IsNullOrWhiteSpace(_previewPersona) ? "Angel" : _previewPersona;

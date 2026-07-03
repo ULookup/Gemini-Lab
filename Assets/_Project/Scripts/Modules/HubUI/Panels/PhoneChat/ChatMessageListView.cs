@@ -121,6 +121,7 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
         {
             if (_previewShown) return;
             if (!_showPreview) return;
+            if (!DebugDisplaySettingsSO.Instance.IsChatPreviewEnabled) return;
             _previewShown = true;
 
             ClearEditorPreview();

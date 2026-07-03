@@ -1,4 +1,5 @@
 #nullable enable
+using GeminiLab;
 using TMPro;
 using UnityEngine;
 
@@ -42,6 +43,12 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void ApplyPreview()
         {
+            if (!DebugDisplaySettingsSO.Instance.IsTarotPreviewEnabled)
+            {
+                gameObject.SetActive(false);
+                return;
+            }
+
             int level = Mathf.Clamp(_previewFortuneLevel, 1, 5);
             if (_fortuneStarsText != null)
                 _fortuneStarsText.text = new string('★', level) + new string('☆', 5 - level);
