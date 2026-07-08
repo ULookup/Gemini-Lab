@@ -34,20 +34,20 @@ namespace GeminiLab
 
         [Header("Master")]
         [Tooltip("When off, all debug displays are hidden.")]
-        [SerializeField] private bool _enableDebugDisplay = true;
+        [SerializeField] private bool _enableDebugDisplay = false;
 
         [Header("Categories")]
         [Tooltip("Chat message list editor preview bubbles.")]
-        [SerializeField] private bool _enableChatPreview = true;
+        [SerializeField] private bool _enableChatPreview = false;
 
         [Tooltip("Tarot card / reading bubble / summary editor preview content.")]
-        [SerializeField] private bool _enableTarotPreview = true;
+        [SerializeField] private bool _enableTarotPreview = false;
 
         [Tooltip("Placeholder GameObjects created at runtime (pet placeholders, etc.).")]
-        [SerializeField] private bool _enablePlaceholderObjects = true;
+        [SerializeField] private bool _enablePlaceholderObjects = false;
 
         [Tooltip("Verbose runtime debug logs from Pet / Furniture / Gateway subsystems.")]
-        [SerializeField] private bool _enableVerboseLogging = true;
+        [SerializeField] private bool _enableVerboseLogging = false;
 
         public bool IsDebugDisplayEnabled => _enableDebugDisplay;
 

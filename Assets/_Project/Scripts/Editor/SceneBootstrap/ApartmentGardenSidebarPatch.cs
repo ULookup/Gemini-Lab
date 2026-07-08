@@ -52,7 +52,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             Button gardenBtn;
             if (gardenBtnTr == null)
             {
-                gardenBtn = MakeTab(sidebarGo, uiLayer, "Btn_Garden", "Garden");
+                gardenBtn = MakeTab(sidebarGo, uiLayer, "Btn_Garden", "花园");
             }
             else
             {
@@ -86,7 +86,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             GameObject panelGarden;
             if (panelGardenTr == null)
             {
-                panelGarden = CreateStubPanel<GardenPanelStub>(sidebarRoot, uiLayer, "Panel_Garden", "Garden (WIP)");
+                panelGarden = CreateStubPanel<GardenPanelStub>(sidebarRoot, uiLayer, "Panel_Garden", "花园");
             }
             else
             {

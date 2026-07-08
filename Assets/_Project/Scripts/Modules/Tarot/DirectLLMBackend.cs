@@ -130,7 +130,7 @@ namespace GeminiLab.Modules.Tarot
                     new LLMMessage { role = "system", content = systemPrompt },
                     new LLMMessage { role = "user", content = userPrompt }
                 },
-                max_tokens = 250
+                max_tokens = 120
             };
 
             string json = JsonUtility.ToJson(body);

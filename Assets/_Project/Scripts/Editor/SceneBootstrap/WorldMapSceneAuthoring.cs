@@ -89,7 +89,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             var gardenLabelGo = new GameObject("Label");
             gardenLabelGo.transform.SetParent(gardenGo.transform, false);
             var gardenTmp = gardenLabelGo.AddComponent<TextMeshPro>();
-            gardenTmp.text = "Garden";
+            gardenTmp.text = "花园";
             gardenTmp.fontSize = 4;
             gardenTmp.alignment = TextAlignmentOptions.Center;
             gardenTmp.color = Color.white;
@@ -126,7 +126,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
             lrt.offsetMin = Vector2.zero; lrt.offsetMax = Vector2.zero;
             var tmp = labelGo.AddComponent<TextMeshProUGUI>();
-            tmp.text = "Return";
+            tmp.text = "返回公寓";
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.fontSize = 28;
             tmp.color = Color.white;

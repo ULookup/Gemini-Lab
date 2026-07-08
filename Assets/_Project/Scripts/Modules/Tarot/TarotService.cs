@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GeminiLab.Core;
+using UnityEngine;
+using Random = UnityEngine.Random;
 using GeminiLab.Core.Events;
 using GeminiLab.Modules.Pet;
 using UnityEngine;
@@ -59,7 +61,8 @@ namespace GeminiLab.Modules.Tarot
             if (session.PickedCount >= 3) return session;
 
             var slot = (TarotSlotPosition)session.PickedCount;
-            var draw = new TarotDrawResult(card, TarotOrientation.Upright, session.SessionDateIso);
+            var orientation = Random.value < 0.5f ? TarotOrientation.Upright : TarotOrientation.Reversed;
+            var draw = new TarotDrawResult(card, orientation, session.SessionDateIso);
             session.SetCardAtSlot(slot, draw);
             session.PickedCount++;
 

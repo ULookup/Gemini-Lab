@@ -95,9 +95,9 @@ namespace GeminiLab.Editor.SceneBootstrap
             vlg.childControlWidth = true;
             vlg.childControlHeight = false;
 
-            var startBtn = MakeButton(btnRoot, uiLayer, "Btn_Start", "Start");
-            var savesBtn = MakeButton(btnRoot, uiLayer, "Btn_Saves", "Save Slots");
-            var settingsBtn = MakeButton(btnRoot, uiLayer, "Btn_Settings", "Settings");
+            var startBtn = MakeButton(btnRoot, uiLayer, "Btn_Start", "开始");
+            var savesBtn = MakeButton(btnRoot, uiLayer, "Btn_Saves", "存档");
+            var settingsBtn = MakeButton(btnRoot, uiLayer, "Btn_Settings", "设置");
 
             // Controller
             var ctrlGo = new GameObject("MainMenuController");
