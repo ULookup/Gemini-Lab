@@ -1,6 +1,6 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-05-27
+Updated: 2026-07-12
 
 ## 入口文件
 - `AGENTS.md`
@@ -67,6 +67,10 @@ Updated: 2026-05-27
 - `Assets/_Project/Scripts/Editor/Pet/PetMoveAnimationSetupEditor.cs`
 - `Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs`
 - `Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs`
+- `Assets/_Project/Scripts/Editor/Tools/DebugDisplayWindow.cs`
+- `Assets/_Project/Scripts/Editor/Tools/ReadingBubbleLayoutSync.cs`
+- `Assets/_Project/Scripts/Editor/Tools/SaveSlotTemplateCreator.cs`
+- `Assets/_Project/Scripts/Editor/SceneBootstrap/SettingsAndSaveSlotsPanelAuthoring.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs`
@@ -210,6 +214,12 @@ Updated: 2026-05-27
    - `Inspector` 可直接调整
    - `Play` 视图与 `Scene` 视图效果一致
    - 不依赖运行时脚本临时拼出最终视觉
+17. `2026-07-12` 起，HubUI 面板（SaveSlotsPanel、ReadingBubble、TarotSummaryPreview）的编辑器预览系统已收口：
+   - `SaveSlotsPanel` 现在使用 `[ExecuteAlways]` + 模板克隆模式：场景中的 `SlotTemplate` 为 inactive 模板，运行时和编辑器预览均通过 `Instantiate` 克隆，用户只需编辑模板即可统一修改所有槽位的美术资源
+   - `DebugDisplayWindow` 的 Tarot Preview 开关现在会联动刷新场景中 `ReadingBubble` / `TarotSummaryPreview` 的 active 状态
+   - 新增 `ReadingBubbleLayoutSync` 工具用于按 Angel/Devil 分组同步气泡布局
+   - 新增 `SaveSlotTemplateCreator` 工具用于在场景中创建/更新 SlotTemplate
+   - 新增长期规则 #12：禁止在未经用户确认的情况下修改 Unity scene 文件或场景对象（含编辑器回调中的隐式修改）
 
 ## 模块 README 导航
 - `Assets/_Project/Scripts/Modules/Pet/README.md`

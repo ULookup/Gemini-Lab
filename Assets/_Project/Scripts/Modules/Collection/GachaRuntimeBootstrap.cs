@@ -10,6 +10,7 @@ namespace GeminiLab.Modules.Collection
     /// 挂 Boot.BootstrapRoot。Start 时注册 CoinService 和 GachaService
     /// （延迟到 Start 确保 CollectionRuntimeBootstrap.Awake 已注册 ICollectionService）。
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     public sealed class GachaRuntimeBootstrap : MonoBehaviour
     {
         private EventBus? _eventBus;
@@ -36,6 +37,9 @@ namespace GeminiLab.Modules.Collection
 
             _gachaService = new GachaService(_coinService, collection, _eventBus);
             ServiceLocator.Register<IGachaService>(_gachaService);
+
+            // 广播初始余额，确保已有的 CoinBalanceDisplay 能拿到当前余额
+            _eventBus?.Publish(new CoinChangedEvent(_coinService.Balance));
 
             if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
             {

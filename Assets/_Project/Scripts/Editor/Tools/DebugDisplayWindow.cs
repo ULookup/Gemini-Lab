@@ -1,6 +1,8 @@
 #nullable enable
+using GeminiLab.Modules.HubUI.Panels;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace GeminiLab.Editor
 {
@@ -10,6 +12,7 @@ namespace GeminiLab.Editor
 
         private DebugDisplaySettingsSO? _settings;
         private bool _foldoutCategories = true;
+        private bool _pendingRefresh;
 
         [MenuItem("Tools/Gemini-Lab/Debug Display Manager")]
         private static void Open()
@@ -83,6 +86,13 @@ namespace GeminiLab.Editor
                 EditorUtility.SetDirty(_settings);
                 AssetDatabase.SaveAssets();
                 DebugDisplaySettingsSO.InvalidateCache();
+                _pendingRefresh = true;
+            }
+
+            if (_pendingRefresh)
+            {
+                _pendingRefresh = false;
+                RefreshPreviewObjects();
             }
         }
 
@@ -138,6 +148,13 @@ namespace GeminiLab.Editor
             }
             EditorGUILayout.EndHorizontal();
 
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Refresh Scene Previews", GUILayout.Height(24)))
+            {
+                RefreshPreviewObjects();
+            }
+            EditorGUILayout.EndHorizontal();
+
             EditorGUILayout.Space(4);
 
             var status = _settings.IsDebugDisplayEnabled ? "<color=green>ON</color>" : "<color=red>OFF</color>";
@@ -179,6 +196,41 @@ namespace GeminiLab.Editor
         {
             var prop = so.FindProperty(propertyName);
             if (prop != null) prop.boolValue = value;
+        }
+
+        private static void RefreshPreviewObjects()
+        {
+            var settings = AssetDatabase.LoadAssetAtPath<DebugDisplaySettingsSO>(AssetPath);
+            if (settings == null) return;
+
+            var scene = SceneManager.GetActiveScene();
+            if (!scene.IsValid()) return;
+
+            var roots = scene.GetRootGameObjects();
+            foreach (var root in roots)
+            {
+                var bubbles = root.GetComponentsInChildren<ReadingBubble>(true);
+                foreach (var b in bubbles)
+                {
+                    var go = b.gameObject;
+                    if (!go.activeSelf && settings.IsTarotPreviewEnabled)
+                        go.SetActive(true);
+                    else if (go.activeSelf && !settings.IsTarotPreviewEnabled)
+                        go.SetActive(false);
+                }
+
+                var summaries = root.GetComponentsInChildren<TarotSummaryPreview>(true);
+                foreach (var s in summaries)
+                {
+                    var go = s.gameObject;
+                    if (!go.activeSelf && settings.IsTarotPreviewEnabled)
+                        go.SetActive(true);
+                    else if (go.activeSelf && !settings.IsTarotPreviewEnabled)
+                        go.SetActive(false);
+                }
+            }
+
+            Debug.Log($"[DebugDisplay] Preview objects refreshed (Tarot: {(settings.IsTarotPreviewEnabled ? "ON" : "OFF")})");
         }
     }
 }

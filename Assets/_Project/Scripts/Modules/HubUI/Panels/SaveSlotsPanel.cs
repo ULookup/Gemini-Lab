@@ -12,16 +12,16 @@ using UnityEngine.UI;
 namespace GeminiLab.Modules.HubUI.Panels
 {
     /// <summary>
-    /// 主菜单"存档"按钮打开的面板。
-    /// Phase E 起走真实 <see cref="ISaveCoordinator"/>：List / Save / Load / Delete。
-    /// 读档成功时跳转到 Apartment（通过 ISceneFlowService），同时 SaveCoordinator
-    /// 会把 Settings / Inventory / Collection / Tarot 的状态恢复回当前 Service 实例。
+    /// 主菜单"存档"按钮打开的面板。槽位行从场景中 SlotTemplate 模板克隆，
+    /// 用户在模板上直接编辑美术资源，scene 视图与 play 视图完全一致。
     /// </summary>
+    [ExecuteAlways]
     public sealed class SaveSlotsPanel : StubPanelBase
     {
         public override PanelId Id => PanelId.SaveSlots;
 
-        [Header("槽位按钮（容器）")]
+        [Header("槽位")]
+        [SerializeField] private GameObject? _slotTemplate;
         [SerializeField] private Transform? _slotContainer;
 
         [Header("操作")]
@@ -42,7 +42,8 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         protected override void Awake()
         {
-            base.Awake();
+            if (Application.isPlaying)
+                base.Awake();
         }
 
         public override void OnOpen(object? payload)
@@ -57,111 +58,69 @@ namespace GeminiLab.Modules.HubUI.Panels
         private void EnsureCoordinator()
         {
             if (_coordinator == null)
-            {
                 ServiceLocator.TryResolve(out _coordinator);
-            }
         }
 
         private void CloseSelf()
         {
             if (ServiceLocator.TryResolve(out IUIRouter? router) && router is not null)
-            {
                 router.Close(Id);
-            }
         }
 
         private void BuildRowsIfNeeded()
         {
-            if (_slotContainer == null) return;
+            if (_slotContainer == null || _slotTemplate == null) return;
             if (_coordinator == null) return;
 
             var defaultSlots = _coordinator.DefaultSlotIds;
             if (_rows.Count == defaultSlots.Count) return;
 
             for (int i = _slotContainer.childCount - 1; i >= 0; i--)
-            {
                 Destroy(_slotContainer.GetChild(i).gameObject);
-            }
             _rows.Clear();
 
             foreach (var slotId in defaultSlots)
-            {
                 _rows.Add(BuildRow(slotId));
-            }
         }
 
         private SlotRow BuildRow(string slotId)
         {
-            int layer = _slotContainer != null ? _slotContainer.gameObject.layer : 5;
-            var rowGo = new GameObject($"Slot_{slotId}");
-            rowGo.transform.SetParent(_slotContainer, false);
-            rowGo.layer = layer;
-            var rt = rowGo.AddComponent<RectTransform>();
-            rt.sizeDelta = new Vector2(0, 110);
-            var bg = rowGo.AddComponent<Image>();
-            bg.color = new Color(1f, 1f, 1f, 0.06f);
+            var clone = Instantiate(_slotTemplate);
+            clone.transform.SetParent(_slotContainer, false);
+            clone.name = $"Slot_{slotId}";
+            clone.SetActive(true);
 
-            var summaryGo = new GameObject("Summary");
-            summaryGo.transform.SetParent(rowGo.transform, false);
-            summaryGo.layer = layer;
-            var srt = summaryGo.AddComponent<RectTransform>();
-            srt.anchorMin = Vector2.zero; srt.anchorMax = new Vector2(0.55f, 1);
-            srt.offsetMin = new Vector2(16, 8); srt.offsetMax = new Vector2(-8, -8);
-            var summary = summaryGo.AddComponent<TextMeshProUGUI>();
-            summary.fontSize = 18;
-            summary.color = Color.white;
-            summary.alignment = TextAlignmentOptions.MidlineLeft;
-            summaryGo.AddComponent<GeminiLab.Modules.UI.Catalogs.TMPFontBinder>();
-
-            var loadBtn = BuildActionButton(rowGo, layer, "读取", new Vector2(0.55f, 0), new Vector2(0.70f, 1));
-            var saveBtn = BuildActionButton(rowGo, layer, "新建 / 覆盖", new Vector2(0.70f, 0), new Vector2(0.88f, 1));
-            var delBtn = BuildActionButton(rowGo, layer, "删除", new Vector2(0.88f, 0), new Vector2(1.0f, 1));
+            var summary = FindInChildren(clone.transform, "Summary")?.GetComponent<TMP_Text>();
+            var loadBtn = FindInChildren(clone.transform, "Btn_读取")?.GetComponent<Button>();
+            var saveBtn = FindInChildren(clone.transform, "Btn_保存")?.GetComponent<Button>();
+            var delBtn = FindInChildren(clone.transform, "Btn_删除")?.GetComponent<Button>();
 
             var row = new SlotRow
             {
                 SlotId = slotId,
-                Root = rowGo,
+                Root = clone,
                 Summary = summary,
                 LoadButton = loadBtn,
                 NewOrSaveButton = saveBtn,
                 DeleteButton = delBtn
             };
 
-            loadBtn.onClick.AddListener(() => _ = OnLoadAsync(row));
-            saveBtn.onClick.AddListener(() => _ = OnSaveAsync(row));
-            delBtn.onClick.AddListener(() => _ = OnDeleteAsync(row));
+            if (loadBtn != null) loadBtn.onClick.AddListener(() => _ = OnLoadAsync(row));
+            if (saveBtn != null) saveBtn.onClick.AddListener(() => _ = OnSaveAsync(row));
+            if (delBtn != null) delBtn.onClick.AddListener(() => _ = OnDeleteAsync(row));
 
             return row;
         }
 
-        private static Button BuildActionButton(GameObject parent, int layer, string label, Vector2 anchorMin, Vector2 anchorMax)
+        private static Transform? FindInChildren(Transform parent, string name)
         {
-            var go = new GameObject($"Btn_{label}");
-            go.transform.SetParent(parent.transform, false);
-            go.layer = layer;
-            var rt = go.AddComponent<RectTransform>();
-            rt.anchorMin = anchorMin;
-            rt.anchorMax = anchorMax;
-            rt.offsetMin = new Vector2(6, 20);
-            rt.offsetMax = new Vector2(-6, -20);
-            var img = go.AddComponent<Image>();
-            img.color = new Color(0.25f, 0.3f, 0.45f, 1f);
-            var btn = go.AddComponent<Button>();
-
-            var labelGo = new GameObject("Label");
-            labelGo.transform.SetParent(go.transform, false);
-            labelGo.layer = layer;
-            var lrt = labelGo.AddComponent<RectTransform>();
-            lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
-            lrt.offsetMin = Vector2.zero; lrt.offsetMax = Vector2.zero;
-            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
-            tmp.text = label;
-            tmp.fontSize = 18;
-            tmp.alignment = TextAlignmentOptions.Center;
-            tmp.color = Color.white;
-            labelGo.AddComponent<GeminiLab.Modules.UI.Catalogs.TMPFontBinder>();
-
-            return btn;
+            foreach (Transform child in parent)
+            {
+                if (child.name == name) return child;
+                var found = FindInChildren(child, name);
+                if (found != null) return found;
+            }
+            return null;
         }
 
         private async System.Threading.Tasks.Task RefreshAllAsync()
@@ -204,11 +163,8 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
 
             SetStatus($"{row.SlotId} 读取成功");
-            // 读档完成后切回公寓
             if (ServiceLocator.TryResolve(out ISceneFlowService? sceneFlow) && sceneFlow is not null)
-            {
                 sceneFlow.LoadAsync(SceneId.Apartment);
-            }
         }
 
         private async System.Threading.Tasks.Task OnSaveAsync(SlotRow row)
@@ -248,5 +204,57 @@ namespace GeminiLab.Modules.HubUI.Panels
         {
             if (_statusText != null) _statusText.text = msg;
         }
+
+#if UNITY_EDITOR
+        private void OnEnable()
+        {
+            if (Application.isPlaying) return;
+            UnityEditor.EditorApplication.delayCall += () =>
+            {
+                if (this == null || Application.isPlaying) return;
+                BuildEditorPreview();
+            };
+        }
+
+        private void BuildEditorPreview()
+        {
+            if (_slotContainer == null || _slotTemplate == null) return;
+
+            var content = transform.Find("Content");
+            if (content != null && !content.gameObject.activeSelf)
+                content.gameObject.SetActive(true);
+
+            // Only create if container is empty — never auto-destroy user's work
+            if (_slotContainer.childCount > 0) return;
+
+            string[] previewIds = { "slot_1", "slot_2", "slot_3" };
+            foreach (var id in previewIds)
+            {
+                var row = BuildRow(id);
+                if (row.Summary != null)
+                    row.Summary.text = $"{id}：预览槽位（编辑器预览）";
+            }
+        }
+
+        [UnityEditor.MenuItem("Tools/Gemini-Lab/Rebuild Save Slot Previews")]
+        private static void RebuildPreviews()
+        {
+            var panel = FindFirstObjectByType<SaveSlotsPanel>();
+            if (panel == null)
+            {
+                Debug.LogWarning("[SaveSlotsPanel] 当前场景未找到 Panel_SaveSlots。");
+                return;
+            }
+
+            var container = panel._slotContainer;
+            if (container == null) return;
+
+            for (int i = container.childCount - 1; i >= 0; i--)
+                DestroyImmediate(container.GetChild(i).gameObject);
+
+            panel.BuildEditorPreview();
+            Debug.Log("[SaveSlotsPanel] 预览已重建。");
+        }
+#endif
     }
 }

@@ -1,7 +1,10 @@
 #nullable enable
+using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
+using GeminiLab.Modules.Collection;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -11,8 +14,12 @@ namespace GeminiLab.Modules.HubUI.Panels
     {
         [SerializeField] private GameObject? _content;
         [SerializeField] protected Button? _closeButton;
+        [SerializeField] protected TMP_Text? _balanceText;
 
         private IUIRouter? _router;
+        private ICoinService? _coin;
+        private EventBus? _eventBus;
+        private IDisposable? _coinChangedSub;
         public abstract PanelId Id { get; }
 
         protected virtual void Awake()
@@ -33,6 +40,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         protected virtual void OnDestroy()
         {
+            _coinChangedSub?.Dispose();
             if (_router is not null)
             {
                 _router.Unregister(Id);
@@ -49,10 +57,16 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 _content.SetActive(true);
             }
+
+            EnsureCoinService();
+            RefreshBalance();
         }
 
         public virtual void OnClose()
         {
+            _coinChangedSub?.Dispose();
+            _coinChangedSub = null;
+
             if (_content is not null)
             {
                 _content.SetActive(false);
@@ -62,6 +76,24 @@ namespace GeminiLab.Modules.HubUI.Panels
         protected void CloseSelf()
         {
             _router?.Close(Id);
+        }
+
+        private void EnsureCoinService()
+        {
+            if (_eventBus == null) ServiceLocator.TryResolve(out _eventBus);
+            if (_coin == null) ServiceLocator.TryResolve(out _coin);
+
+            if (_eventBus != null && _coinChangedSub == null)
+            {
+                _coinChangedSub = _eventBus.Subscribe<CoinChangedEvent>(_ => RefreshBalance());
+            }
+        }
+
+        private void RefreshBalance()
+        {
+            if (_coin == null) ServiceLocator.TryResolve(out _coin);
+            if (_coin == null || _balanceText == null) return;
+            _balanceText.text = $"{_coin.Balance}";
         }
 
         private static IUIRouter ResolveOrCreateRouter()

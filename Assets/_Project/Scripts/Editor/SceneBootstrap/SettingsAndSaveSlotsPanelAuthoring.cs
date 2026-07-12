@@ -131,14 +131,84 @@ namespace GeminiLab.Editor.SceneBootstrap
             // Close button
             var closeBtn = AddButton(content, layer, "CloseBtn", "关闭", 0.40f, 0.60f, 10);
 
+            // Slot template (hidden, cloned at runtime)
+            var template = BuildSlotTemplate(panel, layer);
+
             var so = new SerializedObject(panelComp);
             so.FindProperty("_content").objectReferenceValue = content;
+            so.FindProperty("_slotTemplate").objectReferenceValue = template;
             so.FindProperty("_slotContainer").objectReferenceValue = slotsGo.transform;
             so.FindProperty("_closeButton").objectReferenceValue = closeBtn;
             so.FindProperty("_statusText").objectReferenceValue = status;
             so.ApplyModifiedProperties();
 
             content.SetActive(false);
+        }
+
+        private static GameObject BuildSlotTemplate(GameObject panel, int layer)
+        {
+            var root = new GameObject("SlotTemplate");
+            root.transform.SetParent(panel.transform, false);
+            root.layer = layer;
+            var rt = root.AddComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(0, 110);
+            var bg = root.AddComponent<Image>();
+            bg.color = new Color(1f, 1f, 1f, 0.06f);
+
+            // Summary
+            var summaryGo = new GameObject("Summary");
+            summaryGo.transform.SetParent(root.transform, false);
+            summaryGo.layer = layer;
+            var srt = summaryGo.AddComponent<RectTransform>();
+            srt.anchorMin = Vector2.zero;
+            srt.anchorMax = new Vector2(0.55f, 1);
+            srt.offsetMin = new Vector2(16, 8);
+            srt.offsetMax = new Vector2(-8, -8);
+            var summary = summaryGo.AddComponent<TextMeshProUGUI>();
+            summary.fontSize = 18;
+            summary.color = Color.white;
+            summary.alignment = TextAlignmentOptions.MidlineLeft;
+            summary.text = "Slot_1：预览槽位";
+            summaryGo.AddComponent<GeminiLab.Modules.UI.Catalogs.TMPFontBinder>();
+
+            // Buttons
+            BuildTemplateButton(root, layer, "Btn_读取", "读取", new Vector2(0.55f, 0), new Vector2(0.70f, 1));
+            BuildTemplateButton(root, layer, "Btn_保存", "新建 / 覆盖", new Vector2(0.70f, 0), new Vector2(0.88f, 1));
+            BuildTemplateButton(root, layer, "Btn_删除", "删除", new Vector2(0.88f, 0), new Vector2(1.0f, 1));
+
+            root.SetActive(false);
+            return root;
+        }
+
+        private static void BuildTemplateButton(GameObject parent, int layer, string name, string label,
+            Vector2 anchorMin, Vector2 anchorMax)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent.transform, false);
+            go.layer = layer;
+            var rt = go.AddComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.offsetMin = new Vector2(6, 20);
+            rt.offsetMax = new Vector2(-6, -20);
+            var img = go.AddComponent<Image>();
+            img.color = new Color(0.25f, 0.3f, 0.45f, 1f);
+            go.AddComponent<Button>();
+
+            var labelGo = new GameObject("Label");
+            labelGo.transform.SetParent(go.transform, false);
+            labelGo.layer = layer;
+            var lrt = labelGo.AddComponent<RectTransform>();
+            lrt.anchorMin = Vector2.zero;
+            lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = Vector2.zero;
+            lrt.offsetMax = Vector2.zero;
+            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.text = label;
+            tmp.fontSize = 18;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+            labelGo.AddComponent<GeminiLab.Modules.UI.Catalogs.TMPFontBinder>();
         }
 
         // ---- helpers ----

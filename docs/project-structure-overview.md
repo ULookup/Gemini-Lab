@@ -1,6 +1,6 @@
 # Gemini-Lab 项目结构总览
 
-Updated: 2026-05-27
+Updated: 2026-07-12
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -68,7 +68,7 @@ AI 协作工具链目录。
 当前真实状态：
 - `Core/` 已有 `GameBootstrap`、`ServiceLocator`、`EventBus`、`CommandDispatcher`、FSM
 - `Modules/` 已有 `Pet`、`Furniture`、`Navigation`、`Gateway`、`Travel`、`Persistence`、`UI`、`DesktopOverlay` 等真实代码
-- `Editor/` 已有编辑器脚本
+- `Editor/` 已有编辑器脚本（当前共 9 个编辑器工具：DebugDisplayWindow、ReadingBubbleLayoutSync、SaveSlotTemplateCreator、SettingsAndSaveSlotsPanelAuthoring、ApartmentFurnitureAuthoringBootstrapEditor、PetMoveAnimationSetupEditor、McpNuGetPlayerImportGuard 等）
 - `Scripts/UI/` 目前主要仍承载目录说明；真实 UI 运行时代码当前主要在 `Scripts/Modules/UI/`
 - `Pet` 与 `Furniture` 当前已经开始补“现有场景家具交互 + 运行时状态显示”链路
 - `Pet` 当前还新增了玩家直接控制入口：`PetPlayerInputController` 已开始用于 `Apartment_Main.unity` 中的 `Pet_Angel`

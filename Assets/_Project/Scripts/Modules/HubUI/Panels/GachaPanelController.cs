@@ -27,7 +27,6 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private TMP_Text? _emptyHint;
 
         [Header("资源与抽卡")]
-        [SerializeField] private TMP_Text? _balanceText;
         [SerializeField] private Button? _singleDrawButton;
         [SerializeField] private Button? _multiDrawButton;
 

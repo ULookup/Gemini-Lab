@@ -1,5 +1,6 @@
 #nullable enable
 #if UNITY_EDITOR
+using GeminiLab.Modules.Collection;
 using GeminiLab.Modules.HubUI;
 using GeminiLab.Modules.HubUI.Panels;
 using TMPro;
@@ -192,10 +193,40 @@ namespace GeminiLab.Editor.SceneBootstrap
             xtmp.fontSize = 22;
             xtmp.color = Color.white;
 
+            // Coin balance bar — matches existing TopResource style in scene
+            var topResourceGo = new GameObject("TopResource");
+            topResourceGo.transform.SetParent(contentGo.transform, false);
+            topResourceGo.layer = uiLayer;
+            var trRt = topResourceGo.AddComponent<RectTransform>();
+            trRt.anchorMin = new Vector2(0.5f, 0.5f);
+            trRt.anchorMax = new Vector2(0.5f, 0.5f);
+            trRt.pivot = new Vector2(0.5f, 0.5f);
+            trRt.anchoredPosition = new Vector2(582, 442);
+            trRt.sizeDelta = new Vector2(295, 91);
+            var trImg = topResourceGo.AddComponent<Image>();
+            trImg.color = Color.white;
+
+            var balanceGo = new GameObject("BalanceLabel");
+            balanceGo.transform.SetParent(topResourceGo.transform, false);
+            balanceGo.layer = uiLayer;
+            var bRt = balanceGo.AddComponent<RectTransform>();
+            bRt.anchorMin = Vector2.zero;
+            bRt.anchorMax = Vector2.one;
+            bRt.anchoredPosition = Vector2.zero;
+            bRt.sizeDelta = new Vector2(-16, -4);
+            var bTmp = balanceGo.AddComponent<TextMeshProUGUI>();
+            bTmp.text = "0";
+            bTmp.alignment = TextAlignmentOptions.Center;
+            bTmp.fontSize = 20;
+            bTmp.color = new Color(1f, 0.84f, 0f, 1f);
+            balanceGo.AddComponent<GeminiLab.Modules.UI.Catalogs.TMPFontBinder>();
+            balanceGo.AddComponent<CoinBalanceDisplay>();
+
             var stub = go.AddComponent<T>();
             var so = new SerializedObject(stub);
             so.FindProperty("_content").objectReferenceValue = contentGo;
             so.FindProperty("_closeButton").objectReferenceValue = closeBtn;
+            so.FindProperty("_balanceText").objectReferenceValue = bTmp;
             so.ApplyModifiedProperties();
 
             contentGo.SetActive(false);
