@@ -4,6 +4,7 @@ using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Pet;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -15,11 +16,15 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         [Header("Angel 数值条")]
         [SerializeField] private Image? _angelMoodFill;
+        [SerializeField] private TMP_Text? _angelMoodText;
         [SerializeField] private Image? _angelEnergyFill;
+        [SerializeField] private TMP_Text? _angelEnergyText;
 
         [Header("Devil 数值条")]
         [SerializeField] private Image? _devilMoodFill;
+        [SerializeField] private TMP_Text? _devilMoodText;
         [SerializeField] private Image? _devilEnergyFill;
+        [SerializeField] private TMP_Text? _devilEnergyText;
 
         private IPetRoster? _roster;
         private IDisposable? _snapshotSub;
@@ -63,18 +68,25 @@ namespace GeminiLab.Modules.HubUI.Panels
         {
             if (_roster == null) return;
 
-            var angelData = _roster.TryGet(PetId.Angel);
-            if (angelData != null)
-            {
-                if (_angelMoodFill != null) _angelMoodFill.fillAmount = angelData.Mood / 100f;
-                if (_angelEnergyFill != null) _angelEnergyFill.fillAmount = angelData.Energy / 100f;
-            }
+            RefreshPet(_roster.TryGet(PetId.Angel), _angelMoodFill, _angelMoodText, _angelEnergyFill, _angelEnergyText);
+            RefreshPet(_roster.TryGet(PetId.Devil), _devilMoodFill, _devilMoodText, _devilEnergyFill, _devilEnergyText);
+        }
 
-            var devilData = _roster.TryGet(PetId.Devil);
-            if (devilData != null)
+        private static void RefreshPet(PetRuntimeData? data,
+            Image? moodFill, TMP_Text? moodText,
+            Image? energyFill, TMP_Text? energyText)
+        {
+            if (data != null)
             {
-                if (_devilMoodFill != null) _devilMoodFill.fillAmount = devilData.Mood / 100f;
-                if (_devilEnergyFill != null) _devilEnergyFill.fillAmount = devilData.Energy / 100f;
+                if (moodFill != null) moodFill.fillAmount = data.Mood / 100f;
+                if (moodText != null) moodText.text = Mathf.RoundToInt(data.Mood).ToString();
+                if (energyFill != null) energyFill.fillAmount = data.Energy / 100f;
+                if (energyText != null) energyText.text = Mathf.RoundToInt(data.Energy).ToString();
+            }
+            else
+            {
+                if (moodText != null) moodText.text = "--";
+                if (energyText != null) energyText.text = "--";
             }
         }
     }

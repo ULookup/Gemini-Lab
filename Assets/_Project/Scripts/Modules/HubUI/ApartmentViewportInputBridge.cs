@@ -60,6 +60,9 @@ namespace GeminiLab.Modules.HubUI
                     return;
                 }
             }
+
+            // 点击空地 → 取消所有宠物的选中，双方都进入自由漫游
+            PetPlayerInputController.ReleaseAllControl();
         }
 
         public bool TryScreenPointToWorldPoint(

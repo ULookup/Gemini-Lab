@@ -33,6 +33,14 @@ namespace GeminiLab.Modules.Pet
             s_activeController = this;
         }
 
+        /// <summary>
+        /// 取消所有宠物的选中状态，使双方都回到自由漫游模式。
+        /// </summary>
+        public static void ReleaseAllControl()
+        {
+            s_activeController = null;
+        }
+
         private void Awake()
         {
             TryBecomeActiveController();

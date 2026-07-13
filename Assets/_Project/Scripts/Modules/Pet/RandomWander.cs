@@ -4,8 +4,9 @@ using UnityEngine;
 namespace GeminiLab.Modules.Pet
 {
     /// <summary>
-    /// 随机漫游：在限定区域内让宠物随机走到目标点、等待、再走，循环。
-    /// 挂在 PetController 同一 GameObject 上即可自动运行。
+    /// 随机漫游目标选择器。只负责选目标 + 计时，不直接操作 Transform/Rigidbody。
+    /// 实际位移由 PetController.TickInactivePlayerControlled 统一驱动。
+    /// 当玩家选中此宠物（WASD 控制）时自动暂停，取消选中后恢复。
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public sealed class RandomWander : MonoBehaviour
@@ -27,6 +28,25 @@ namespace GeminiLab.Modules.Pet
         private float _waitTimer;
         private bool _isMoving;
 
+        public bool IsMoving => _isMoving;
+        public Vector2 TargetPosition => _targetPosition;
+        public float MoveSpeed => _moveSpeed;
+        public float ArrivalThreshold => _arrivalThreshold;
+
+        /// <summary>PetController 在宠物到达目标后调用。</summary>
+        public void NotifyArrived()
+        {
+            _isMoving = false;
+            _waitTimer = Random.Range(_minWaitSeconds, _maxWaitSeconds);
+        }
+
+        /// <summary>PetController 在宠物卡住超过 2 秒后调用，放弃当前目标重新等待。</summary>
+        public void AbandonTarget()
+        {
+            _isMoving = false;
+            _waitTimer = Random.Range(_minWaitSeconds, _maxWaitSeconds);
+        }
+
         private void Awake()
         {
             _controller = GetComponent<PetController>();
@@ -40,49 +60,28 @@ namespace GeminiLab.Modules.Pet
             var data = _controller.RuntimeData;
             if (data == null) return;
 
-            // Pause wander when pet is in a non-idle FSM state
+            if (_controller.IsPlayerControlEnabled)
+            {
+                if (_isMoving) NotifyArrived();
+                return;
+            }
+
             if (data.CurrentState == "Sleeping" ||
                 data.CurrentState == "Interacting" ||
                 data.CurrentState == "Working" ||
                 data.IsPlayerInteractionActive)
             {
-                if (_isMoving)
-                {
-                    data.CurrentState = "Idle";
-                    _isMoving = false;
-                    _waitTimer = Random.Range(_minWaitSeconds, _maxWaitSeconds);
-                }
+                if (_isMoving) NotifyArrived();
                 return;
             }
 
-            if (_isMoving)
-            {
-                Vector2 current = data.Position;
-                Vector2 toTarget = _targetPosition - current;
+            if (_isMoving) return; // 移动中，等 PetController 通知到达
 
-                if (toTarget.sqrMagnitude <= _arrivalThreshold * _arrivalThreshold)
-                {
-                    data.Position = _targetPosition;
-                    data.CurrentState = "Idle";
-                    _isMoving = false;
-                    _waitTimer = Random.Range(_minWaitSeconds, _maxWaitSeconds);
-                }
-                else
-                {
-                    float step = _moveSpeed * Time.deltaTime;
-                    data.Position = Vector2.MoveTowards(current, _targetPosition, step);
-                    data.CurrentState = "Moving";
-                }
-            }
-            else
+            _waitTimer -= Time.deltaTime;
+            if (_waitTimer <= 0f)
             {
-                _waitTimer -= Time.deltaTime;
-                if (_waitTimer <= 0f)
-                {
-                    PickNewTarget();
-                    data.CurrentState = "Moving";
-                    _isMoving = true;
-                }
+                PickNewTarget();
+                _isMoving = true;
             }
         }
 
@@ -106,10 +105,7 @@ namespace GeminiLab.Modules.Pet
             {
                 Gizmos.color = Color.green;
                 Gizmos.DrawWireSphere(_targetPosition, 0.2f);
-                if (_controller?.RuntimeData != null)
-                {
-                    Gizmos.DrawLine(_controller.RuntimeData.Position, _targetPosition);
-                }
+                Gizmos.DrawLine(transform.position, _targetPosition);
             }
         }
 #endif
