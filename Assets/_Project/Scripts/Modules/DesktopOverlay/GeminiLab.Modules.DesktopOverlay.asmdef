@@ -1,17 +1,18 @@
 {
-  "name": "GeminiLab.Modules.DesktopOverlay",
-  "rootNamespace": "GeminiLab.Modules.DesktopOverlay",
-  "references": [
-    "GeminiLab.Core",
-    "GeminiLab.Modules.Pet"
-  ],
-  "includePlatforms": [],
-  "excludePlatforms": [],
-  "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
-  "autoReferenced": true,
-  "defineConstraints": [],
-  "versionDefines": [],
-  "noEngineReferences": false
+    "name": "GeminiLab.Modules.DesktopOverlay",
+    "rootNamespace": "GeminiLab.Modules.DesktopOverlay",
+    "references": [
+        "GeminiLab.Core",
+        "GeminiLab.Modules.Pet",
+        "spine-unity"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
 }

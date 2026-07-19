@@ -88,7 +88,12 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_guideBackButton != null) _guideBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
             if (_historyBackButton != null) _historyBackButton.onClick.AddListener(() => SwitchTab(SubView.Draw));
 
-            if (_drawButton != null) _drawButton.onClick.AddListener(OnStartDrawClicked);
+            if (_drawButton != null)
+            {
+                _drawButton.onClick.AddListener(OnStartDrawClicked);
+                Debug.Log("[TarotPanel] DrawButton 监听已挂载");
+            }
+            else Debug.LogWarning("[TarotPanel] _drawButton 为 null，Inspector 引用可能丢失！");
             if (_shuffleButton != null) _shuffleButton.onClick.AddListener(OnShuffleClicked);
             if (_confirmButton != null) _confirmButton.onClick.AddListener(OnConfirmSelection);
 
@@ -144,6 +149,7 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_tarot == null) ServiceLocator.TryResolve(out _tarot);
             if (_collection == null) ServiceLocator.TryResolve(out _collection);
             if (_recordStore == null) ServiceLocator.TryResolve(out _recordStore);
+            Debug.Log($"[TarotPanel] EnsureServices — _tarot={(_tarot != null ? "OK" : "NULL")}, _collection={(_collection != null ? "OK" : "NULL")}, _recordStore={(_recordStore != null ? "OK" : "NULL")}");
         }
 
         // ======================== Tab 切换 ========================
@@ -187,7 +193,12 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void OnStartDrawClicked()
         {
-            if (_tarot == null) return;
+            Debug.Log($"[TarotPanel] OnStartDrawClicked 触发 — _tarot={(_tarot != null ? "OK" : "NULL")}");
+            if (_tarot == null)
+            {
+                Debug.LogError("[TarotPanel] _tarot 为 null，无法跳转！检查 ITarotService 是否已注册到 ServiceLocator。");
+                return;
+            }
             _session = _tarot.CreateSession(null);
             EnterStage(Stage.Select);
         }
@@ -346,6 +357,7 @@ namespace GeminiLab.Modules.HubUI.Panels
                 ref reading.FutureCardId, ref reading.FutureOrientation,
                 ref reading.FutureAngelReading, ref reading.FutureDevilReading);
 
+            reading.Advice = TruncateText(reading.Advice);
             _recordStore.Add(reading);
         }
 
@@ -363,9 +375,16 @@ namespace GeminiLab.Modules.HubUI.Panels
             string devilKey = TarotSession.ReadingKey(slot, PetId.Devil);
 
             if (session.Readings.TryGetValue(angelKey, out var ar))
-                angelReading = ar.Text;
+                angelReading = TruncateText(ar.Text);
             if (session.Readings.TryGetValue(devilKey, out var dr))
-                devilReading = dr.Text;
+                devilReading = TruncateText(dr.Text);
+        }
+
+        private static string TruncateText(string text, int maxLength = 200)
+        {
+            if (string.IsNullOrEmpty(text) || text.Length <= maxLength)
+                return text;
+            return text.Substring(0, maxLength) + "...";
         }
 
         // ======================== Tab 视图 ========================

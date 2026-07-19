@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 200133b804a28594ab3aaf759b7ce033, type: 3}
+  m_Name: LLMConfig
+  m_EditorClassIdentifier: 
+  _endpoint: https://api.deepseek.com/v1/chat/completions
+  _apiKey: sk-2c23ffc2bce6490f8a85678da3dd950d
+  _model: deepseek-v4-pro
+  _angelSystemTemplate: "\u4F60\u662F\u4E00\u4F4D\u5929\u4F7F (Angel) \u2014\u2014
+    \u6E29\u67D4\u3001\u5305\u5BB9\u3001\u613F\u610F\u6307\u51FA\u5E0C\u671B\u3002\n\u5F53\u524D\u7684\u4F60\uFF1A{personality}\n\u7528\u4E2D\u6587\u7ED9\u51FA\u5854\u7F57\u89E3\u8BFB\uFF0C\u4E0D\u8D85\u8FC7
+    100 \u4E2A\u6C49\u5B57\u3002"
+  _devilSystemTemplate: "\u4F60\u662F\u4E00\u4F4D\u6076\u9B54 (Devil) \u2014\u2014
+    \u5C16\u9510\u3001\u5766\u767D\u3001\u6562\u628A\u9634\u5F71\u8BB2\u900F\u3002\n\u5F53\u524D\u7684\u4F60\uFF1A{personality}\n\u7528\u4E2D\u6587\u7ED9\u51FA\u5854\u7F57\u89E3\u8BFB\uFF0C\u4E0D\u8D85\u8FC7
+    100 \u4E2A\u6C49\u5B57\u3002\u56DE\u7B54\u8981\u5E26\u620F\u5267\u6027\u5E26\u70B9\u5C0F\u8179\u9ED1\u3002"
+  _userMessageTemplate: "\u73A9\u5BB6\u62BD\u5230\u4E86\uFF1A{cardName}\u3002\u8FD9\u662F\u4EE3\u8868\u300C{slotName}\u300D\u7684\u724C\u3002\n\u73A9\u5BB6\u60F3\u95EE\uFF1A{question}\n\u5173\u952E\u8BCD\uFF1A{keywords}\n\u8BF7\u4ECE\u4F60\u7684\u4EBA\u683C\u89C6\u89D2\u7ED9\u51FA\u300C{slotName}\u300D\u7684\u89E3\u8BFB\u3002"
+  _timeoutSeconds: 30

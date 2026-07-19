@@ -23,11 +23,15 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             _phoneRect.localScale = Vector3.one * 0.3f;
             _phoneRect.anchoredPosition = _collapsedAnchoredPosition;
             _canvasGroup.alpha = 0f;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
         }
 
         public IEnumerator PlayOpenAnim()
         {
             IsAnimating = true;
+            _canvasGroup.interactable = true;
+            _canvasGroup.blocksRaycasts = true;
             _canvasGroup.alpha = 0f;
             float t = 0f;
             while (t < _openDuration)
@@ -68,6 +72,8 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             _phoneRect.localScale = Vector3.one * 0.3f;
             _phoneRect.anchoredPosition = _collapsedAnchoredPosition;
             _canvasGroup.alpha = 0f;
+            _canvasGroup.interactable = false;
+            _canvasGroup.blocksRaycasts = false;
             IsAnimating = false;
         }
     }

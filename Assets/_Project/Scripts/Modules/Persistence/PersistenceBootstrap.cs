@@ -20,9 +20,13 @@ namespace GeminiLab.Modules.Persistence
         {
             if (!ServiceLocator.TryResolve(out ISaveSystem? saveSystem) || saveSystem is null)
             {
-                saveSystem = new SaveSystem();
+                // 开发者模式与玩家模式的存档完全隔离：
+                // 调试数据（时钟快进产生的未来日期等）不会污染真实进度，反之亦然
+                string saveRoot = System.IO.Path.Combine(
+                    Application.persistentDataPath, DevMode.Active ? "Saves-Dev" : "Saves");
+                saveSystem = new SaveSystem(saveRootPath: saveRoot);
                 ServiceLocator.Register(saveSystem);
-                Debug.Log("[PersistenceBootstrap] SaveSystem registered.");
+                Debug.Log($"[PersistenceBootstrap] SaveSystem registered. 存档目录: {(DevMode.Active ? "Saves-Dev (开发者)" : "Saves (玩家)")}");
             }
 
             if (ServiceLocator.TryResolve(out ISaveCoordinator? _))
@@ -46,6 +50,12 @@ namespace GeminiLab.Modules.Persistence
 
             ServiceLocator.Register<ISaveCoordinator>(new SaveCoordinator(saveSystem, registry, clock, eventBus));
             Debug.Log("[PersistenceBootstrap] SaveCoordinator registered.");
+
+            // 创建自动存档/读档管理器
+            var autoSaveGo = new GameObject("AutoSaveManager");
+            Object.DontDestroyOnLoad(autoSaveGo);
+            autoSaveGo.AddComponent<AutoSaveManager>();
+            Debug.Log("[PersistenceBootstrap] AutoSaveManager created.");
         }
     }
 }

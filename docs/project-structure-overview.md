@@ -1,6 +1,6 @@
 # Gemini-Lab 项目结构总览
 
-Updated: 2026-05-27
+Updated: 2026-07-12
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -41,8 +41,13 @@ Unity 项目主资源目录。
 
 当前已知重点：
 - 已有 Unity MCP 相关包
+- 当前 `Packages/` 内保留的是嵌入式 `SkillsForUnity`
+- 4 个 Unity MCP 包当前已临时移出到 `PackageBackups/MCP-disabled-2026-06-02/`，不再作为活动包参与解析
+- `Assets/Plugins/NuGet` 当前也已临时移出到 `PackageBackups/NuGet-disabled-2026-06-02/`，避免 Burst 从活动资源路径扫描到 MCP 残留 DLL
 - 已有 `com.unity.ai.navigation`
 - 有嵌入式 `SkillsForUnity`
+- 已补 `Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs`，用于阻止 MCP 依赖解析器落地到 `Assets/Plugins/NuGet` 的外部 DLL 进入正式 Player 构建
+- 若后续要恢复 MCP，需把这 4 个包目录移回 `Packages/` 并把对应依赖加回 `Packages/manifest.json`
 
 ### `ProjectSettings/`
 Unity 项目级设置目录。
@@ -63,7 +68,7 @@ AI 协作工具链目录。
 当前真实状态：
 - `Core/` 已有 `GameBootstrap`、`ServiceLocator`、`EventBus`、`CommandDispatcher`、FSM
 - `Modules/` 已有 `Pet`、`Furniture`、`Navigation`、`Gateway`、`Travel`、`Persistence`、`UI`、`DesktopOverlay` 等真实代码
-- `Editor/` 已有编辑器脚本
+- `Editor/` 已有编辑器脚本（当前共 9 个编辑器工具：DebugDisplayWindow、ReadingBubbleLayoutSync、SaveSlotTemplateCreator、SettingsAndSaveSlotsPanelAuthoring、ApartmentFurnitureAuthoringBootstrapEditor、PetMoveAnimationSetupEditor、McpNuGetPlayerImportGuard 等）
 - `Scripts/UI/` 目前主要仍承载目录说明；真实 UI 运行时代码当前主要在 `Scripts/Modules/UI/`
 - `Pet` 与 `Furniture` 当前已经开始补“现有场景家具交互 + 运行时状态显示”链路
 - `Pet` 当前还新增了玩家直接控制入口：`PetPlayerInputController` 已开始用于 `Apartment_Main.unity` 中的 `Pet_Angel`

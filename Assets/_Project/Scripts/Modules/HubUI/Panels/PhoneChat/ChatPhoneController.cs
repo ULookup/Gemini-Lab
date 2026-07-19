@@ -30,9 +30,38 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
 
         private void Awake()
         {
+            Debug.Log($"[PhoneChat] Awake — _collapsedButtonRoot={_collapsedButtonRoot}, _closeButton={_closeButton}, _inputHandler={_inputHandler}, _animController={_animController}, _messageListView={_messageListView}");
+
+            if (_collapsedButtonRoot == null) { Debug.LogError("[PhoneChat] _collapsedButtonRoot is null!"); return; }
+            if (_closeButton == null) { Debug.LogError("[PhoneChat] _closeButton is null!"); return; }
+
             _collapsedButtonRoot.SetActive(true);
             _closeButton.SetActive(false);
-            _inputHandler.OnSubmitMessage += HandleUserMessage;
+
+            if (_inputHandler != null)
+                _inputHandler.OnSubmitMessage += HandleUserMessage;
+
+            var collapsedBtn = _collapsedButtonRoot.GetComponent<UnityEngine.UI.Button>();
+            if (collapsedBtn != null)
+            {
+                collapsedBtn.onClick.AddListener(OnCollapsedButtonClicked);
+                Debug.Log("[PhoneChat] CollapsedButton listener added");
+            }
+            else
+            {
+                Debug.LogError("[PhoneChat] No Button component on _collapsedButtonRoot!");
+            }
+
+            var closeBtn = _closeButton.GetComponent<UnityEngine.UI.Button>();
+            if (closeBtn != null)
+            {
+                closeBtn.onClick.AddListener(ClosePhone);
+                Debug.Log("[PhoneChat] CloseButton listener added");
+            }
+            else
+            {
+                Debug.LogError("[PhoneChat] No Button component on _closeButton!");
+            }
         }
 
         private async void Start()
@@ -68,12 +97,14 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
 
         public void OnCollapsedButtonClicked()
         {
+            Debug.Log($"[PhoneChat] OnCollapsedButtonClicked — CurrentState={CurrentState}");
             if (CurrentState != PhoneState.Collapsed) return;
             StartCoroutine(OpenRoutine());
         }
 
         public void ClosePhone()
         {
+            Debug.Log($"[PhoneChat] ClosePhone — CurrentState={CurrentState}");
             if (CurrentState != PhoneState.Open) return;
             StartCoroutine(CloseRoutine());
         }
@@ -97,10 +128,20 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             CurrentState = PhoneState.Collapsed;
         }
 
+        private int _requestVersion;
+
         private async void HandleUserMessage(string text)
         {
-            if (!Core.ServiceLocator.TryResolve<IPetChatService>(out var chatService)) return;
-            if (!Core.ServiceLocator.TryResolve<IChatPersistenceService>(out var persistence)) return;
+            if (!Core.ServiceLocator.TryResolve<IPetChatService>(out var chatService))
+            {
+                Debug.LogWarning("[PhoneChat] IPetChatService not registered — cannot process message");
+                return;
+            }
+            if (!Core.ServiceLocator.TryResolve<IChatPersistenceService>(out var persistence))
+            {
+                Debug.LogWarning("[PhoneChat] IChatPersistenceService not registered — cannot process message");
+                return;
+            }
 
             // Add user message bubble
             var userMsg = new ChatMessage(ChatRole.User, text);
@@ -112,6 +153,7 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             _currentCts?.Dispose();
             var cts = new CancellationTokenSource();
             _currentCts = cts;
+            var myVersion = System.Threading.Interlocked.Increment(ref _requestVersion);
 
             PetChatResult result;
             try
@@ -120,17 +162,23 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
             }
             catch (OperationCanceledException)
             {
-                _inputHandler.SetWaitingState(false);
+                if (myVersion == _requestVersion)
+                    _inputHandler.SetWaitingState(false);
+                return;
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"[PhoneChat] Unexpected error: {ex}");
+                if (myVersion == _requestVersion)
+                    _inputHandler.SetWaitingState(false);
                 return;
             }
 
-            _inputHandler.SetWaitingState(false);
-
-            if (cts.IsCancellationRequested) return;
+            if (myVersion != _requestVersion || cts.IsCancellationRequested) return;
 
             if (result.IsCancelled)
             {
-                Debug.Log("[PhoneChat] Request was cancelled");
+                _inputHandler.SetWaitingState(false);
                 return;
             }
 
@@ -149,6 +197,7 @@ namespace GeminiLab.Modules.HubUI.Panels.PhoneChat
                 _messageListView.AddBubble(ChatRole.Devil, result.DevilReply);
             }
 
+            _inputHandler.SetWaitingState(false);
             _ = persistence.SaveAsync();
         }
     }

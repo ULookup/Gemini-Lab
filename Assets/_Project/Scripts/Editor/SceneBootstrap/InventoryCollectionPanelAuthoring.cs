@@ -104,10 +104,10 @@ namespace GeminiLab.Editor.SceneBootstrap
                 return;
             }
 
-            var panel = panelRoot.GetComponent<CollectionPanelStub>();
+            var panel = panelRoot.GetComponent<GachaPanelController>();
             if (panel == null)
             {
-                Debug.LogError("[InventoryCollectionAuthoring] Panel_Collection 缺 CollectionPanelStub");
+                Debug.LogError("[InventoryCollectionAuthoring] Panel_Collection 缺 GachaPanelController");
                 return;
             }
 
@@ -151,11 +151,6 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             var so = new SerializedObject(panel);
             so.FindProperty("_content").objectReferenceValue = content;
-            so.FindProperty("_tabTravel").objectReferenceValue = tabTravel;
-            so.FindProperty("_tabTarot").objectReferenceValue = tabTarot;
-            so.FindProperty("_tabGarden").objectReferenceValue = tabGarden;
-            so.FindProperty("_gridRoot").objectReferenceValue = gridRoot.transform;
-            so.FindProperty("_emptyHint").objectReferenceValue = emptyText;
             so.ApplyModifiedProperties();
 
             content.SetActive(false);

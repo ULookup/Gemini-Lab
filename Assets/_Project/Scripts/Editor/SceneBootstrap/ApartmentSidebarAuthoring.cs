@@ -1,5 +1,6 @@
 #nullable enable
 #if UNITY_EDITOR
+using GeminiLab.Modules.Collection;
 using GeminiLab.Modules.HubUI;
 using GeminiLab.Modules.HubUI.Panels;
 using TMPro;
@@ -84,13 +85,13 @@ namespace GeminiLab.Editor.SceneBootstrap
             vlg.childControlWidth = true;
             vlg.childControlHeight = false;
 
-            var toggleBtn = MakeTab(sidebarGo, uiLayer, "Btn_Toggle", "<<");
-            var petStatusBtn = MakeTab(sidebarGo, uiLayer, "Btn_PetStatus", "Status");
-            var spaceSysBtn = MakeTab(sidebarGo, uiLayer, "Btn_SpaceSys", "Space");
-            var tarotBtn = MakeTab(sidebarGo, uiLayer, "Btn_Tarot", "Tarot");
-            var collectionBtn = MakeTab(sidebarGo, uiLayer, "Btn_Collection", "Collection");
-            var inventoryBtn = MakeTab(sidebarGo, uiLayer, "Btn_Inventory", "Inventory");
-            var gardenBtn = MakeTab(sidebarGo, uiLayer, "Btn_Garden", "Garden");
+            var toggleBtn = MakeTab(sidebarGo, uiLayer, "Btn_Toggle", "收");
+            var petStatusBtn = MakeTab(sidebarGo, uiLayer, "Btn_PetStatus", "宠物状态");
+            var spaceSysBtn = MakeTab(sidebarGo, uiLayer, "Btn_SpaceSys", "空间");
+            var tarotBtn = MakeTab(sidebarGo, uiLayer, "Btn_Tarot", "每日塔罗");
+            var collectionBtn = MakeTab(sidebarGo, uiLayer, "Btn_Collection", "收藏");
+            var inventoryBtn = MakeTab(sidebarGo, uiLayer, "Btn_Inventory", "物品栏");
+            var gardenBtn = MakeTab(sidebarGo, uiLayer, "Btn_Garden", "花园");
 
             var sidebar = sidebarGo.AddComponent<SidebarController>();
             var so = new SerializedObject(sidebar);
@@ -107,12 +108,12 @@ namespace GeminiLab.Editor.SceneBootstrap
             so.ApplyModifiedProperties();
 
             // 6 panels — stretch fullscreen (anchor 0,0→1,1)
-            CreateStubPanel<ProfilePanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "Profile");
-            CreateStubPanel<SpaceSysPanelStub>(canvasGo, uiLayer, "Panel_SpaceSys", "Space System");
-            CreateStubPanel<TarotPanelStub>(canvasGo, uiLayer, "Panel_Tarot", "Tarot (WIP)");
-            CreateStubPanel<CollectionPanelStub>(canvasGo, uiLayer, "Panel_Collection", "Collection (WIP)");
-            CreateStubPanel<InventoryPanelStub>(canvasGo, uiLayer, "Panel_Inventory", "Inventory (WIP)");
-            CreateStubPanel<GardenPanelStub>(canvasGo, uiLayer, "Panel_Garden", "Garden (WIP)");
+            CreateStubPanel<ProfilePanelStub>(canvasGo, uiLayer, "Panel_PetStatus", "宠物状态");
+            CreateStubPanel<SpaceSysPanelStub>(canvasGo, uiLayer, "Panel_SpaceSys", "空间系统");
+            CreateStubPanel<TarotPanelStub>(canvasGo, uiLayer, "Panel_Tarot", "每日塔罗");
+            CreateStubPanel<GachaPanelController>(canvasGo, uiLayer, "Panel_Collection", "收藏");
+            CreateStubPanel<InventoryPanelStub>(canvasGo, uiLayer, "Panel_Inventory", "物品栏");
+            CreateStubPanel<GardenPanelStub>(canvasGo, uiLayer, "Panel_Garden", "花园");
 
             // Portal to WorldMap (inside overlay, stays on top)
             var portalGo = GameObject.Find("UI_WorldMapPortal");
@@ -137,7 +138,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             plrt.anchorMin = Vector2.zero; plrt.anchorMax = Vector2.one;
             plrt.offsetMin = Vector2.zero; plrt.offsetMax = Vector2.zero;
             var ptmp = portalLabelGo.AddComponent<TextMeshProUGUI>();
-            ptmp.text = "→ World Map";
+            ptmp.text = "→ 大地图";
             ptmp.alignment = TextAlignmentOptions.Center;
             ptmp.fontSize = 24;
             ptmp.color = Color.white;
@@ -230,10 +231,40 @@ namespace GeminiLab.Editor.SceneBootstrap
             xtmp.fontSize = 22;
             xtmp.color = Color.white;
 
+            // Coin balance bar — matches existing TopResource style in scene
+            var topResourceGo = new GameObject("TopResource");
+            topResourceGo.transform.SetParent(contentGo.transform, false);
+            topResourceGo.layer = uiLayer;
+            var trRt = topResourceGo.AddComponent<RectTransform>();
+            trRt.anchorMin = new Vector2(0.5f, 0.5f);
+            trRt.anchorMax = new Vector2(0.5f, 0.5f);
+            trRt.pivot = new Vector2(0.5f, 0.5f);
+            trRt.anchoredPosition = new Vector2(582, 442);
+            trRt.sizeDelta = new Vector2(295, 91);
+            var trImg = topResourceGo.AddComponent<Image>();
+            trImg.color = Color.white;
+
+            var balanceGo = new GameObject("BalanceLabel");
+            balanceGo.transform.SetParent(topResourceGo.transform, false);
+            balanceGo.layer = uiLayer;
+            var bRt = balanceGo.AddComponent<RectTransform>();
+            bRt.anchorMin = Vector2.zero;
+            bRt.anchorMax = Vector2.one;
+            bRt.anchoredPosition = Vector2.zero;
+            bRt.sizeDelta = new Vector2(-16, -4);
+            var bTmp = balanceGo.AddComponent<TextMeshProUGUI>();
+            bTmp.text = "0";
+            bTmp.alignment = TextAlignmentOptions.Center;
+            bTmp.fontSize = 20;
+            bTmp.color = new Color(1f, 0.84f, 0f, 1f);
+            balanceGo.AddComponent<GeminiLab.Modules.UI.Catalogs.TMPFontBinder>();
+            balanceGo.AddComponent<CoinBalanceDisplay>();
+
             var stub = go.AddComponent<T>();
             var so = new SerializedObject(stub);
             so.FindProperty("_content").objectReferenceValue = contentGo;
             so.FindProperty("_closeButton").objectReferenceValue = closeBtn;
+            so.FindProperty("_balanceText").objectReferenceValue = bTmp;
             so.ApplyModifiedProperties();
 
             contentGo.SetActive(false);

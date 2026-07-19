@@ -13,6 +13,7 @@ namespace GeminiLab.Modules.Pet
             float mood,
             float energy,
             float satiety,
+            float relation,
             bool workRequested,
             string targetFurnitureId,
             FurnitureCategory targetFurnitureCategory,
@@ -26,6 +27,7 @@ namespace GeminiLab.Modules.Pet
             Mood = mood;
             Energy = energy;
             Satiety = satiety;
+            Relation = relation;
             WorkRequested = workRequested;
             TargetFurnitureId = targetFurnitureId;
             TargetFurnitureCategory = targetFurnitureCategory;
@@ -43,6 +45,8 @@ namespace GeminiLab.Modules.Pet
         public float Energy { get; }
 
         public float Satiety { get; }
+
+        public float Relation { get; }
 
         public bool WorkRequested { get; }
 

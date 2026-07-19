@@ -370,9 +370,19 @@ namespace GeminiLab.Modules.HubUI.Panels
             catch (Exception ex)
             {
                 Debug.LogWarning($"[TarotReveal] Reading failed for {slot} {petId}: {ex.Message}");
+                StoreFallbackReading(slot, draw, petId, orientation);
+            }
+
+            // Safety: if backend returned empty text, fall back
+            if (_session != null)
+            {
                 string key = TarotSession.ReadingKey(slot, petId);
-                var fallback = LocalFallback.Build(draw, petId, orientation);
-                if (_session != null) _session.Readings[key] = fallback;
+                if (_session.Readings.TryGetValue(key, out var reading) &&
+                    string.IsNullOrWhiteSpace(reading.Text))
+                {
+                    Debug.LogWarning($"[TarotReveal] Empty reading for {slot} {petId}, falling back");
+                    StoreFallbackReading(slot, draw, petId, orientation);
+                }
             }
         }
 
@@ -534,6 +544,14 @@ namespace GeminiLab.Modules.HubUI.Panels
                 image.sprite = draw.Value.Card.Artwork;
                 image.color = Color.white;
             }
+        }
+
+        private void StoreFallbackReading(TarotSlotPosition slot, TarotDrawResult draw,
+            PetId petId, TarotOrientation orientation)
+        {
+            string key = TarotSession.ReadingKey(slot, petId);
+            var fallback = LocalFallback.Build(draw, petId, orientation);
+            if (_session != null) _session.Readings[key] = fallback;
         }
     }
 }

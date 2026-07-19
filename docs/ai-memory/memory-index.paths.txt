@@ -81,6 +81,7 @@ Assets/_Project/Scripts/Modules/Persistence/README.md
 Assets/_Project/Scripts/UI/README.md
 Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs
 Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs
+Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs
 Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs
 Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs
 Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs
@@ -97,6 +98,14 @@ Assets/_Project/Tests/EditMode/FurnitureServiceSceneHintTests.cs
 
 Packages/manifest.json
 Packages/packages-lock.json
+Packages/SkillsForUnity/package.json
+PackageBackups/MCP-disabled-2026-06-02/com.ivanmurzak.unity.mcp/package.json
+PackageBackups/MCP-disabled-2026-06-02/com.ivanmurzak.unity.mcp/Runtime/com.IvanMurzak.Unity.MCP.Runtime.asmdef
+PackageBackups/MCP-disabled-2026-06-02/com.ivanmurzak.unity.mcp.animation/Runtime/com.IvanMurzak.Unity.MCP.Animation.Runtime.asmdef
+PackageBackups/MCP-disabled-2026-06-02/com.ivanmurzak.unity.mcp.particlesystem/Runtime/com.IvanMurzak.Unity.MCP.ParticleSystem.Runtime.asmdef
+PackageBackups/MCP-disabled-2026-06-02/com.ivanmurzak.unity.mcp.probuilder/Runtime/com.IvanMurzak.Unity.MCP.ProBuilder.Runtime.asmdef
+PackageBackups/NuGet-disabled-2026-06-02/README.md
+PackageBackups/NuGet-disabled-2026-06-02/NuGet.meta
 ProjectSettings/ProjectVersion.txt
 .cursor/mcp.json
 tools/check-task-gate.ps1

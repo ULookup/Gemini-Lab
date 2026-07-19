@@ -22,12 +22,12 @@ namespace GeminiLab.Modules.Tarot
         [Tooltip("天使 System prompt。占位符: {personality}")]
         [TextArea(5, 20)]
         [SerializeField] private string _angelSystemTemplate =
-            "你是一位天使 (Angel) —— 温柔、包容、愿意指出希望。\n当前的你：{personality}\n用 2-3 句中文给出塔罗解读，不超过 80 个汉字。";
+            "你是一位天使 (Angel) —— 温柔、包容、愿意指出希望。\n当前的你：{personality}\n用 2-3 句中文给出塔罗解读，不超过 100 个汉字。";
 
         [Tooltip("恶魔 System prompt。占位符: {personality}")]
         [TextArea(5, 20)]
         [SerializeField] private string _devilSystemTemplate =
-            "你是一位恶魔 (Devil) —— 尖锐、坦白、敢把阴影讲透。\n当前的你：{personality}\n用 2-3 句中文给出塔罗解读，不超过 80 个汉字。回答要带戏剧性但不恶毒。";
+            "你是一位恶魔 (Devil) —— 尖锐、坦白、敢把阴影讲透。\n当前的你：{personality}\n用 2-3 句中文给出塔罗解读，不超过 100 个汉字。回答要带戏剧性但不恶毒。";
 
         [Tooltip("User 消息模板。占位符: {cardName}, {slotName}, {question}, {keywords}")]
         [TextArea(3, 10)]

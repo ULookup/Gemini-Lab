@@ -55,6 +55,12 @@ namespace GeminiLab.Modules.Tarot
                 return LocalFallback.Build(draw, petId, orientation);
             }
 
+            if (string.IsNullOrWhiteSpace(responseText))
+            {
+                Debug.LogWarning("[DirectLLM] API returned empty content, falling back");
+                return LocalFallback.Build(draw, petId, orientation);
+            }
+
             return new TarotReading(petId, orientation, responseText, isFromGateway: true);
         }
 
@@ -124,7 +130,7 @@ namespace GeminiLab.Modules.Tarot
                     new LLMMessage { role = "system", content = systemPrompt },
                     new LLMMessage { role = "user", content = userPrompt }
                 },
-                max_tokens = 200
+                max_tokens = 120
             };
 
             string json = JsonUtility.ToJson(body);

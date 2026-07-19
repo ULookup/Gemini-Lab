@@ -1,0 +1,310 @@
+#nullable enable
+using GeminiLab.Core;
+using GeminiLab.Core.Events;
+using GeminiLab.Core.Persistence;
+using GeminiLab.Core.Time;
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using UnityEngine;
+
+namespace GeminiLab.Modules.EmotionGarden
+{
+    /// <summary>
+    /// 情绪花园核心服务。管理每日情绪提交、周记录、开花状态和图鉴累计。
+    /// 存档 key: "emotion-garden"。
+    /// </summary>
+    public sealed class EmotionGardenService : MonoBehaviour, IEmotionGardenService, IPersistentService
+    {
+        private const int SaveVersion = 1;
+
+        private IGameClock? _clock;
+        private EventBus? _eventBus;
+
+        private string _lastSubmitDateIso = string.Empty;
+        private readonly List<EmotionFlowerData> _flowers = new();
+        private readonly Dictionary<string, ClusterProgress> _clusters = new(); // key: "emotionType|owner"
+
+        string IPersistentService.Key => "emotion-garden";
+
+        public void Initialize(IGameClock clock, EventBus eventBus)
+        {
+            _clock = clock;
+            _eventBus = eventBus;
+        }
+
+        // ── IEmotionGardenService ──────────────────────────────
+
+        public bool CanSubmitToday()
+        {
+            if (_clock == null) return false;
+            return _lastSubmitDateIso != _clock.TodayIso;
+        }
+
+        public EmotionFlowerData? SubmitEmotion(string emotionType, string emotionDetail, string owner)
+        {
+            if (_clock == null) return null;
+            if (!CanSubmitToday()) return null;
+
+            var today = _clock.TodayIso;
+            var weekId = ComputeWeekIdFromIso(today);
+
+            var flower = new EmotionFlowerData
+            {
+                FlowerId = $"{emotionType}_{owner}_{today}",
+                DateIso = today,
+                WeekId = weekId,
+                EmotionType = emotionType,
+                EmotionDetail = emotionDetail,
+                Owner = owner,
+                State = GrowthState.Growing,
+                IsCollected = false,
+                CreatedAtUtcTicks = _clock.UtcNow.Ticks
+            };
+
+            _lastSubmitDateIso = today;
+            _flowers.Add(flower);
+
+            _eventBus?.Publish(new EmotionFlowerSubmittedEvent(flower));
+
+            Debug.Log($"[EmotionGarden] 提交情绪: {flower.FlowerId}");
+            return flower;
+        }
+
+        public EmotionFlowerData? GetTodayFlower()
+        {
+            if (_clock == null) return null;
+            var today = _clock.TodayIso;
+            for (int i = _flowers.Count - 1; i >= 0; i--)
+            {
+                if (_flowers[i].DateIso == today) return _flowers[i];
+            }
+            return null;
+        }
+
+        public int GetCurrentWeekId()
+        {
+            if (_clock == null) return 0;
+            return ComputeWeekIdFromIso(_clock.TodayIso);
+        }
+
+        public int OffsetWeekId(int weekId, int deltaWeeks)
+        {
+            var monday = GetWeekStartDate(weekId);
+            return ComputeWeekId(monday.AddDays(deltaWeeks * 7));
+        }
+
+        public DateTime GetWeekStartDate(int weekId)
+        {
+            int year = weekId / 100;
+            int week = weekId % 100;
+            if (year < 1 || week < 1) return DateTime.MinValue;
+
+            // ISO 8601: 1 月 4 日必属第 1 周
+            var jan4 = new DateTime(year, 1, 4);
+            int dow = ((int)jan4.DayOfWeek + 6) % 7; // 周一=0 … 周日=6
+            var week1Monday = jan4.AddDays(-dow);
+            return week1Monday.AddDays((week - 1) * 7);
+        }
+
+        public EmotionFlowerData?[] GetWeekFlowers(int weekId)
+        {
+            var result = new EmotionFlowerData?[7];
+
+            for (int i = 0; i < _flowers.Count; i++)
+            {
+                var f = _flowers[i];
+                if (f.WeekId != weekId) continue;
+
+                if (DateTime.TryParseExact(f.DateIso, "yyyy-MM-dd",
+                        CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+                {
+                    int dayIndex = ((int)dt.DayOfWeek + 6) % 7; // 周一=0 … 周日=6
+                    result[dayIndex] = f;
+                }
+            }
+
+            return result;
+        }
+
+        public bool SetBloomed(string flowerId)
+        {
+            for (int i = 0; i < _flowers.Count; i++)
+            {
+                if (_flowers[i].FlowerId != flowerId) continue;
+                return BloomAt(i);
+            }
+
+            return false;
+        }
+
+        /// <summary>按索引开花。调试重置后同日重复提交会产生重复 FlowerId，按 ID 查找会漏开。</summary>
+        private bool BloomAt(int i)
+        {
+            var f = _flowers[i];
+            if (f.State == GrowthState.Bloomed && f.IsCollected) return false;
+
+            f.State = GrowthState.Bloomed;
+            f.IsCollected = true;
+            _flowers[i] = f;
+
+            // 更新累计进度
+            var cluster = GetOrCreateCluster(f.EmotionType, f.Owner);
+            cluster.TotalCount += 1;
+
+            // 解锁阶段判定
+            int newStage = cluster.UnlockedStage;
+            if (cluster.TotalCount >= 3) newStage = 3;
+            else if (cluster.TotalCount >= 1) newStage = 1;
+
+            if (newStage != cluster.UnlockedStage)
+            {
+                cluster.UnlockedStage = newStage;
+                _eventBus?.Publish(new ClusterUnlockedEvent(f.EmotionType, f.Owner, newStage));
+            }
+
+            _clusters[ClusterKey(f.EmotionType, f.Owner)] = cluster;
+            _eventBus?.Publish(new EmotionFlowerBloomedEvent(f.FlowerId));
+
+            Debug.Log($"[EmotionGarden] 开花: {f.FlowerId}, 累计: {cluster.TotalCount}, 阶段: {cluster.UnlockedStage}");
+            return true;
+        }
+
+        public IReadOnlyList<ClusterProgress> GetAllClusters()
+        {
+            var list = new List<ClusterProgress>(_clusters.Values);
+            return list;
+        }
+
+        public void RefreshBlooming()
+        {
+            if (_clock == null) return;
+            var today = _clock.TodayIso;
+
+            for (int i = 0; i < _flowers.Count; i++)
+            {
+                var f = _flowers[i];
+                if (f.State != GrowthState.Growing) continue;
+                if (f.IsCollected) continue;
+
+                // 跨天自动开花：花的日期早于今天
+                if (string.Compare(f.DateIso, today, StringComparison.Ordinal) < 0)
+                {
+                    BloomAt(i);
+                }
+            }
+        }
+
+        public void ClearAllData()
+        {
+            _flowers.Clear();
+            _clusters.Clear();
+            _lastSubmitDateIso = string.Empty;
+            _eventBus?.Publish(new EmotionGardenClearedEvent());
+            Debug.Log("[EmotionGarden] 花园数据已清空（调试）");
+        }
+
+        // ── IPersistentService ─────────────────────────────────
+
+        string IPersistentService.CaptureJson()
+        {
+            var save = new EmotionGardenSaveData
+            {
+                Version = SaveVersion,
+                LastSubmitDateIso = _lastSubmitDateIso,
+                Flowers = new List<EmotionFlowerData>(_flowers),
+                Clusters = new List<ClusterProgress>(_clusters.Values)
+            };
+            return JsonUtility.ToJson(save);
+        }
+
+        bool IPersistentService.RestoreJson(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return false;
+
+            try
+            {
+                var save = JsonUtility.FromJson<EmotionGardenSaveData>(json);
+                if (save == null) return false;
+
+                _lastSubmitDateIso = save.LastSubmitDateIso ?? string.Empty;
+                _flowers.Clear();
+                if (save.Flowers != null) _flowers.AddRange(save.Flowers);
+
+                // 迁移：WeekId 从 DateIso 重算（旧存档存的是不含年份的裸周号，且可能有 UTC 漂移）
+                for (int i = 0; i < _flowers.Count; i++)
+                {
+                    var f = _flowers[i];
+                    var recomputed = ComputeWeekIdFromIso(f.DateIso);
+                    if (recomputed != 0 && recomputed != f.WeekId)
+                    {
+                        f.WeekId = recomputed;
+                        _flowers[i] = f;
+                    }
+                }
+
+                _clusters.Clear();
+                if (save.Clusters != null)
+                {
+                    foreach (var c in save.Clusters)
+                    {
+                        _clusters[ClusterKey(c.EmotionType, c.Owner)] = c;
+                    }
+                }
+
+                return true;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[EmotionGarden] 存档恢复失败: {e.Message}");
+                return false;
+            }
+        }
+
+        // ── Internal helpers ───────────────────────────────────
+
+        /// <summary>
+        /// ISO 8601 周编号，年份限定格式：年份*100+周号（如 202629）。
+        /// 周四规则：一周的周四落在哪一年，该周就属于哪一年——
+        /// 避免 .NET GetWeekOfYear 年末返回 53 而 ISO 应为次年第 1 周的缺陷，且不依赖系统区域设置。
+        /// </summary>
+        private static int ComputeWeekId(DateTime localDate)
+        {
+            int dow = ((int)localDate.DayOfWeek + 6) % 7; // 周一=0 … 周日=6
+            var thursday = localDate.AddDays(3 - dow);
+            int week = (thursday.DayOfYear - 1) / 7 + 1;
+            return thursday.Year * 100 + week;
+        }
+
+        /// <summary>从 yyyy-MM-dd 推导周编号；解析失败返回 0。WeekId 的唯一事实来源是 DateIso。</summary>
+        private static int ComputeWeekIdFromIso(string dateIso)
+        {
+            if (DateTime.TryParseExact(dateIso, "yyyy-MM-dd",
+                    CultureInfo.InvariantCulture, DateTimeStyles.None, out var dt))
+            {
+                return ComputeWeekId(dt);
+            }
+            return 0;
+        }
+
+        private ClusterProgress GetOrCreateCluster(string emotionType, string owner)
+        {
+            var key = ClusterKey(emotionType, owner);
+            if (_clusters.TryGetValue(key, out var existing)) return existing;
+            return new ClusterProgress { EmotionType = emotionType, Owner = owner };
+        }
+
+        private static string ClusterKey(string emotionType, string owner) => $"{emotionType}|{owner}";
+
+        // ── Save container ─────────────────────────────────────
+
+        [Serializable]
+        private sealed class EmotionGardenSaveData
+        {
+            public int Version;
+            public string LastSubmitDateIso = string.Empty;
+            public List<EmotionFlowerData> Flowers = new();
+            public List<ClusterProgress> Clusters = new();
+        }
+    }
+}

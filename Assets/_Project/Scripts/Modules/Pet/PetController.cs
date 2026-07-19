@@ -85,6 +85,16 @@ namespace GeminiLab.Modules.Pet
         private Vector2 _playerAnimationDirection = Vector2.down;
         private bool _hasPlayerAnimationDirection;
         private string _lastForcedAnimatorStateName = string.Empty;
+
+        // 方向更新的最小 delta 阈值：过滤物理振荡（~0.002），低于此值使用目标方向
+        private const float MinDirectionDeltaSqr = 0.0001f; // (0.01)²
+
+        // 漫游卡住检测（基于 velocity 驱动 + Rigidbody2D 物理）
+        private Vector2 _wanderPrevActualPosition;
+        private bool _hasWanderPrevActualPosition;
+        private float _wanderStuckTimer;
+        private const float WanderStuckTimeout = 2f;
+        private const float WanderStuckMoveThreshold = 0.005f;
         private PetRuntimeSnapshotChangedEvent? _lastPublishedSnapshot;
         private readonly List<SpriteRenderer> _hiddenInteractionRenderers = new();
         private readonly List<bool> _hiddenInteractionRendererStates = new();
@@ -227,14 +237,14 @@ namespace GeminiLab.Modules.Pet
 
         private void FixedUpdate()
         {
-            if (_context is not null)
-            {
-                ApplyRuntimePosition(_context.RuntimeData.Position);
-            }
-
             if (IsInactivePlayerPet())
             {
                 return;
+            }
+
+            if (_context is not null)
+            {
+                ApplyRuntimePosition(_context.RuntimeData.Position);
             }
 
             _stateMachine?.FixedTick(Time.fixedDeltaTime);
@@ -658,12 +668,86 @@ namespace GeminiLab.Modules.Pet
         {
             CancelPlayerInteraction(context);
             _hasPlayerAnimationDirection = false;
-            SetPlayerControlledState(context, IdleState.StateName);
+
+            var wander = GetComponent<RandomWander>();
+            bool isWandering = wander != null && wander.IsMoving;
+
+            if (isWandering)
+            {
+                Vector2 current = GetCurrentWorldPosition();
+                Vector2 toTarget = wander.TargetPosition - current;
+
+                if (toTarget.sqrMagnitude <= wander.ArrivalThreshold * wander.ArrivalThreshold)
+                {
+                    SetWanderVelocity(Vector2.zero);
+                    context.RuntimeData.Position = wander.TargetPosition;
+                    wander.NotifyArrived();
+                    isWandering = false;
+                    _wanderStuckTimer = 0f;
+                    _hasWanderPrevActualPosition = false;
+                }
+                else
+                {
+                    float step = wander.MoveSpeed * deltaTime;
+
+                    // 检测是否卡住（本帧实际位置 vs 上帧实际位置）
+                    bool stuckThisFrame = false;
+                    if (_hasWanderPrevActualPosition)
+                    {
+                        float actualMove = Vector2.Distance(current, _wanderPrevActualPosition);
+                        stuckThisFrame = step > WanderStuckMoveThreshold && actualMove < WanderStuckMoveThreshold;
+                    }
+
+                    if (stuckThisFrame)
+                    {
+                        _wanderStuckTimer += deltaTime;
+                        if (_wanderStuckTimer >= WanderStuckTimeout)
+                        {
+                            SetWanderVelocity(Vector2.zero);
+                            wander.AbandonTarget();
+                            isWandering = false;
+                            _wanderStuckTimer = 0f;
+                            _hasWanderPrevActualPosition = false;
+                        }
+                        // 卡住但未超时：保持 velocity，继续朝向目标播放移动动画
+                    }
+                    else
+                    {
+                        _wanderStuckTimer = 0f;
+                        SetWanderVelocity(toTarget.normalized * wander.MoveSpeed);
+                    }
+
+                    _wanderPrevActualPosition = current;
+                    _hasWanderPrevActualPosition = true;
+                    context.RuntimeData.TargetPosition = wander.TargetPosition;
+                    context.RuntimeData.TargetReached = false;
+                }
+            }
+            else
+            {
+                SetWanderVelocity(Vector2.zero);
+                _wanderStuckTimer = 0f;
+                _hasWanderPrevActualPosition = false;
+            }
+
+            SetPlayerControlledState(context, isWandering ? MovingState.StateName : IdleState.StateName);
             context.Advance(deltaTime);
             _tickService?.Tick(context, deltaTime);
             ResetPlayerControlledRuntime(context);
-            context.RuntimeData.TargetPosition = context.RuntimeData.Position;
-            context.RuntimeData.TargetReached = true;
+
+            if (!isWandering)
+            {
+                context.RuntimeData.TargetPosition = context.RuntimeData.Position;
+                context.RuntimeData.TargetReached = true;
+            }
+        }
+
+        private void SetWanderVelocity(Vector2 velocity)
+        {
+            if (_rigidbody2D != null)
+            {
+                _rigidbody2D.velocity = velocity;
+            }
         }
 
         public bool TryStartPlayerInteraction(PetPlayerInteractionRequest request)
@@ -1155,7 +1239,7 @@ namespace GeminiLab.Modules.Pet
             {
                 _lastMoveDirection = _playerAnimationDirection;
             }
-            else if (hasDelta)
+            else if (hasDelta && delta.sqrMagnitude > MinDirectionDeltaSqr)
             {
                 _lastMoveDirection = delta.normalized;
             }
@@ -1632,6 +1716,7 @@ namespace GeminiLab.Modules.Pet
                 runtime.Mood,
                 runtime.Energy,
                 runtime.Satiety,
+                runtime.Relation,
                 runtime.WorkRequested,
                 runtime.TargetFurnitureId,
                 runtime.TargetFurnitureCategory,

@@ -40,6 +40,10 @@ namespace GeminiLab.Core.Time
             UtcNow += delta;
         }
 
+        public void DebugAdvanceDays(int days) => Advance(TimeSpan.FromDays(days));
+
+        public void DebugResetClock() => SetLocal(DateTime.Now);
+
         public void SetLocal(DateTime local)
         {
             Now = local;

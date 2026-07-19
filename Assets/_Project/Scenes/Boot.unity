@@ -235,6 +235,8 @@ GameObject:
   - component: {fileID: 1934747569}
   - component: {fileID: 1934747570}
   - component: {fileID: 1934747571}
+  - component: {fileID: 1934747572}
+  - component: {fileID: 1934747573}
   m_Layer: 0
   m_Name: BootstrapRoot
   m_TagString: Untagged
@@ -326,9 +328,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a10f14f7a21b7b2489c92e66628f85a3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _fadeInSeconds: 0.25
-  _fadeOutSeconds: 0.4
-  _fadeColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!114 &1934747565
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -426,6 +425,31 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _deck: {fileID: 11400000, guid: 7a2560ab8af095d44a8baba7d0818e46, type: 2}
   _llmConfig: {fileID: 11400000, guid: ffee80063e7d8a54eb1afe0558c7500b, type: 2}
+--- !u!114 &1934747572
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f10a68f83b14b7047bf8df94f643f663, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1934747573
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1934747558}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7cb0204bc295c7e4aa9ec16bcbeb6ca6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _refreshIntervalSeconds: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

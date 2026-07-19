@@ -2,7 +2,10 @@
   "name": "GeminiLab.Modules.WorldMap",
   "rootNamespace": "GeminiLab.Modules.WorldMap",
   "references": [
-    "GeminiLab.Core"
+    "GeminiLab.Core",
+    "GeminiLab.Modules.Garden",
+    "GeminiLab.Modules.Pet",
+    "GeminiLab.Modules.EmotionGarden"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

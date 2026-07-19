@@ -7,6 +7,7 @@ using GeminiLab.Core.UI;
 using GeminiLab.Modules.Gateway;
 using GeminiLab.Modules.Pet;
 using GeminiLab.Modules.Pet.Personality;
+using GeminiLab;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Tarot
@@ -48,7 +49,8 @@ namespace GeminiLab.Modules.Tarot
             if (ServiceLocator.TryResolve(out IPersistentServiceRegistry? registry) && registry is not null)
                 registry.Register(recordStore);
 
-            Debug.Log($"[TarotBootstrap] TarotService registered. Backend: {backend.GetType().Name}");
+            if (DebugDisplaySettingsSO.Instance.IsVerboseLoggingEnabled)
+                Debug.Log($"[TarotBootstrap] TarotService registered. Backend: {backend.GetType().Name}");
 
             if (_eventBus is not null)
             {
@@ -60,17 +62,20 @@ namespace GeminiLab.Modules.Tarot
         {
             if (_llmConfig != null && _llmConfig.IsConfigured)
             {
-                Debug.Log("[TarotBootstrap] 使用 DirectLLMBackend");
+                if (DebugDisplaySettingsSO.Instance.IsVerboseLoggingEnabled)
+                    Debug.Log("[TarotBootstrap] 使用 DirectLLMBackend");
                 return new DirectLLMBackend(_llmConfig, ResolvePersonalityText);
             }
 
             if (ServiceLocator.TryResolve(out IGatewayClient? client) && client is not null)
             {
-                Debug.Log("[TarotBootstrap] 使用 GatewayTarotBackend");
+                if (DebugDisplaySettingsSO.Instance.IsVerboseLoggingEnabled)
+                    Debug.Log("[TarotBootstrap] 使用 GatewayTarotBackend");
                 return new GatewayTarotBackend(client);
             }
 
-            Debug.Log("[TarotBootstrap] 使用 FallbackOnlyBackend（本地解读）");
+            if (DebugDisplaySettingsSO.Instance.IsVerboseLoggingEnabled)
+                Debug.Log("[TarotBootstrap] 使用 FallbackOnlyBackend（本地解读）");
             return new FallbackOnlyBackend();
         }
 
@@ -92,11 +97,6 @@ namespace GeminiLab.Modules.Tarot
 
         private void OnTarotDrawn(TarotDrawnEvent evt)
         {
-            if (_eventBus is null) return;
-
-            string orientZh = evt.Result.Orientation == TarotOrientation.Upright ? "正位" : "逆位";
-            string msg = $"已选牌：{evt.Result.Card.DisplayNameZh} · {orientZh}";
-            _eventBus.Publish(new ToastRequestedEvent(msg, ToastKind.Success, 0f));
         }
 
         private sealed class FallbackOnlyBackend : ITarotReadingBackend

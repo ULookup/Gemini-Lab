@@ -21,6 +21,11 @@ namespace GeminiLab.Core.UI
         Garden = 24,
         SpaceSys = 25,
 
+        // 情绪花园
+        EmotionInput = 26,
+        WeeklyGardenView = 27,
+        EmotionCollection = 28,
+
         // 通用
         ConfirmDialog = 90
     }
