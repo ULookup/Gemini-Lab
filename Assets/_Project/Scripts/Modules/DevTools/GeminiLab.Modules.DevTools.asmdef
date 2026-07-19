@@ -1,0 +1,17 @@
+{
+  "name": "GeminiLab.Modules.DevTools",
+  "rootNamespace": "GeminiLab.Modules.DevTools",
+  "references": [
+    "GeminiLab.Core",
+    "GeminiLab.Modules.EmotionGarden"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

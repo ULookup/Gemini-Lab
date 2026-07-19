@@ -15,7 +15,10 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private bool _preferControlOnEnable;
         [SerializeField] private bool _acceptWasd = true;
         [SerializeField] private bool _acceptArrowKeys = true;
+        [SerializeField] private bool _horizontalOnly = false;
         [SerializeField, Min(0f)] private float _moveSpeed = 2.5f;
+
+        public static Transform? ActiveTransform => s_activeController != null ? s_activeController.transform : null;
 
         public bool InputEnabled => _enableInput && isActiveAndEnabled && ReferenceEquals(s_activeController, this);
 
@@ -84,6 +87,7 @@ namespace GeminiLab.Modules.Pet
             }
 
             rawInput = ReadRawInputVector(_acceptWasd, _acceptArrowKeys);
+            if (_horizontalOnly) rawInput.y = 0f;
             movement = rawInput.sqrMagnitude > 1f ? rawInput.normalized : rawInput;
             return rawInput.sqrMagnitude > 0.0001f;
         }

@@ -15,6 +15,9 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private Vector2 _boundsMin = new(-5f, -3f);
         [SerializeField] private Vector2 _boundsMax = new(5f, 3f);
 
+        [Header("横板模式")]
+        [SerializeField] private bool _horizontalOnly = false;
+
         [Header("移动参数")]
         [SerializeField] private float _moveSpeed = 1.5f;
         [SerializeField] private float _arrivalThreshold = 0.15f;
@@ -87,10 +90,11 @@ namespace GeminiLab.Modules.Pet
 
         private void PickNewTarget()
         {
-            _targetPosition = new Vector2(
-                Random.Range(_boundsMin.x, _boundsMax.x),
-                Random.Range(_boundsMin.y, _boundsMax.y)
-            );
+            float x = Random.Range(_boundsMin.x, _boundsMax.x);
+            float y = _horizontalOnly
+                ? transform.position.y
+                : Random.Range(_boundsMin.y, _boundsMax.y);
+            _targetPosition = new Vector2(x, y);
         }
 
 #if UNITY_EDITOR

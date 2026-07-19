@@ -34,5 +34,15 @@ namespace GeminiLab.Core.Time
         /// 花园离线推进、旅行 ETA 等用这个。
         /// </summary>
         TimeSpan ElapsedSinceUtc(DateTime utcWhen);
+
+        /// <summary>
+        /// [调试] 将时钟整体拨快 N 天，影响 Now / UtcNow / TodayIso。
+        /// 所有每日重置类系统（情绪花园、塔罗等）会随之进入新的一天。
+        /// 开发者模式下偏移持久化（跨 Play 会话连续），玩家模式永远真实时间。
+        /// </summary>
+        void DebugAdvanceDays(int days);
+
+        /// <summary>[调试] 清零调试偏移，回到真实系统时间。</summary>
+        void DebugResetClock();
     }
 }
