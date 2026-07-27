@@ -206,20 +206,12 @@ namespace GeminiLab.Editor.SceneBootstrap
 
         private static void CreateSceneObjects(Transform parent)
         {
-            // 小木屋 — 场景左侧
-            CreatePlaceholderObject(parent, "Cabin", new Vector3(-12f, GroundY - 0.2f, 0),
-                new Vector2(2.5f, 3f), new Color(0.6f, 0.45f, 0.25f, 1f),
-                "小木屋", "小木屋 · 功能待接入");
-
-            // 祈愿树 — 场景左侧
-            CreatePlaceholderObject(parent, "WishingTree", new Vector3(-6f, GroundY + 0.2f, 0),
-                new Vector2(1.8f, 3.5f), new Color(0.35f, 0.6f, 0.25f, 1f),
-                "祈愿树", "祈愿树 · 功能待接入");
-
-            // 邮箱 — 场景右侧
-            CreatePlaceholderObject(parent, "Mailbox", new Vector3(6f, GroundY + 0.5f, 0),
-                new Vector2(1f, 1.5f), new Color(0.7f, 0.3f, 0.25f, 1f),
-                "邮箱", "邮箱 · 功能待接入");
+            // 旧占位物已由 PSD 导入的真实美术资源替代（桥/室内/邮箱），不再创建占位
+            foreach (var name in new[] { "Cabin", "WishingTree", "Mailbox" })
+            {
+                var old = parent.Find(name);
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+            }
         }
 
         private static void CreatePlaceholderObject(Transform parent, string name, Vector3 pos,

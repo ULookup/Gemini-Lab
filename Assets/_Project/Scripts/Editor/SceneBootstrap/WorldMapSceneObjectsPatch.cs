@@ -1,5 +1,6 @@
 #nullable enable
 #if UNITY_EDITOR
+using GeminiLab.Modules.Pet;
 using GeminiLab.Modules.WorldMap;
 using TMPro;
 using UnityEditor;
@@ -30,23 +31,39 @@ namespace GeminiLab.Editor.SceneBootstrap
                 return;
             }
 
-            var rootT = root.transform;
+            // 清理旧的占位物体（已被 PSD 导入的真实美术资源替代）
+            foreach (var name in new[] { "Cabin", "WishingTree", "Mailbox" })
+            {
+                var old = root.transform.Find(name);
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+            }
 
-            EnsurePlaceholder(rootT, "Cabin", new Vector3(-12f, GroundY - 0.2f, 0),
-                new Vector2(2.5f, 3f), new Color(0.6f, 0.45f, 0.25f, 1f),
-                "小木屋", "小木屋 · 功能待接入");
-
-            EnsurePlaceholder(rootT, "WishingTree", new Vector3(-6f, GroundY + 0.2f, 0),
-                new Vector2(1.8f, 3.5f), new Color(0.35f, 0.6f, 0.25f, 1f),
-                "祈愿树", "祈愿树 · 功能待接入");
-
-            EnsurePlaceholder(rootT, "Mailbox", new Vector3(6f, GroundY + 0.5f, 0),
-                new Vector2(1f, 1.5f), new Color(0.7f, 0.3f, 0.25f, 1f),
-                "邮箱", "邮箱 · 功能待接入");
+            // 配置桥的物理碰撞（桌宠可步行表面）
+            SetupBridgeWalkableSurface();
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[WorldMapSceneObjectsPatch] 场景物占位已增量添加");
+            Debug.Log("[WorldMapSceneObjectsPatch] 旧占位物体已清理 + 桥碰撞已配置");
+        }
+
+        /// <summary>配置"桥"为桌宠可步行表面：添加 WalkableSurface，桌宠走到桥上方自动站到桥面。</summary>
+        private static void SetupBridgeWalkableSurface()
+        {
+            var bg = GameObject.Find("桥");
+            if (bg == null)
+            {
+                Debug.LogWarning("[WorldMapSceneObjectsPatch] 未找到桥对象，跳过桥碰撞配置");
+                return;
+            }
+
+            if (bg.GetComponent<WalkableSurface>() == null)
+            {
+                var ws = bg.AddComponent<WalkableSurface>();
+                var wsSo = new SerializedObject(ws);
+                wsSo.FindProperty("_yOffset").floatValue = 0.25f;
+                wsSo.ApplyModifiedProperties();
+                Debug.Log("[WorldMapSceneObjectsPatch] 桥 WalkableSurface 已添加");
+            }
         }
 
         private static void EnsurePlaceholder(Transform parent, string name, Vector3 pos,

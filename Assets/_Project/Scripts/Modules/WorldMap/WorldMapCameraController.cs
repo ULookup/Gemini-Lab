@@ -7,7 +7,7 @@ namespace GeminiLab.Modules.WorldMap
 {
     /// <summary>
     /// WorldMap 场景的横板摄像头控制器。
-    /// 未选中桌宠时：A/D 键、左键拖拽、右键拖拽平移。
+    /// 未选中桌宠时：A/D 键、左键拖拽平移。
     /// 选中桌宠时：自动跟随桌宠 X 坐标（平滑插值）。
     /// 点击空白区域取消选中桌宠。
     /// </summary>
@@ -19,7 +19,7 @@ namespace GeminiLab.Modules.WorldMap
         [SerializeField] private float _maxX = 20f;
 
         [Header("键盘输入")]
-        [SerializeField] private float _keyboardSpeed = 8f;
+        [SerializeField] private float _keyboardSpeed = 5f;
         [SerializeField] private KeyCode _leftKey = KeyCode.A;
         [SerializeField] private KeyCode _rightKey = KeyCode.D;
 
@@ -29,9 +29,16 @@ namespace GeminiLab.Modules.WorldMap
         [Header("跟随")]
         [SerializeField] private float _followSmoothTime = 0.3f;
 
+        [Header("箭头按钮滚动")]
+        [SerializeField] private float _arrowScrollSpeed = 5f;
+        [SerializeField] private float _arrowSmoothTime = 0.25f;
+
         private Camera? _camera;
         private Vector3? _lastDragMouseWorld;
         private float _followVelocity;
+        private float _scrollTargetX;
+        private float _scrollVelocity;
+        private bool _hasScrollTarget;
 
         private void Awake()
         {
@@ -41,6 +48,26 @@ namespace GeminiLab.Modules.WorldMap
         private void Update()
         {
             if (_camera is null) return;
+
+            // 左键点击非桌宠区域 → 取消选中（必须在跟随/平移分支之前，否则选中状态下不会执行）
+            if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
+            {
+                Vector2 worldPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
+                var hits = Physics2D.OverlapPointAll(worldPoint);
+                bool clickedOnPet = false;
+                foreach (var h in hits)
+                {
+                    if (h.GetComponent<PetPlayerInputController>() != null)
+                    {
+                        clickedOnPet = true;
+                        break;
+                    }
+                }
+                if (!clickedOnPet)
+                {
+                    PetPlayerInputController.ReleaseAllControl();
+                }
+            }
 
             Transform? followTarget = PetPlayerInputController.ActiveTransform;
 
@@ -57,8 +84,9 @@ namespace GeminiLab.Modules.WorldMap
                 return;
             }
 
-            // 自由平移模式
+            // 自由平移模式：键盘 A/D
             float delta = 0f;
+
             if (Input.GetKey(_leftKey)) delta -= _keyboardSpeed * Time.unscaledDeltaTime;
             if (Input.GetKey(_rightKey)) delta += _keyboardSpeed * Time.unscaledDeltaTime;
 
@@ -71,22 +99,35 @@ namespace GeminiLab.Modules.WorldMap
                 {
                     delta += (_lastDragMouseWorld.Value.x - cur.x) * _dragSpeed;
                 }
-                _lastDragMouseWorld = _camera.ScreenToWorldPoint(Input.mousePosition);
+                _lastDragMouseWorld = cur;
             }
             else
             {
                 _lastDragMouseWorld = null;
             }
 
-            // 左键点击空白区域 → 取消选中桌宠
-            if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
+            bool hasManualInput = Mathf.Abs(delta) > 0.0001f;
+
+            // 手动输入时取消平滑滚动目标
+            if (hasManualInput)
             {
-                Vector2 worldPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
-                Collider2D? hit = Physics2D.OverlapPoint(worldPoint);
-                if (hit == null)
+                _hasScrollTarget = false;
+            }
+
+            // 平滑滚动模式：箭头按钮设置的 target
+            if (_hasScrollTarget && !hasManualInput)
+            {
+                pos.x = Mathf.SmoothDamp(pos.x, _scrollTargetX, ref _scrollVelocity, _arrowSmoothTime);
+                pos.x = Mathf.Clamp(pos.x, _minX, _maxX);
+                transform.position = pos;
+
+                if (Mathf.Abs(pos.x - _scrollTargetX) < 0.01f)
                 {
-                    PetPlayerInputController.ReleaseAllControl();
+                    pos.x = _scrollTargetX;
+                    transform.position = pos;
+                    _hasScrollTarget = false;
                 }
+                return;
             }
 
             pos.x = Mathf.Clamp(pos.x + delta, _minX, _maxX);
@@ -97,6 +138,20 @@ namespace GeminiLab.Modules.WorldMap
         {
             _minX = minX;
             _maxX = maxX;
+        }
+
+        public void ScrollLeft()
+        {
+            _scrollTargetX = Mathf.Clamp(transform.position.x - _arrowScrollSpeed, _minX, _maxX);
+            _hasScrollTarget = true;
+            _scrollVelocity = 0f;
+        }
+
+        public void ScrollRight()
+        {
+            _scrollTargetX = Mathf.Clamp(transform.position.x + _arrowScrollSpeed, _minX, _maxX);
+            _hasScrollTarget = true;
+            _scrollVelocity = 0f;
         }
 
         private static bool IsPointerOverUI()

@@ -11,7 +11,7 @@ namespace GeminiLab.Editor.SceneBootstrap
     public static class AutoSetup
     {
         private const string SetupDoneKey = "GeminiLab.AutoSetupDone";
-        private const int ExpectedVersion = 15;
+        private const int ExpectedVersion = 21;
 
         static AutoSetup()
         {
@@ -106,6 +106,36 @@ namespace GeminiLab.Editor.SceneBootstrap
                     if (currentVersion < 15)
                     {
                         WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 16)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 17)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 18)
+                    {
+                        WorldMapSceneObjectsPatch.Patch();
+                    }
+
+                    if (currentVersion < 19)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 20)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 21)
+                    {
+                        WorldMapSceneObjectsPatch.Patch();
                     }
 
                     EditorPrefs.SetInt(SetupDoneKey, ExpectedVersion);
