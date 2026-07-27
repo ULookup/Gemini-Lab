@@ -6,6 +6,7 @@ using GeminiLab.Modules.Collection;
 using GeminiLab.Modules.DevTools;
 using GeminiLab.Modules.HubUI;
 using GeminiLab.Modules.HubUI.Panels;
+using GeminiLab.Modules.WorldMap;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -55,9 +56,15 @@ namespace GeminiLab.Editor.SceneBootstrap
             WireButtonToPanel(weeklyBtn, PanelId.WeeklyGardenView);
             WireButtonToPanel(collectionBtn, PanelId.EmotionCollection);
 
+            // 7/20 修改清单
+            EnsureArrowButtons(canvasGo, uiLayer);
+            EnsureCabinReturnPortal();
+            HideGardenPlots();
+            DisableCameraFollow();
+
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[WorldMapEmotionGardenUI] 情绪花园面板 + 触发按钮已添加到 WorldMap Canvas");
+            Debug.Log("[WorldMapEmotionGardenUI] 情绪花园面板 + 触发按钮 + 7/20 修改已应用到 WorldMap Canvas");
         }
 
         // ── DevTools 调试工具父节点 ──────────────────────────
@@ -292,6 +299,13 @@ namespace GeminiLab.Editor.SceneBootstrap
 
         // ── 每周培育面板内容 ──────────────────────────────────
 
+        private const string GardenWeekArtDir = "Assets/_Project/Art/WorldMap/garden_week";
+
+        private static Sprite? LoadGardenWeekSprite(string fileName)
+        {
+            return AssetDatabase.LoadAssetAtPath<Sprite>($"{GardenWeekArtDir}/{fileName}.png");
+        }
+
         private static void SetupWeeklyGardenContent(GameObject panel, int uiLayer)
         {
             var stub = panel.GetComponent<WeeklyGardenPanelStub>();
@@ -302,47 +316,244 @@ namespace GeminiLab.Editor.SceneBootstrap
             if (content == null) return;
 
             var contentT = content.transform;
+            var uiSprite = LoadGardenWeekSprite("UI");
+            var closeSprite = LoadGardenWeekSprite("close");
+            var barSprite = LoadGardenWeekSprite("UIbar");
+            var bottleSprite = LoadGardenWeekSprite("bottle");
 
-            var titleGo = EnsureChildText(contentT, uiLayer, "WeekTitle", "每周培育", 28,
-                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -50), new Vector2(400, 46));
+            // ── 替换 Content 背景为 UI.png ──
+            var bgImg = content.GetComponent<Image>();
+            if (bgImg != null && uiSprite != null)
+            {
+                bgImg.sprite = uiSprite;
+                bgImg.color = Color.white;
+            }
 
+            // ── 标题 + 动态周范围文字 ──
+            var existingTitleTmp = contentT.Find("WeekTitle");
+            if (existingTitleTmp != null) Object.DestroyImmediate(existingTitleTmp.gameObject);
+            var existingWeekInfo = contentT.Find("WeekInfo");
+            if (existingWeekInfo != null) Object.DestroyImmediate(existingWeekInfo.gameObject);
+
+            var weekInfoGo = new GameObject("WeekInfo");
+            weekInfoGo.transform.SetParent(contentT, false);
+            weekInfoGo.layer = uiLayer;
+            var wrt = weekInfoGo.AddComponent<RectTransform>();
+            wrt.anchorMin = new Vector2(0.5f, 1f);
+            wrt.anchorMax = new Vector2(0.5f, 1f);
+            wrt.pivot = new Vector2(0.5f, 0f);
+            wrt.anchoredPosition = new Vector2(0, -90);
+            wrt.sizeDelta = new Vector2(500, 36);
+            var wtmp = weekInfoGo.AddComponent<TextMeshProUGUI>();
+            wtmp.fontSize = 22;
+            wtmp.alignment = TextAlignmentOptions.Center;
+            wtmp.color = Color.white;
+            so.FindProperty("_weekTitleText").objectReferenceValue = wtmp;
+
+            // ── 替换关闭按钮为 close.png 精灵 ──
+            var closeBtnT = contentT.Find("Btn_Close");
+            if (closeBtnT != null)
+            {
+                var cbImg = closeBtnT.GetComponent<Image>();
+                if (cbImg != null && closeSprite != null)
+                {
+                    cbImg.sprite = closeSprite;
+                    cbImg.color = Color.white;
+                    var cbrt = closeBtnT.GetComponent<RectTransform>();
+                    cbrt.sizeDelta = new Vector2(50, 52);
+                }
+                var xT = closeBtnT.Find("X");
+                if (xT != null) Object.DestroyImmediate(xT.gameObject);
+            }
+
+            // ── UIbar 顶栏装饰 ──
+            var existingBar = contentT.Find("UIbar");
+            if (existingBar != null) Object.DestroyImmediate(existingBar.gameObject);
+            if (barSprite != null)
+            {
+                var barGo = new GameObject("UIbar");
+                barGo.transform.SetParent(contentT, false);
+                barGo.transform.SetAsFirstSibling();
+                barGo.layer = uiLayer;
+                var brt = barGo.AddComponent<RectTransform>();
+                brt.anchorMin = new Vector2(0.5f, 1f);
+                brt.anchorMax = new Vector2(0.5f, 1f);
+                brt.pivot = new Vector2(0.5f, 1f);
+                brt.anchoredPosition = new Vector2(0, -5);
+                var rect = barSprite.rect;
+                brt.sizeDelta = new Vector2(rect.width * 0.5f, rect.height * 0.5f);
+                var bimg = barGo.AddComponent<Image>();
+                bimg.sprite = barSprite;
+                bimg.preserveAspect = true;
+                bimg.raycastTarget = false;
+            }
+
+            // ── 翻周按钮 ──
             var prevBtn = EnsureWeekNavButton(contentT, uiLayer, "PrevWeekBtn", "◀ 上一周", new Vector2(-260, -50));
             var nextBtn = EnsureWeekNavButton(contentT, uiLayer, "NextWeekBtn", "下一周 ▶", new Vector2(260, -50));
-
             if (prevBtn.onClick.GetPersistentEventCount() == 0)
                 UnityEditor.Events.UnityEventTools.AddPersistentListener(prevBtn.onClick, stub.ShowPrevWeek);
             if (nextBtn.onClick.GetPersistentEventCount() == 0)
                 UnityEditor.Events.UnityEventTools.AddPersistentListener(nextBtn.onClick, stub.ShowNextWeek);
 
+            // ── 瓶子网格 ──
             var gridGo = EnsureChild(contentT, "Grid", uiLayer);
-            if (gridGo.transform.childCount == 0)
-            {
-                // 首次创建才设置布局属性
-                var grt = GetOrAdd<RectTransform>(gridGo);
-                grt.anchorMin = new Vector2(0.5f, 0.5f);
-                grt.anchorMax = new Vector2(0.5f, 0.5f);
-                grt.pivot = new Vector2(0.5f, 0.5f);
-                grt.anchoredPosition = new Vector2(0, 30);
-                grt.sizeDelta = new Vector2(1600, 380);
-                var hlg = GetOrAdd<HorizontalLayoutGroup>(gridGo);
-                hlg.spacing = 14;
-                hlg.childAlignment = TextAnchor.MiddleCenter;
-                hlg.childControlWidth = true;
-                hlg.childControlHeight = false;
-                hlg.childForceExpandWidth = true;
-                hlg.childForceExpandHeight = false;
-            }
-            else
-            {
-                // 已存在：只确保组件不丢
-                if (gridGo.GetComponent<RectTransform>() == null) gridGo.AddComponent<RectTransform>();
-                if (gridGo.GetComponent<HorizontalLayoutGroup>() == null) gridGo.AddComponent<HorizontalLayoutGroup>();
-            }
+            // 总是重建网格布局（适配新瓶子尺寸）
+            var grt = GetOrAdd<RectTransform>(gridGo);
+            grt.anchorMin = new Vector2(0.5f, 0.5f);
+            grt.anchorMax = new Vector2(0.5f, 0.5f);
+            grt.pivot = new Vector2(0.5f, 0.5f);
+            grt.anchoredPosition = new Vector2(0, -180);
+            grt.sizeDelta = new Vector2(1600, 400);
+            var hlg = GetOrAdd<HorizontalLayoutGroup>(gridGo);
+            hlg.spacing = 14;
+            hlg.childAlignment = TextAnchor.MiddleCenter;
+            hlg.childControlWidth = true;
+            hlg.childControlHeight = false;
+            hlg.childForceExpandWidth = false;
+            hlg.childForceExpandHeight = false;
 
-            so.FindProperty("_weekTitleText").objectReferenceValue = titleGo.GetComponent<TextMeshProUGUI>();
+            // ── 创建瓶子单元格模板 ──
+            SetupBottleCellTemplate(gridGo, uiLayer, bottleSprite, so);
+
+            // ── 数据绑定 ──
             so.FindProperty("_gridRoot").objectReferenceValue = gridGo.transform;
             so.FindProperty("_nextWeekButton").objectReferenceValue = nextBtn;
             so.ApplyModifiedProperties();
+        }
+
+        private static void SetupBottleCellTemplate(GameObject gridGo, int uiLayer,
+            Sprite? bottleSprite, SerializedObject stubSo)
+        {
+            // 清理旧的占位 cells + Day0~Day6（强制重建，确保使用新瓶子资源）
+            for (int i = gridGo.transform.childCount - 1; i >= 0; i--)
+            {
+                var child = gridGo.transform.GetChild(i);
+                if (child.name == "CellTemplate") continue;
+                Object.DestroyImmediate(child.gameObject);
+            }
+
+            // 幂等：已有模板则跳过创建
+            var template = gridGo.transform.Find("CellTemplate")?.gameObject;
+            if (template == null)
+            {
+                template = new GameObject("CellTemplate");
+                template.transform.SetParent(gridGo.transform, false);
+                template.SetActive(false);
+                template.layer = uiLayer;
+
+                var trt = template.AddComponent<RectTransform>();
+                trt.sizeDelta = new Vector2(160, 320);
+
+                var layout = template.AddComponent<LayoutElement>();
+                layout.preferredWidth = 160;
+                layout.preferredHeight = 320;
+                layout.minWidth = 120;
+                layout.minHeight = 280;
+
+                // 瓶子背景
+                var bottleGo = new GameObject("Bottle");
+                bottleGo.transform.SetParent(template.transform, false);
+                bottleGo.layer = uiLayer;
+                var brt = bottleGo.AddComponent<RectTransform>();
+                brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one;
+                brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
+                var bimg = bottleGo.AddComponent<Image>();
+                bimg.preserveAspect = true;
+                if (bottleSprite != null)
+                    bimg.sprite = bottleSprite;
+                bimg.color = Color.white;
+
+                // 天数标签
+                var dayLabelGo = new GameObject("DayLabel");
+                dayLabelGo.transform.SetParent(template.transform, false);
+                dayLabelGo.layer = uiLayer;
+                var drt = dayLabelGo.AddComponent<RectTransform>();
+                drt.anchorMin = new Vector2(0.5f, 1f);
+                drt.anchorMax = new Vector2(0.5f, 1f);
+                drt.pivot = new Vector2(0.5f, 1f);
+                drt.anchoredPosition = new Vector2(0, -10);
+                drt.sizeDelta = new Vector2(80, 32);
+
+                var daySpriteGo = new GameObject("DaySprite");
+                daySpriteGo.transform.SetParent(dayLabelGo.transform, false);
+                daySpriteGo.layer = uiLayer;
+                var dsrt = daySpriteGo.AddComponent<RectTransform>();
+                dsrt.anchorMin = Vector2.zero; dsrt.anchorMax = Vector2.one;
+                dsrt.offsetMin = Vector2.zero; dsrt.offsetMax = Vector2.zero;
+                var dimg = daySpriteGo.AddComponent<Image>();
+                dimg.preserveAspect = true;
+                dimg.color = Color.white;
+
+                var dayTextGo = new GameObject("DayText");
+                dayTextGo.transform.SetParent(dayLabelGo.transform, false);
+                dayTextGo.layer = uiLayer;
+                var dtrt = dayTextGo.AddComponent<RectTransform>();
+                dtrt.anchorMin = Vector2.zero; dtrt.anchorMax = Vector2.one;
+                dtrt.offsetMin = Vector2.zero; dtrt.offsetMax = Vector2.zero;
+                var dtmp = dayTextGo.AddComponent<TextMeshProUGUI>();
+                dtmp.fontSize = 16;
+                dtmp.alignment = TextAlignmentOptions.Center;
+                dtmp.color = Color.white;
+                dtmp.raycastTarget = false;
+
+                // 情绪/培育者文字
+                var labelGo = new GameObject("Label");
+                labelGo.transform.SetParent(template.transform, false);
+                labelGo.layer = uiLayer;
+                var lrt = labelGo.AddComponent<RectTransform>();
+                lrt.anchorMin = new Vector2(0f, 0f);
+                lrt.anchorMax = new Vector2(1f, 0f);
+                lrt.pivot = new Vector2(0.5f, 0f);
+                lrt.anchoredPosition = Vector2.zero;
+                lrt.sizeDelta = new Vector2(-12, 80);
+                var ltmp = labelGo.AddComponent<TextMeshProUGUI>();
+                ltmp.fontSize = 14;
+                ltmp.alignment = TextAlignmentOptions.Center;
+                ltmp.color = new Color(0.9f, 0.9f, 0.9f, 1f);
+                ltmp.raycastTarget = false;
+                ltmp.enableWordWrapping = true;
+            }
+
+            // 绑定模板 + 清空日标签精灵数组（新 UI 使用文字标签）
+            stubSo.FindProperty("_cellPrefab").objectReferenceValue = template;
+            var daySpritesProp = stubSo.FindProperty("_dayLabelSprites");
+            if (daySpritesProp != null)
+            {
+                daySpritesProp.arraySize = 7;
+                for (int i = 0; i < 7; i++)
+                    daySpritesProp.GetArrayElementAtIndex(i).objectReferenceValue = null;
+            }
+
+            // ── 预置 7 个可见格子到场景中（方便 Scene 视图编辑）──
+            string[] dayLabels = { "周一", "周二", "周三", "周四", "周五", "周六", "周日" };
+            for (int i = 0; i < 7; i++)
+            {
+                var existingDay = gridGo.transform.Find($"Day{i}");
+                if (existingDay != null) continue;
+
+                var dayCell = Object.Instantiate(template, gridGo.transform);
+                dayCell.name = $"Day{i}";
+                dayCell.SetActive(true);
+                dayCell.layer = uiLayer;
+
+                // 天数文字
+                var dayTmp = dayCell.transform.Find("DayLabel/DayText")?.GetComponent<TextMeshProUGUI>();
+                if (dayTmp != null)
+                {
+                    dayTmp.text = dayLabels[i];
+                    dayTmp.enabled = true;
+                }
+                var daySpriteGo = dayCell.transform.Find("DayLabel/DaySprite");
+                if (daySpriteGo != null) daySpriteGo.gameObject.SetActive(false);
+
+                // 示例文字
+                var label = dayCell.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
+                if (label != null)
+                {
+                    label.text = dayLabels[i];
+                }
+            }
         }
 
         /// <summary>顶部锚定的翻周导航按钮（EnsureButtonWithLabel 是中心锚定，不适用标题栏）。</summary>
@@ -625,6 +836,176 @@ namespace GeminiLab.Editor.SceneBootstrap
             tmp.color = Color.white;
 
             return btn;
+        }
+
+        // ── 7/20 修改清单 ──────────────────────────────────────
+
+        /// <summary>左右下角箭头按钮：点击滚动场景，摄像机不跟桌宠。</summary>
+        private static void EnsureArrowButtons(GameObject canvasGo, int uiLayer)
+        {
+            var existingLeft = canvasGo.transform.Find("Btn_ScrollLeft");
+            var existingRight = canvasGo.transform.Find("Btn_ScrollRight");
+
+            if (existingLeft != null && existingRight != null) return;
+
+            var cam = UnityEngine.Object.FindFirstObjectByType<WorldMapCameraController>();
+            if (cam == null)
+            {
+                Debug.LogWarning("[WorldMapEmotionGardenUI] 未找到 WorldMapCameraController，跳过箭头按钮创建");
+                return;
+            }
+
+            if (existingLeft == null)
+            {
+                var go = new GameObject("Btn_ScrollLeft");
+                go.transform.SetParent(canvasGo.transform, false);
+                go.layer = uiLayer;
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0, 0.5f);
+                rt.anchorMax = new Vector2(0, 0.5f);
+                rt.pivot = new Vector2(0, 0.5f);
+                rt.anchoredPosition = new Vector2(24, 0);
+                rt.sizeDelta = new Vector2(56, 80);
+                var img = go.AddComponent<Image>();
+                img.color = new Color(0.12f, 0.14f, 0.22f, 0.75f);
+                var btn = go.AddComponent<Button>();
+                btn.targetGraphic = img;
+
+                var arrowGo = new GameObject("Arrow");
+                arrowGo.transform.SetParent(go.transform, false);
+                arrowGo.layer = uiLayer;
+                var art = arrowGo.AddComponent<RectTransform>();
+                art.anchorMin = Vector2.zero; art.anchorMax = Vector2.one;
+                art.offsetMin = Vector2.zero; art.offsetMax = Vector2.zero;
+                var tmp = arrowGo.AddComponent<TextMeshProUGUI>();
+                tmp.text = "◀";
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.fontSize = 28;
+                tmp.color = Color.white;
+
+                UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, cam.ScrollLeft);
+
+                // hover 变色
+                var colors = btn.colors;
+                colors.normalColor = new Color(0.12f, 0.14f, 0.22f, 0.75f);
+                colors.highlightedColor = new Color(0.22f, 0.28f, 0.45f, 0.9f);
+                btn.colors = colors;
+            }
+
+            if (existingRight == null)
+            {
+                var go = new GameObject("Btn_ScrollRight");
+                go.transform.SetParent(canvasGo.transform, false);
+                go.layer = uiLayer;
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = new Vector2(1, 0.5f);
+                rt.anchorMax = new Vector2(1, 0.5f);
+                rt.pivot = new Vector2(1, 0.5f);
+                rt.anchoredPosition = new Vector2(-24, 0);
+                rt.sizeDelta = new Vector2(56, 80);
+                var img = go.AddComponent<Image>();
+                img.color = new Color(0.12f, 0.14f, 0.22f, 0.75f);
+                var btn = go.AddComponent<Button>();
+                btn.targetGraphic = img;
+
+                var arrowGo = new GameObject("Arrow");
+                arrowGo.transform.SetParent(go.transform, false);
+                arrowGo.layer = uiLayer;
+                var art = arrowGo.AddComponent<RectTransform>();
+                art.anchorMin = Vector2.zero; art.anchorMax = Vector2.one;
+                art.offsetMin = Vector2.zero; art.offsetMax = Vector2.zero;
+                var tmp = arrowGo.AddComponent<TextMeshProUGUI>();
+                tmp.text = "▶";
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.fontSize = 28;
+                tmp.color = Color.white;
+
+                UnityEditor.Events.UnityEventTools.AddPersistentListener(btn.onClick, cam.ScrollRight);
+
+                var colors = btn.colors;
+                colors.normalColor = new Color(0.12f, 0.14f, 0.22f, 0.75f);
+                colors.highlightedColor = new Color(0.22f, 0.28f, 0.45f, 0.9f);
+                btn.colors = colors;
+            }
+
+            // 禁用摄像机跟随桌宠（通过 SerializedObject 设置私有字段）
+            var camSo = new SerializedObject(cam);
+            var fp = camSo.FindProperty("_followSelectedPet");
+            if (fp != null && fp.boolValue)
+            {
+                fp.boolValue = false;
+                camSo.ApplyModifiedProperties();
+            }
+        }
+
+        /// <summary>将 Cabin 场景物改造为返回公寓入口（替换 ClickableSceneObject → CabinReturnPortal + 移除旧返回按钮）。</summary>
+        private static void EnsureCabinReturnPortal()
+        {
+            var cabin = GameObject.Find("室内");
+            if (cabin == null)
+            {
+                Debug.LogWarning("[WorldMapEmotionGardenUI] 未找到「室内」（小木屋入口）");
+                return;
+            }
+
+            // 移除旧的 ClickableSceneObject
+            var oldClickable = cabin.GetComponent<ClickableSceneObject>();
+            if (oldClickable != null) Object.DestroyImmediate(oldClickable);
+
+            // 确保 CabinReturnPortal
+            if (cabin.GetComponent<CabinReturnPortal>() == null)
+            {
+                var portal = cabin.AddComponent<CabinReturnPortal>();
+                var so = new SerializedObject(portal);
+                so.ApplyModifiedProperties();
+            }
+
+            // 确保 Collider2D 非 trigger（OnMouseEnter/Exit 需要）
+            var col = cabin.GetComponent<Collider2D>();
+            if (col != null && col.isTrigger)
+            {
+                col.isTrigger = false;
+            }
+
+            // 移除旧版 Canvas 上的返回公寓按钮
+            var canvas = GameObject.Find("Canvas");
+            if (canvas != null)
+            {
+                var oldBtn = canvas.transform.Find("Btn_ReturnApartment");
+                if (oldBtn != null) Object.DestroyImmediate(oldBtn.gameObject);
+
+                // 也清理 WorldMapExit 旧节点（如果仍存在）
+                var oldExit = GameObject.Find("WorldMapExit");
+                if (oldExit != null) Object.DestroyImmediate(oldExit);
+            }
+
+            Debug.Log("[WorldMapEmotionGardenUI] Cabin → 返回公寓入口（hover + 点击）");
+        }
+
+        /// <summary>隐藏九宫格花圃（当前无数据，先隐藏）。</summary>
+        private static void HideGardenPlots()
+        {
+            var plots = GameObject.Find("GardenPlots");
+            if (plots != null && plots.activeSelf)
+            {
+                plots.SetActive(false);
+                Debug.Log("[WorldMapEmotionGardenUI] GardenPlots 已隐藏");
+            }
+        }
+
+        /// <summary>确保摄像机 _followSelectedPet = false。</summary>
+        private static void DisableCameraFollow()
+        {
+            var cam = UnityEngine.Object.FindFirstObjectByType<WorldMapCameraController>();
+            if (cam == null) return;
+
+            var so = new SerializedObject(cam);
+            var prop = so.FindProperty("_followSelectedPet");
+            if (prop != null && prop.boolValue)
+            {
+                prop.boolValue = false;
+                so.ApplyModifiedProperties();
+            }
         }
 
         // ── helpers ────────────────────────────────────────────

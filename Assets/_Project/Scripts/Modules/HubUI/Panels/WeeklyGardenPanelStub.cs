@@ -10,7 +10,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 {
     /// <summary>
     /// 每周培育面板：周一~周日 7 格展示指定周的情绪花，支持前后翻周。
-    /// 当前阶段：每格用方块占位，显示情绪标签+培育者+生长状态。
+    /// 单元格使用 PSD 瓶子精灵 + 天数标签 + 情绪文字叠加。
     /// </summary>
     public sealed class WeeklyGardenPanelStub : StubPanelBase
     {
@@ -29,6 +29,9 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         [Header("翻周按钮")]
         [SerializeField] private Button? _nextWeekButton;
+
+        [Header("精灵资源")]
+        [SerializeField] private Sprite[]? _dayLabelSprites;
 
         private IEmotionGardenService? _service;
         private readonly GameObject[] _cells = new GameObject[7];
@@ -54,7 +57,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         public void ShowNextWeek()
         {
             if (_service == null) return;
-            if (_viewedWeekId >= _service.GetCurrentWeekId()) return; // 不看未来
+            if (_viewedWeekId >= _service.GetCurrentWeekId()) return;
             _viewedWeekId = _service.OffsetWeekId(_viewedWeekId, +1);
             Refresh();
         }
@@ -85,19 +88,37 @@ namespace GeminiLab.Modules.HubUI.Panels
                 var cell = _cells[i];
                 if (cell == null) continue;
 
-                var label = cell.GetComponentInChildren<TMP_Text>();
-                if (label == null) continue;
-
-                if (flower.HasValue)
+                // 天数精灵
+                var dayImg = cell.transform.Find("DayLabel/DaySprite")?.GetComponent<Image>();
+                var dayTmp = cell.transform.Find("DayLabel/DayText")?.GetComponent<TextMeshProUGUI>();
+                if (dayImg != null && _dayLabelSprites != null && i < _dayLabelSprites.Length && _dayLabelSprites[i] != null)
                 {
-                    var f = flower.Value;
-                    var stateStr = f.State == GrowthState.Bloomed ? "已开花" : "培育中";
-                    var ownerStr = f.Owner == "angel" ? "天使" : "恶魔";
-                    label.text = $"{DayLabels[i]}\n{ownerStr}\n{f.EmotionType}\n{stateStr}";
+                    dayImg.sprite = _dayLabelSprites[i];
+                    dayImg.enabled = true;
+                    if (dayTmp != null) dayTmp.enabled = false;
                 }
-                else
+                else if (dayTmp != null)
                 {
-                    label.text = $"{DayLabels[i]}\n—";
+                    dayTmp.text = DayLabels[i];
+                    dayTmp.enabled = true;
+                    if (dayImg != null) dayImg.enabled = false;
+                }
+
+                // 情绪文字
+                var label = cell.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
+                if (label != null)
+                {
+                    if (flower.HasValue)
+                    {
+                        var f = flower.Value;
+                        var stateStr = f.State == GrowthState.Bloomed ? "已开花" : "培育中";
+                        var ownerStr = f.Owner == "angel" ? "天使" : "恶魔";
+                        label.text = $"{ownerStr}\n{f.EmotionType}\n{stateStr}";
+                    }
+                    else
+                    {
+                        label.text = "—";
+                    }
                 }
             }
         }
@@ -110,41 +131,55 @@ namespace GeminiLab.Modules.HubUI.Panels
             {
                 if (_cells[i] != null) continue;
 
-                GameObject cell;
+                // 优先使用场景中预置的格子（方便在 Scene 视图中编辑）
+                var existing = _gridRoot.Find($"Day{i}");
+                if (existing != null)
+                {
+                    existing.gameObject.SetActive(true);
+                    _cells[i] = existing.gameObject;
+                    continue;
+                }
+
+                // 回退：从模板 Instantiate
                 if (_cellPrefab != null)
                 {
-                    cell = Instantiate(_cellPrefab, _gridRoot);
+                    var cell = Instantiate(_cellPrefab, _gridRoot);
+                    cell.name = $"Day{i}";
+                    cell.SetActive(true);
+                    _cells[i] = cell;
                 }
                 else
                 {
-                    // 方块占位
-                    cell = new GameObject($"Day{i}");
-                    cell.transform.SetParent(_gridRoot, false);
-                    var rt = cell.AddComponent<RectTransform>();
-                    rt.sizeDelta = new Vector2(200, 300);
-
-                    var layout = cell.AddComponent<UnityEngine.UI.LayoutElement>();
-                    layout.preferredWidth = 200;
-                    layout.preferredHeight = 300;
-                    layout.minWidth = 140;
-                    layout.minHeight = 240;
-
-                    var img = cell.AddComponent<UnityEngine.UI.Image>();
-                    img.color = new Color(0.25f, 0.25f, 0.35f, 1f);
-
-                    var labelGo = new GameObject("Label");
-                    labelGo.transform.SetParent(cell.transform, false);
-                    var lrt = labelGo.AddComponent<RectTransform>();
-                    lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
-                    lrt.offsetMin = new Vector2(6, 6); lrt.offsetMax = new Vector2(-6, -6);
-                    var tmp = labelGo.AddComponent<TextMeshProUGUI>();
-                    tmp.fontSize = 24;
-                    tmp.alignment = TextAlignmentOptions.Center;
-                    tmp.color = Color.white;
+                    _cells[i] = CreateFallbackCell(i);
                 }
-
-                _cells[i] = cell;
             }
+        }
+
+        private GameObject CreateFallbackCell(int index)
+        {
+            var cell = new GameObject($"Day{index}");
+            cell.transform.SetParent(_gridRoot, false);
+            var rt = cell.AddComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(160, 320);
+
+            var layout = cell.AddComponent<LayoutElement>();
+            layout.preferredWidth = 160;
+            layout.preferredHeight = 320;
+
+            var img = cell.AddComponent<Image>();
+            img.color = new Color(0.25f, 0.25f, 0.35f, 1f);
+
+            var labelGo = new GameObject("Label");
+            labelGo.transform.SetParent(cell.transform, false);
+            var lrt = labelGo.AddComponent<RectTransform>();
+            lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
+            lrt.offsetMin = new Vector2(6, 6); lrt.offsetMax = new Vector2(-6, -6);
+            var tmp = labelGo.AddComponent<TextMeshProUGUI>();
+            tmp.fontSize = 20;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = Color.white;
+
+            return cell;
         }
     }
 }

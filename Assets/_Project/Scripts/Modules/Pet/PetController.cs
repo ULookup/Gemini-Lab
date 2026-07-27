@@ -118,6 +118,11 @@ namespace GeminiLab.Modules.Pet
         private bool _hasStoredPetSpriteVisible;
         private bool _storedPetSpriteVisible;
 
+        // 可步行表面检测
+        private WalkableSurface[] _walkableSurfaces = System.Array.Empty<WalkableSurface>();
+        private int _lastWalkableSurfaceRefreshFrame = int.MinValue;
+        private const int WalkableSurfaceRefreshInterval = 60;
+
         public string CurrentState => _context?.RuntimeData.CurrentState ?? "None";
 
         public PetRuntimeData? RuntimeData => _context?.RuntimeData;
@@ -1819,6 +1824,7 @@ namespace GeminiLab.Modules.Pet
         private void ApplyRuntimePosition(Vector2 position)
         {
             position = ClampToMovementBounds(position);
+            position.y = ResolveGroundY(position.x, position.y);
             if (_hasInteractionPhysicsOverride)
             {
                 ApplyDirectRuntimePosition(position);
@@ -1894,6 +1900,30 @@ namespace GeminiLab.Modules.Pet
             return new Vector2(
                 Mathf.Clamp(position.x, minX, maxX),
                 Mathf.Clamp(position.y, minY, maxY));
+        }
+
+        private void RefreshWalkableSurfaces()
+        {
+            if (Time.frameCount - _lastWalkableSurfaceRefreshFrame < WalkableSurfaceRefreshInterval)
+                return;
+            _lastWalkableSurfaceRefreshFrame = Time.frameCount;
+            _walkableSurfaces = Object.FindObjectsByType<WalkableSurface>(
+                FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        }
+
+        /// <summary>根据 X 坐标查找下方的可步行表面，返回应站立的 Y。</summary>
+        private float ResolveGroundY(float x, float fallbackY)
+        {
+            RefreshWalkableSurfaces();
+            float bestY = fallbackY;
+            foreach (var surface in _walkableSurfaces)
+            {
+                if (!surface.ContainsX(x)) continue;
+                float surfaceY = surface.SurfaceY;
+                // 宠物站在表面上方：取最高的表面（y 最大）
+                if (surfaceY > bestY) bestY = surfaceY;
+            }
+            return bestY;
         }
     }
 }

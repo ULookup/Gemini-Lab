@@ -24,7 +24,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         protected virtual void Awake()
         {
-            if (_content is not null)
+            if (_content is not null && Application.isPlaying)
             {
                 _content.SetActive(false);
             }
