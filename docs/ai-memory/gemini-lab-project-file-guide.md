@@ -1,6 +1,6 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-07-12
+Updated: 2026-07-28
 
 ## 入口文件
 - `AGENTS.md`
@@ -59,6 +59,8 @@ Updated: 2026-07-12
 - `Assets/_Project/Scenes/Boot.unity`
 - `Assets/_Project/Scripts/Core/GameBootstrap.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetController.cs`
+- `Assets/_Project/Scripts/Modules/Pet/WalkableSurface.cs`
+- `Assets/_Project/Scripts/Modules/Pet/RandomWander.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetPlayerInputController.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetPlayerFurnitureInteractionController.cs`
 - `Assets/_Project/Scripts/Modules/Pet/PetClickReactionController.cs`
@@ -160,7 +162,7 @@ Updated: 2026-07-12
 - `Assets/_Project/Scripts/`
   - 已存在真实 C# 实现、asmdef 与少量编辑器工具
 - `Assets/_Project/Scenes/`
-  - 已存在 `Boot.unity`、`Apartment/Apartment_Main.unity`、`Desktop/Desktop_Overlay.unity`
+  - 已存在 `Boot.unity`、`Apartment/Apartment_Main.unity`、`WorldMap/WorldMap_Main.unity`、`Desktop/Desktop_Overlay.unity`
 - `Assets/_Project/Tests/`
   - 已存在 `EditMode` / `PlayMode` 测试程序集
 - `Assets/_Project/Art/` 与 `Assets/_Project/Animations/`
@@ -186,16 +188,17 @@ Updated: 2026-07-12
 8. `2026-05-22` 起，Apartment 场景中的 `Pet` 根节点已同时包含 `Pet_Angel` 与 `Pet_Devil`；当前玩家控制方式为“默认天使可控，点击恶魔后切换恶魔主控”，不再是简单复制输入组件后让双宠同时吃同一套方向键；未被选中的桌宠当前会保持待机，不再继续跑自动睡觉链路。当前 `Pet_Angel` 与 `Pet_Devil` 也不再共用同一个移动边界：恶魔已切到左侧专用 `PetMovementBounds_Devil`。
 9. `Assets/_Project/Animations/Pet/` 当前除 3 个 move clip 外，已新增 `Pet_Angel_Interact_Read.anim` 与 `Pet_Angel_Interact_BesideDoor.anim`，并新增 `Pet_Devil_Move_* / Pet_Devil_Idle_* / Pet_Devil_Sleep.anim`、`Pet_Devil_Interact_BesideDoor.anim`、`Pet_Devil_Interact_Write.anim` 与 `Pet_Devil_Interact_PlayingMusic.anim`；但恶魔其余完整交互动画仍未补齐。
 10. `2026-05-25` 起，Apartment 场景已开始搭第一版 `viewport` 结构：当前 `ApartmentViewportHost` 与 `ApartmentViewportImage` 已归属 `Panel_SpaceSys/Content`，并新增 `ArtGenerated/ApartmentViewportCamera`；当前 `RenderTexture` 资产路径为 `Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture`。同日已补 `ApartmentViewportInputBridge`，当前可把 viewport 内点击先桥接到桌宠点击，再桥接到当前宠物的家具交互链路；当 `BuildModeController` 开启时，也会优先桥接到建造模式的放置/删除家具入口。
-11. `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前已经从旧的平铺命名，切换为 `正面 / 背面 / 侧面` 三个子目录；对应导入链路由 `PetMoveAnimationSetupEditor` 兼容新旧两套来源。
-12. `Assets/_Project/Art/Sprites/Pet/Frames/Interact/` 当前两组交互帧已经统一改为规范命名：`Pet_Angel_Interact_Read_0001...` 与 `Pet_Angel_Interact_BesideDoor_0001...`，不再使用 `IMG_986x.PNG`。
-13. `2026-06-02` 起，项目已补一条 Windows 构建防护：`Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs` 会把 `Assets/Plugins/NuGet` 下由 Unity MCP 依赖解析器解压出的 `McpPlugin / SignalR / Microsoft.Extensions.*` DLL 统一校正为 `Editor-only`，避免它们以 Player 插件身份进入 Bee / Burst 构建链。
-14. `2026-06-02` 同日，项目又把 4 个 Unity MCP 包临时从 `Packages/` 移到了 `PackageBackups/MCP-disabled-2026-06-02/`，并从 `Packages/manifest.json` 取消引用；当前保留不动的是 `Packages/SkillsForUnity`。
-15. `2026-06-02` 同日，项目还把 `Assets/Plugins/NuGet` 整个目录及其 `.meta` 软移出到了 `PackageBackups/NuGet-disabled-2026-06-02/`，并清空了 `ProjectSettings/ProjectSettings.asset` 里的 `Standalone` `UNITY_MCP_READY`，用于让 Windows Build 不再继续命中这批 MCP NuGet 残留 DLL。
-16. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
-12. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
+11. `2026-07-28` 起，`WorldMap_Main.unity` 中桥对象 `桥` 的过桥移动轮廓由同物体 `PolygonCollider2D` 上侧轮廓直接提供。`WalkableSurface` 是运行时读取入口，`WorldMapSceneObjectsPatch` 只确保桥对象有 `WalkableSurface` 并保留现有 collider 点位，不再维护 `_profileLocalPoints` 独立折线轨道。`PetController.ResolveGroundY` 会把桥面 surface Y 当作脚底/行走锚点高度，再换算成 transform Y。相关 PlayMode 表现仍需按 `docs/manual-validation-checklist.md` 的 B9 章节人工补验。
+12. `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前已经从旧的平铺命名，切换为 `正面 / 背面 / 侧面` 三个子目录；对应导入链路由 `PetMoveAnimationSetupEditor` 兼容新旧两套来源。
+13. `Assets/_Project/Art/Sprites/Pet/Frames/Interact/` 当前两组交互帧已经统一改为规范命名：`Pet_Angel_Interact_Read_0001...` 与 `Pet_Angel_Interact_BesideDoor_0001...`，不再使用 `IMG_986x.PNG`。
+14. `2026-06-02` 起，项目已补一条 Windows 构建防护：`Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs` 会把 `Assets/Plugins/NuGet` 下由 Unity MCP 依赖解析器解压出的 `McpPlugin / SignalR / Microsoft.Extensions.*` DLL 统一校正为 `Editor-only`，避免它们以 Player 插件身份进入 Bee / Burst 构建链。
+15. `2026-06-02` 同日，项目又把 4 个 Unity MCP 包临时从 `Packages/` 移到了 `PackageBackups/MCP-disabled-2026-06-02/`，并从 `Packages/manifest.json` 取消引用；当前保留不动的是 `Packages/SkillsForUnity`。
+16. `2026-06-02` 同日，项目还把 `Assets/Plugins/NuGet` 整个目录及其 `.meta` 软移出到了 `PackageBackups/NuGet-disabled-2026-06-02/`，并清空了 `ProjectSettings/ProjectSettings.asset` 里的 `Standalone` `UNITY_MCP_READY`，用于让 Windows Build 不再继续命中这批 MCP NuGet 残留 DLL。
+17. `Apartment_Main.unity` 当前并不是所有“看起来像家具”的对象都天然进入家具逻辑；首轮显式接线通过 `ApartmentSceneFurnitureBindings` 给关键对象补 `Furniture` / `InteractionAnchor` / `SceneFurnitureDefinitionHint`。
+18. `ApartmentSceneFurnitureBindings` 当前已经覆盖公寓场景里主要可交互对象，但仍要注意两类现实区别：
    - 有些对象已经进入对象级交互类型，却未必已经摆进 `Apartment_Main.unity`
    - 场景绑定里的定义 ID、类别和交互类型需要持续与真实 Sprite 资源名保持一致，不能把 `WorkDesk` 类资源误绑成装饰类
-13. `Pet` 模块当前需要区分“长期规划”和“现阶段入口”：
+19. `Pet` 模块当前需要区分“长期规划”和“现阶段入口”：
    - 长期规划仍保留 HFSM、自主行为、Gateway / Travel / AI 对话方向
    - 当前 Apartment 原型里，`Pet_Angel` 的主要行动入口已经切换为 `PetPlayerInputController`，由玩家通过 `WASD` / 方向键直接控制移动
    - 当前 Apartment 原型还新增了 `PetPlayerFurnitureInteractionController`，用于靠近特定家具或交互点时按 `F` 触发玩家手动交互
@@ -203,18 +206,18 @@ Updated: 2026-07-12
    - 当场景里同时存在 `Pet_Angel` 与 `Pet_Devil` 时，点击桌宠不仅会触发气泡回应，也会显式切换当前键盘控制对象
    - 当前恶魔的 `门边` 交互已沿用天使同一条 `Interact_BesideDoor` 触发链路，但 controller 已切到恶魔自己的 `Pet_Devil_Interact_BesideDoor.anim`
    - `2026-05-27` 起，恶魔当前还额外拥有两条玩家自交互接线：`画画` 会对着 `家具_休闲_画架_恶魔_01` 触发并坐到 `家具_装饰_椅子_恶魔_01`，`玩掌机` 会坐到 `家具_装饰_沙发_恶魔_02`
-13. `Apartment_Main.unity` 当前会用 `StaticFurnitureDecorOnly` 承载一部分“已有独立 Sprite、但不直接走原始关卡对象”的静态家具；这类对象进入交互系统时，也要同步补进 `ApartmentSceneFurnitureBindings`，避免出现“场景有图但无交互绑定”或“绑定有定义但 `_target` 为空”。
-14. 当前工作流已开始显式区分三层记忆：
+20. `Apartment_Main.unity` 当前会用 `StaticFurnitureDecorOnly` 承载一部分“已有独立 Sprite、但不直接走原始关卡对象”的静态家具；这类对象进入交互系统时，也要同步补进 `ApartmentSceneFurnitureBindings`，避免出现“场景有图但无交互绑定”或“绑定有定义但 `_target` 为空”。
+21. 当前工作流已开始显式区分三层记忆：
    - `L1`：`docs/current-task-card.md`
    - `L2`：`docs/ai-memory/`
    - `L3`：git / PR / 长文档历史
-15. 当前工作流已开始显式区分任务上下文包，入口在 `docs/workflow-context-packages.md`。
-16. 涉及视觉、布局、UI、相机、装饰层的任务时，默认要求：
+22. 当前工作流已开始显式区分任务上下文包，入口在 `docs/workflow-context-packages.md`。
+23. 涉及视觉、布局、UI、相机、装饰层的任务时，默认要求：
    - `Scene` 视图可直接看到
    - `Inspector` 可直接调整
    - `Play` 视图与 `Scene` 视图效果一致
    - 不依赖运行时脚本临时拼出最终视觉
-17. `2026-07-12` 起，HubUI 面板（SaveSlotsPanel、ReadingBubble、TarotSummaryPreview）的编辑器预览系统已收口：
+24. `2026-07-12` 起，HubUI 面板（SaveSlotsPanel、ReadingBubble、TarotSummaryPreview）的编辑器预览系统已收口：
    - `SaveSlotsPanel` 现在使用 `[ExecuteAlways]` + 模板克隆模式：场景中的 `SlotTemplate` 为 inactive 模板，运行时和编辑器预览均通过 `Instantiate` 克隆，用户只需编辑模板即可统一修改所有槽位的美术资源
    - `DebugDisplayWindow` 的 Tarot Preview 开关现在会联动刷新场景中 `ReadingBubble` / `TarotSummaryPreview` 的 active 状态
    - 新增 `ReadingBubbleLayoutSync` 工具用于按 Angel/Devil 分组同步气泡布局

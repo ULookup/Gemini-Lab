@@ -16,7 +16,6 @@ namespace GeminiLab.Editor.SceneBootstrap
     public static class WorldMapSceneObjectsPatch
     {
         private const string ScenePath = "Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity";
-        private const float GroundY = -3f;
 
         public static void Patch()
         {
@@ -38,15 +37,15 @@ namespace GeminiLab.Editor.SceneBootstrap
                 if (old != null) Object.DestroyImmediate(old.gameObject);
             }
 
-            // 配置桥的物理碰撞（桌宠可步行表面）
+            // 配置桥的可步行表面，移动轮廓直接来自桥对象的 PolygonCollider2D 上轮廓。
             SetupBridgeWalkableSurface();
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
-            Debug.Log("[WorldMapSceneObjectsPatch] 旧占位物体已清理 + 桥碰撞已配置");
+            Debug.Log("[WorldMapSceneObjectsPatch] 旧占位物体已清理 + 桥 PolygonCollider2D 上轮廓已作为可步行表面");
         }
 
-        /// <summary>配置"桥"为桌宠可步行表面：添加 WalkableSurface，桌宠走到桥上方自动站到桥面。</summary>
+        /// <summary>配置"桥"为桌宠可步行表面：WalkableSurface 直接读取桥的 PolygonCollider2D 上轮廓。</summary>
         private static void SetupBridgeWalkableSurface()
         {
             var bg = GameObject.Find("桥");
@@ -56,14 +55,25 @@ namespace GeminiLab.Editor.SceneBootstrap
                 return;
             }
 
-            if (bg.GetComponent<WalkableSurface>() == null)
+            if (bg.GetComponent<PolygonCollider2D>() == null)
             {
-                var ws = bg.AddComponent<WalkableSurface>();
-                var wsSo = new SerializedObject(ws);
-                wsSo.FindProperty("_yOffset").floatValue = 0.25f;
-                wsSo.ApplyModifiedProperties();
+                Debug.LogWarning("[WorldMapSceneObjectsPatch] 桥缺少 PolygonCollider2D，WalkableSurface 无法读取桥面上轮廓");
+                return;
+            }
+
+            var ws = bg.GetComponent<WalkableSurface>();
+            if (ws == null)
+            {
+                ws = bg.AddComponent<WalkableSurface>();
                 Debug.Log("[WorldMapSceneObjectsPatch] 桥 WalkableSurface 已添加");
             }
+
+            var wsSo = new SerializedObject(ws);
+            wsSo.FindProperty("_overrideBounds").boolValue = false;
+            wsSo.FindProperty("_yOffset").floatValue = 0f;
+            wsSo.ApplyModifiedProperties();
+
+            Debug.Log("[WorldMapSceneObjectsPatch] 桥 WalkableSurface 已改为读取 PolygonCollider2D 上轮廓");
         }
 
         private static void EnsurePlaceholder(Transform parent, string name, Vector3 pos,

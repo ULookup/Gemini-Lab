@@ -24,6 +24,8 @@ namespace GeminiLab.Modules.Pet
 
         public float MoveSpeed => _moveSpeed;
 
+        public bool HorizontalOnly => _horizontalOnly;
+
         public bool IsActiveController => ReferenceEquals(s_activeController, this);
 
         public void TakeControl()

@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-07-12
+Updated: 2026-07-28
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -92,6 +92,13 @@ Updated: 2026-07-12
   - `SettingsAndSaveSlotsPanelAuthoring` 同步更新：`BuildSaveSlotsPanel` 现在会创建 SlotTemplate（inactive），作为 `SaveSlotsPanel` 的运行时克隆模板
   - 新增长期规则 #12（记录在 `gemini-lab-memory-rules-and-history.md`）：任何涉及修改 Unity scene 文件、场景 GameObject 或组件属性的操作，必须先停下来询问用户确认，不得擅自执行
   - 事故记录：`SaveSlotsPanel.OnDisable()` 中的 `ClearEditorPreview()` 使用 `DestroyImmediate` 清空 `_slotContainer` 子物体；Unity 脚本重编译触发 OnDisable→OnEnable 周期时，用户手动调好的 `Slot_slot_1` 被自动删除。教训：编辑器回调（OnEnable/OnDisable/OnValidate）中绝对不能执行任何会修改场景的操作
+- `2026-07-28` 已修复 WorldMap 桥面行走逻辑的脚本侧收口：
+  - `WorldMap_Main.unity` 中桥对象 `桥` 的 `PolygonCollider2D` 上侧轮廓现在是桌宠过桥移动轮廓的唯一事实源
+  - `WalkableSurface.TryGetSurfaceY` 在存在启用的 `PolygonCollider2D` 时，会按当前世界 X 求 polygon 边交点并取最高 Y；不再使用 `_profileLocalPoints` 独立折线轨道
+  - `WorldMapSceneObjectsPatch` 不再回填 `_useProfile/_profileLocalPoints`，只确保桥对象有 `WalkableSurface` 且保留现有 `PolygonCollider2D` 点位
+  - `PetController` 的 `WalkableSurface` 刷新帧初值已修正，避免 `int.MinValue` 帧差溢出导致首次刷新被跳过
+  - `PetController.ResolveGroundY` 现在把桥面 surface Y 视为脚底/行走锚点高度，并通过 `_sortingAnchor`、`CapsuleCollider2D` 底部或 `SpriteRenderer` 底部换算成 transform Y，避免中心 pivot 贴桥导致脚底下穿
+  - `tools/check-task-gate.ps1 write`、`git diff --check`、`dotnet build GeminiLab.Modules.Pet.csproj --no-restore`、`dotnet build Assembly-CSharp-Editor.csproj --no-restore` 已通过；Unity PlayMode 仍需人工验证
 - `2026-04-28` 已开始推进任务 1：现有场景家具接入 `FurnitureService`，并让 Apartment 场景里的状态/库存/概览面板显示真实运行时数据。
 - `2026-04-28` 已完成任务 2 的首轮范围确认，并把现有 `Move` 动画 controller 显式绑定到 `Apartment_Main.unity` 中的 `Pet_Angel`。
 - `2026-04-28` 已基于新增美术资源补上两个交互动画 clip：`Interact_Read` 与 `Interact_BesideDoor`，并把它们接进现有 `Pet_Angel.controller`。
@@ -227,7 +234,7 @@ Updated: 2026-07-12
 1. 这个仓库不再是“只有说明文档”的空骨架，已经有一轮可运行原型；但说明文档密度依然高于最终实现密度。
 2. `_Project/` 继续是自研业务代码与资源的唯一正式落点。
 3. 当前已真实落地的关键内容包括：
-   - 场景：`Boot.unity`、`Apartment/Apartment_Main.unity`、`Desktop/Desktop_Overlay.unity`
+   - 场景：`Boot.unity`、`Apartment/Apartment_Main.unity`、`WorldMap/WorldMap_Main.unity`、`Desktop/Desktop_Overlay.unity`
    - Core：`ServiceLocator`、`EventBus`、`CommandDispatcher`、FSM、`GameBootstrap`
    - 业务模块：`Pet`、`Furniture`、`Navigation`、`Gateway`、`Travel`、`Persistence`、`UI`、`DesktopOverlay`
    - 测试：`EditMode` / `PlayMode` 测试程序集与多组核心模块测试

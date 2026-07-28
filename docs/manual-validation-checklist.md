@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-05-27
+Updated: 2026-07-28
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -45,6 +45,24 @@ Updated: 2026-05-27
 | EditorBuildSettings 顺序为 `Boot(0) / MainMenu / Apartment_Main / WorldMap_Main / Desktop_Overlay` |  |  |
 | `DesktopOverlayManagerEditModeTests` 通过 |  |  |
 | Console 无 `CS` 编译错误（CJK 字形 □ 警告在补 CJK 字体前可接受） |  |  |
+
+## B9. WorldMap 桥面行走（2026-07-28）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标对象：桥 GameObject `桥`
+- 当前规则：桥对象上的 `PolygonCollider2D` 上侧轮廓是桌宠过桥移动轮廓的唯一事实源，不再使用 `_profileLocalPoints` 独立折线轨道。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `WalkableSurface.TryGetSurfaceY` 在有启用的 `PolygonCollider2D` 时按当前 X 求所有边交点并取最高 Y | 通过 | `dotnet build GeminiLab.Modules.Pet.csproj --no-restore` 通过 |
+| `PetController` 首次刷新 `WalkableSurface` 列表不会因 `int.MinValue` 帧差溢出而跳过 | 通过 | `_lastWalkableSurfaceRefreshFrame` 初值改为 `-WalkableSurfaceRefreshInterval` |
+| `PetController.ResolveGroundY` 会把桥面 surface Y 从脚底/行走锚点换算成 transform Y | 通过 | `dotnet build GeminiLab.Modules.Pet.csproj --no-restore` 通过；PlayMode 仍需看脚底是否贴合桥上轮廓 |
+| `WorldMapSceneObjectsPatch` 不再回填 `_useProfile/_profileLocalPoints` 独立折线轨道 | 通过 | `Assembly-CSharp-Editor.csproj` 构建通过 |
+| `WorldMap_Main.unity` 桥对象不再序列化 `_useProfile/_profileLocalPoints` | 通过 | `rg` 搜索旧字段无命中 |
+| `Pet_Angel` 玩家控制横向走到桥 X 范围时，脚底/行走锚点会沿桥 `PolygonCollider2D` 上轮廓抬升和下降 | 未验证 | 需在 Unity PlayMode 使用 `A/D` 或方向键验证 |
+| `Pet_Devil` 玩家控制横向走到桥 X 范围时，脚底/行走锚点会沿桥 `PolygonCollider2D` 上轮廓抬升和下降 | 未验证 | 需在 Unity PlayMode 点击切换主控后验证 |
+| 未被选中的桌宠自动横向漫游经过桥时，脚底/行走锚点同样跟随桥上轮廓 | 未验证 | 需在 Unity PlayMode 等待随机漫游过桥 |
+| 离开桥两端后，桌宠回到横板基准地面而不是停留在桥面高度 | 未验证 | 需在 Unity PlayMode 验证左右两端 |
 
 ## B3. 塔罗垂直切片（B1 2026-05-10 新增）
 | 检查项 | 结果 | 备注 |

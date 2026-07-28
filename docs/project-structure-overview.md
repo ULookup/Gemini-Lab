@@ -1,6 +1,6 @@
 # Gemini-Lab 项目结构总览
 
-Updated: 2026-07-12
+Updated: 2026-07-28
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -81,10 +81,11 @@ AI 协作工具链目录。
 当前已存在真实场景文件：
 - `Boot.unity`
 - `Apartment/Apartment_Main.unity`
+- `WorldMap/WorldMap_Main.unity`
 - `Desktop/Desktop_Overlay.unity`
 
 当前判断：
-- 这 3 个场景已经足以说明仓库不再是“没有场景”的状态
+- 这 4 个场景已经足以说明仓库不再是“没有场景”的状态
 - 但它们仍然更接近原型场景，而不是完整量产场景集
 - `Apartment_Main.unity` 当前已经承载宠物、现成家具与状态/库存/概览面板，是任务 1 的主验证场景
 - `Apartment_Main.unity` 当前也是玩家控制宠物移动的主验证场景；`Pet_Angel` 已开始通过 `WASD` / 方向键直接控制
@@ -97,6 +98,7 @@ AI 协作工具链目录。
 - `2026-05-26` 已撤回此前对 `Panel_PetStatus` 的 `profile` 资料卡美术绑定尝试；场景不再保留刚才绑定的 `profile` 贴图、宠物正面待机预览 Sprite、雷达配色与尺寸微调。具体 UI 美术资源选择、贴图映射与最终视觉作者化后续由人工完成。
 - `2026-05-26` 已完成 Apartment UI 的非美术技术收口：`ApartmentViewportInputBridge` 现在只处理落在 RawImage 矩形内的点击，并暴露可测试的坐标转换；`SidebarController` / `StubPanelBase` 可在直接打开 Apartment 调试时兜底创建 `IUIRouter` / `EventBus`；`ProfilePanelStub`、`TarotPanelStub`、`InventoryPanelStub` 已补服务缺失或空数据提示。
 - 本轮未能在当前 shell 直接运行 Unity Editor / `unity-mcp-cli`，所以 viewport 点击、Sidebar 面板切换、建造模式桥接仍需在 Unity PlayMode 中按 `docs/manual-validation-checklist.md` 的 E2 章节补验。
+- `2026-07-28` 起，`WorldMap_Main.unity` 中桥对象 `桥` 的过桥移动轮廓以同物体 `PolygonCollider2D` 上侧轮廓为唯一事实源；`WalkableSurface` 会按桌宠当前世界 X 取 polygon 边交点的最高 Y，不再维护 `_profileLocalPoints` 独立折线轨道。`PetController.ResolveGroundY` 会把桥面 surface Y 当作脚底/行走锚点高度，再换算成 transform Y。当前脚本级构建已通过，PlayMode 过桥表现仍需人工补验。
 
 ### `Assets/_Project/Tests/`
 当前已存在：
