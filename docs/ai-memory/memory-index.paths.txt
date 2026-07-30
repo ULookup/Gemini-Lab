@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-07-28
+# Updated: 2026-07-29
 
 AGENTS.md
 docs/current-task-card.md
@@ -62,7 +62,10 @@ Assets/_Project/Scripts/Modules/HubUI/Panels/StubPanelBase.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/ProfilePanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/TarotPanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/InventoryPanelStub.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/FlowerCollectionPanelStub.cs
 Assets/_Project/Art/Sprites/Environment/ApartmentScene_Extracted/README.md
+Assets/_Project/Art/WorldMap/flowerCodex
+Assets/_Project/Art/WorldMap/flower_info
 Assets/_Project/Audio/README.md
 Assets/_Project/Settings/README.md
 Assets/_Project/Scripts/README.md
@@ -85,7 +88,9 @@ Assets/_Project/Scripts/Modules/Persistence/README.md
 Assets/_Project/Scripts/UI/README.md
 Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs
 Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/AutoSetup.cs
 Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapSceneObjectsPatch.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapEmotionGardenUIPatch.cs
 Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs
 Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs
 Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs
@@ -114,3 +119,4 @@ PackageBackups/NuGet-disabled-2026-06-02/NuGet.meta
 ProjectSettings/ProjectVersion.txt
 .cursor/mcp.json
 tools/check-task-gate.ps1
+tools/run-unity-editor-method.ps1

@@ -33,6 +33,10 @@ namespace GeminiLab.Modules.HubUI.Panels
         [Header("精灵资源")]
         [SerializeField] private Sprite[]? _dayLabelSprites;
 
+        [Header("瓶子精灵变体")]
+        [Tooltip("顺序: angel_growing, angel_bloomed, demon_growing, demon_bloomed")]
+        [SerializeField] private Sprite[]? _bottleSprites;
+
         private IEmotionGardenService? _service;
         private readonly GameObject[] _cells = new GameObject[7];
         private int _viewedWeekId;
@@ -104,6 +108,19 @@ namespace GeminiLab.Modules.HubUI.Panels
                     if (dayImg != null) dayImg.enabled = false;
                 }
 
+                // 瓶子精灵
+                var bottle = cell.transform.Find("Bottle")?.GetComponent<Image>();
+                if (bottle != null && _bottleSprites != null && _bottleSprites.Length == 4)
+                {
+                    if (flower.HasValue)
+                    {
+                        var f = flower.Value;
+                        int spriteIndex = GetBottleSpriteIndex(f.Owner, f.State);
+                        if (spriteIndex >= 0 && spriteIndex < _bottleSprites.Length && _bottleSprites[spriteIndex] != null)
+                            bottle.sprite = _bottleSprites[spriteIndex];
+                    }
+                }
+
                 // 情绪文字
                 var label = cell.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
                 if (label != null)
@@ -136,6 +153,7 @@ namespace GeminiLab.Modules.HubUI.Panels
                 if (existing != null)
                 {
                     existing.gameObject.SetActive(true);
+                    EnsureCellStructure(existing, i);
                     _cells[i] = existing.gameObject;
                     continue;
                 }
@@ -153,6 +171,103 @@ namespace GeminiLab.Modules.HubUI.Panels
                     _cells[i] = CreateFallbackCell(i);
                 }
             }
+        }
+
+        /// <summary>确保场景预置格子有完整的子对象结构（Bottle + DayLabel/DaySprite/DayText + Label）。</summary>
+        private void EnsureCellStructure(Transform cell, int index)
+        {
+            // Bottle
+            var bottle = cell.Find("Bottle");
+            if (bottle == null)
+            {
+                var go = new GameObject("Bottle");
+                go.transform.SetParent(cell, false);
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+                var img = go.AddComponent<Image>();
+                img.preserveAspect = true;
+                img.color = Color.white;
+            }
+            else if (bottle.GetComponent<Image>() == null)
+            {
+                var img = bottle.gameObject.AddComponent<Image>();
+                img.preserveAspect = true;
+                img.color = Color.white;
+            }
+
+            // DayLabel
+            var dayLabel = cell.Find("DayLabel");
+            if (dayLabel == null)
+            {
+                var go = new GameObject("DayLabel");
+                go.transform.SetParent(cell, false);
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0.5f, 1f);
+                rt.anchorMax = new Vector2(0.5f, 1f);
+                rt.pivot = new Vector2(0.5f, 1f);
+                rt.anchoredPosition = new Vector2(0, -10);
+                rt.sizeDelta = new Vector2(80, 32);
+                dayLabel = go.transform;
+            }
+
+            // DayLabel/DaySprite
+            var daySprite = dayLabel.Find("DaySprite");
+            if (daySprite == null)
+            {
+                var go = new GameObject("DaySprite");
+                go.transform.SetParent(dayLabel, false);
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+                var img = go.AddComponent<Image>();
+                img.preserveAspect = true;
+                img.color = Color.white;
+            }
+
+            // DayLabel/DayText
+            var dayText = dayLabel.Find("DayText");
+            if (dayText == null)
+            {
+                var go = new GameObject("DayText");
+                go.transform.SetParent(dayLabel, false);
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = Vector2.zero; rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero; rt.offsetMax = Vector2.zero;
+                var tmp = go.AddComponent<TextMeshProUGUI>();
+                tmp.fontSize = 16;
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.color = Color.white;
+                tmp.raycastTarget = false;
+                tmp.text = DayLabels[index];
+            }
+
+            // Label
+            var labelT = cell.Find("Label");
+            if (labelT == null)
+            {
+                var go = new GameObject("Label");
+                go.transform.SetParent(cell, false);
+                var rt = go.AddComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0f, 0f);
+                rt.anchorMax = new Vector2(1f, 0f);
+                rt.pivot = new Vector2(0.5f, 0f);
+                rt.anchoredPosition = Vector2.zero;
+                rt.sizeDelta = new Vector2(-12, 80);
+                var tmp = go.AddComponent<TextMeshProUGUI>();
+                tmp.fontSize = 14;
+                tmp.alignment = TextAlignmentOptions.Center;
+                tmp.color = new Color(0.9f, 0.9f, 0.9f, 1f);
+                tmp.raycastTarget = false;
+                tmp.enableWordWrapping = true;
+            }
+        }
+
+        /// <summary>根据花的所有者和生长状态返回瓶子精灵索引。</summary>
+        private static int GetBottleSpriteIndex(string owner, GrowthState state)
+        {
+            int baseIndex = owner == "angel" ? 0 : 2;
+            return state == GrowthState.Bloomed ? baseIndex + 1 : baseIndex;
         }
 
         private GameObject CreateFallbackCell(int index)

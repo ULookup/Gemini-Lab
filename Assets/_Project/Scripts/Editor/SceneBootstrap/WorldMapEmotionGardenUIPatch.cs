@@ -22,6 +22,8 @@ namespace GeminiLab.Editor.SceneBootstrap
     public static class WorldMapEmotionGardenUIPatch
     {
         private const string ScenePath = "Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity";
+        private const string FlowerCodexArtDir = "Assets/_Project/Art/WorldMap/flowerCodex";
+        private const string FlowerInfoArtDir = "Assets/_Project/Art/WorldMap/flower_info";
 
         public static void Patch()
         {
@@ -44,7 +46,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             SetupEmotionInputContent(panelInput, uiLayer);
             SetupWeeklyGardenContent(panelWeekly, uiLayer);
-            SetupFlowerCollectionContent(panelCollection, uiLayer);
+            SetupFlowerCollectionBookContent(panelCollection, uiLayer);
 
             EnsureDevTools(canvasGo, uiLayer);
 
@@ -433,96 +435,138 @@ namespace GeminiLab.Editor.SceneBootstrap
                 Object.DestroyImmediate(child.gameObject);
             }
 
-            // 幂等：已有模板则跳过创建
+            // 强制重建 CellTemplate（确保结构完整：Bottle + DayLabel/DaySprite + DayLabel/DayText + Label）
             var template = gridGo.transform.Find("CellTemplate")?.gameObject;
-            if (template == null)
-            {
-                template = new GameObject("CellTemplate");
-                template.transform.SetParent(gridGo.transform, false);
-                template.SetActive(false);
-                template.layer = uiLayer;
+            if (template != null) Object.DestroyImmediate(template);
 
-                var trt = template.AddComponent<RectTransform>();
-                trt.sizeDelta = new Vector2(160, 320);
+            template = new GameObject("CellTemplate");
+            template.transform.SetParent(gridGo.transform, false);
+            template.SetActive(false);
+            template.layer = uiLayer;
 
-                var layout = template.AddComponent<LayoutElement>();
-                layout.preferredWidth = 160;
-                layout.preferredHeight = 320;
-                layout.minWidth = 120;
-                layout.minHeight = 280;
+            var trt = template.AddComponent<RectTransform>();
+            trt.sizeDelta = new Vector2(160, 320);
 
-                // 瓶子背景
-                var bottleGo = new GameObject("Bottle");
-                bottleGo.transform.SetParent(template.transform, false);
-                bottleGo.layer = uiLayer;
-                var brt = bottleGo.AddComponent<RectTransform>();
-                brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one;
-                brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
-                var bimg = bottleGo.AddComponent<Image>();
-                bimg.preserveAspect = true;
-                if (bottleSprite != null)
-                    bimg.sprite = bottleSprite;
-                bimg.color = Color.white;
+            var layout = template.AddComponent<LayoutElement>();
+            layout.preferredWidth = 160;
+            layout.preferredHeight = 320;
+            layout.minWidth = 120;
+            layout.minHeight = 280;
 
-                // 天数标签
-                var dayLabelGo = new GameObject("DayLabel");
-                dayLabelGo.transform.SetParent(template.transform, false);
-                dayLabelGo.layer = uiLayer;
-                var drt = dayLabelGo.AddComponent<RectTransform>();
-                drt.anchorMin = new Vector2(0.5f, 1f);
-                drt.anchorMax = new Vector2(0.5f, 1f);
-                drt.pivot = new Vector2(0.5f, 1f);
-                drt.anchoredPosition = new Vector2(0, -10);
-                drt.sizeDelta = new Vector2(80, 32);
+            // 瓶子背景
+            var bottleGo = new GameObject("Bottle");
+            bottleGo.transform.SetParent(template.transform, false);
+            bottleGo.layer = uiLayer;
+            var brt = bottleGo.AddComponent<RectTransform>();
+            brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one;
+            brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
+            var bimg = bottleGo.AddComponent<Image>();
+            bimg.preserveAspect = true;
+            if (bottleSprite != null)
+                bimg.sprite = bottleSprite;
+            bimg.color = Color.white;
 
-                var daySpriteGo = new GameObject("DaySprite");
-                daySpriteGo.transform.SetParent(dayLabelGo.transform, false);
-                daySpriteGo.layer = uiLayer;
-                var dsrt = daySpriteGo.AddComponent<RectTransform>();
-                dsrt.anchorMin = Vector2.zero; dsrt.anchorMax = Vector2.one;
-                dsrt.offsetMin = Vector2.zero; dsrt.offsetMax = Vector2.zero;
-                var dimg = daySpriteGo.AddComponent<Image>();
-                dimg.preserveAspect = true;
-                dimg.color = Color.white;
+            // 天数标签
+            var dayLabelGo = new GameObject("DayLabel");
+            dayLabelGo.transform.SetParent(template.transform, false);
+            dayLabelGo.layer = uiLayer;
+            var drt = dayLabelGo.AddComponent<RectTransform>();
+            drt.anchorMin = new Vector2(0.5f, 1f);
+            drt.anchorMax = new Vector2(0.5f, 1f);
+            drt.pivot = new Vector2(0.5f, 1f);
+            drt.anchoredPosition = new Vector2(0, -10);
+            drt.sizeDelta = new Vector2(80, 32);
 
-                var dayTextGo = new GameObject("DayText");
-                dayTextGo.transform.SetParent(dayLabelGo.transform, false);
-                dayTextGo.layer = uiLayer;
-                var dtrt = dayTextGo.AddComponent<RectTransform>();
-                dtrt.anchorMin = Vector2.zero; dtrt.anchorMax = Vector2.one;
-                dtrt.offsetMin = Vector2.zero; dtrt.offsetMax = Vector2.zero;
-                var dtmp = dayTextGo.AddComponent<TextMeshProUGUI>();
-                dtmp.fontSize = 16;
-                dtmp.alignment = TextAlignmentOptions.Center;
-                dtmp.color = Color.white;
-                dtmp.raycastTarget = false;
+            var daySpriteGo = new GameObject("DaySprite");
+            daySpriteGo.transform.SetParent(dayLabelGo.transform, false);
+            daySpriteGo.layer = uiLayer;
+            var dsrt = daySpriteGo.AddComponent<RectTransform>();
+            dsrt.anchorMin = Vector2.zero; dsrt.anchorMax = Vector2.one;
+            dsrt.offsetMin = Vector2.zero; dsrt.offsetMax = Vector2.zero;
+            var dimg = daySpriteGo.AddComponent<Image>();
+            dimg.preserveAspect = true;
+            dimg.color = Color.white;
 
-                // 情绪/培育者文字
-                var labelGo = new GameObject("Label");
-                labelGo.transform.SetParent(template.transform, false);
-                labelGo.layer = uiLayer;
-                var lrt = labelGo.AddComponent<RectTransform>();
-                lrt.anchorMin = new Vector2(0f, 0f);
-                lrt.anchorMax = new Vector2(1f, 0f);
-                lrt.pivot = new Vector2(0.5f, 0f);
-                lrt.anchoredPosition = Vector2.zero;
-                lrt.sizeDelta = new Vector2(-12, 80);
-                var ltmp = labelGo.AddComponent<TextMeshProUGUI>();
-                ltmp.fontSize = 14;
-                ltmp.alignment = TextAlignmentOptions.Center;
-                ltmp.color = new Color(0.9f, 0.9f, 0.9f, 1f);
-                ltmp.raycastTarget = false;
-                ltmp.enableWordWrapping = true;
-            }
+            var dayTextGo = new GameObject("DayText");
+            dayTextGo.transform.SetParent(dayLabelGo.transform, false);
+            dayTextGo.layer = uiLayer;
+            var dtrt = dayTextGo.AddComponent<RectTransform>();
+            dtrt.anchorMin = Vector2.zero; dtrt.anchorMax = Vector2.one;
+            dtrt.offsetMin = Vector2.zero; dtrt.offsetMax = Vector2.zero;
+            var dtmp = dayTextGo.AddComponent<TextMeshProUGUI>();
+            dtmp.fontSize = 16;
+            dtmp.alignment = TextAlignmentOptions.Center;
+            dtmp.color = Color.white;
+            dtmp.raycastTarget = false;
 
-            // 绑定模板 + 清空日标签精灵数组（新 UI 使用文字标签）
-            stubSo.FindProperty("_cellPrefab").objectReferenceValue = template;
+            // 情绪/培育者文字
+            var labelGo = new GameObject("Label");
+            labelGo.transform.SetParent(template.transform, false);
+            labelGo.layer = uiLayer;
+            var lrt = labelGo.AddComponent<RectTransform>();
+            lrt.anchorMin = new Vector2(0f, 0f);
+            lrt.anchorMax = new Vector2(1f, 0f);
+            lrt.pivot = new Vector2(0.5f, 0f);
+            lrt.anchoredPosition = Vector2.zero;
+            lrt.sizeDelta = new Vector2(-12, 80);
+            var ltmp = labelGo.AddComponent<TextMeshProUGUI>();
+            ltmp.fontSize = 14;
+            ltmp.alignment = TextAlignmentOptions.Center;
+            ltmp.color = new Color(0.9f, 0.9f, 0.9f, 1f);
+            ltmp.raycastTarget = false;
+            ltmp.enableWordWrapping = true;
+
+            // ── 加载 Mon-Sun 精灵，填充 _dayLabelSprites ──
             var daySpritesProp = stubSo.FindProperty("_dayLabelSprites");
+            Sprite[] loadedDaySprites = new Sprite[7];
             if (daySpritesProp != null)
             {
                 daySpritesProp.arraySize = 7;
+                string[] dayNames = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+                var daySpriteAssets = AssetDatabase.LoadAllAssetsAtPath(
+                    "Assets/_Project/Art/WorldMap/garden_week/weekUI.psd");
                 for (int i = 0; i < 7; i++)
-                    daySpritesProp.GetArrayElementAtIndex(i).objectReferenceValue = null;
+                {
+                    Sprite? match = null;
+                    foreach (var asset in daySpriteAssets)
+                    {
+                        if (asset is Sprite s && string.Equals(s.name, dayNames[i], System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            match = s;
+                            break;
+                        }
+                    }
+                    loadedDaySprites[i] = match!;
+                    daySpritesProp.GetArrayElementAtIndex(i).objectReferenceValue = match;
+                }
+            }
+
+            // 绑定模板到 Stub 的 _cellPrefab
+            stubSo.FindProperty("_cellPrefab").objectReferenceValue = template;
+
+            // ── 加载 bottle 变体精灵，填充 _bottleSprites ──
+            var bottleSpritesProp = stubSo.FindProperty("_bottleSprites");
+            if (bottleSpritesProp != null)
+            {
+                var bottleAssets = AssetDatabase.LoadAllAssetsAtPath(
+                    "Assets/_Project/Art/WorldMap/garden_week/weekUI.psd");
+                string[] bottleNames = { "bottle_angel_growing", "bottle_angel_bloomed", "bottle_demon_growing", "bottle_demon_bloomed" };
+                bottleSpritesProp.arraySize = bottleNames.Length;
+                for (int b = 0; b < bottleNames.Length; b++)
+                {
+                    Sprite? match = null;
+                    foreach (var asset in bottleAssets)
+                    {
+                        if (asset is Sprite s && string.Equals(s.name, bottleNames[b], System.StringComparison.OrdinalIgnoreCase))
+                        {
+                            match = s;
+                            break;
+                        }
+                    }
+                    bottleSpritesProp.GetArrayElementAtIndex(b).objectReferenceValue = match;
+                    if (match == null)
+                        Debug.LogWarning($"[WorldMapEmotionGardenUI] 未在 weekUI.psd 中找到精灵: {bottleNames[b]}");
+                }
             }
 
             // ── 预置 7 个可见格子到场景中（方便 Scene 视图编辑）──
@@ -544,8 +588,8 @@ namespace GeminiLab.Editor.SceneBootstrap
                     dayTmp.text = dayLabels[i];
                     dayTmp.enabled = true;
                 }
-                var daySpriteGo = dayCell.transform.Find("DayLabel/DaySprite");
-                if (daySpriteGo != null) daySpriteGo.gameObject.SetActive(false);
+                var dayCellSprite = dayCell.transform.Find("DayLabel/DaySprite");
+                if (dayCellSprite != null) dayCellSprite.gameObject.SetActive(false);
 
                 // 示例文字
                 var label = dayCell.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
@@ -589,6 +633,351 @@ namespace GeminiLab.Editor.SceneBootstrap
         }
 
         // ── 情绪图鉴面板内容 ──────────────────────────────────
+
+        private static void SetupFlowerCollectionBookContent(GameObject panel, int uiLayer)
+        {
+            var stub = panel.GetComponent<FlowerCollectionPanelStub>();
+            if (stub == null) return;
+
+            var so = new SerializedObject(stub);
+            var content = so.FindProperty("_content").objectReferenceValue as GameObject;
+            if (content == null) return;
+
+            var contentT = content.transform;
+            var contentImage = GetOrAdd<Image>(content);
+            contentImage.color = new Color(1f, 1f, 1f, 0f);
+            contentImage.raycastTarget = true;
+
+            foreach (var oldName in new[] { "CollectionTitle", "ScrollView", "DebugBloomBtn" })
+            {
+                var old = contentT.Find(oldName);
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+            }
+
+            var oldClose = contentT.Find("Btn_Close");
+            if (oldClose != null) oldClose.gameObject.SetActive(false);
+            var topResource = contentT.Find("TopResource");
+            if (topResource != null) topResource.gameObject.SetActive(false);
+
+            var codexBookSprite = LoadFlowerCodexSprite("book");
+            var cardSprite = LoadFlowerCodexSprite("card");
+            var unknownSprite = LoadFlowerCodexSprite("unknow");
+            var codexCloseSprite = LoadFlowerCodexSprite("close");
+            var codexLeftSprite = LoadFlowerCodexSprite("left");
+            var codexRightSprite = LoadFlowerCodexSprite("right");
+            var detailBookSprite = LoadFlowerInfoSprite("book");
+            var detailStockSprite = LoadFlowerInfoSprite("stock");
+            var detailCloseSprite = LoadFlowerInfoSprite("close");
+            var detailLeftSprite = LoadFlowerInfoSprite("left");
+            var detailRightSprite = LoadFlowerInfoSprite("right");
+
+            var codexView = EnsureFullRect(contentT, "CodexView", uiLayer);
+            var detailView = EnsureFullRect(contentT, "DetailView", uiLayer);
+
+            var codexBook = EnsureImageChild(codexView.transform, "Book", uiLayer, codexBookSprite, Vector2.zero, new Vector2(1644, 951));
+            ApplyRect(codexBook.gameObject, Vector2.zero, new Vector2(1644, 951));
+            codexBook.transform.SetAsFirstSibling();
+
+            EnsureCodexTitlePlate(codexView.transform, uiLayer);
+            EnsureCodexCategoryTabs(codexView.transform, uiLayer);
+
+            var codexClose = EnsureImageButton(codexView.transform, "CloseButton", uiLayer, codexCloseSprite,
+                new Vector2(728, 372), new Vector2(58, 58));
+            ApplyRect(codexClose.gameObject, new Vector2(728, 372), new Vector2(58, 58));
+            var codexPrevious = EnsureImageButton(codexView.transform, "PreviousPageButton", uiLayer, codexLeftSprite,
+                new Vector2(-752, -12), new Vector2(92, 120));
+            ApplyRect(codexPrevious.gameObject, new Vector2(-752, -12), new Vector2(92, 120));
+            var codexNext = EnsureImageButton(codexView.transform, "NextPageButton", uiLayer, codexRightSprite,
+                new Vector2(752, -12), new Vector2(92, 120));
+            ApplyRect(codexNext.gameObject, new Vector2(752, -12), new Vector2(92, 120));
+
+            var progressText = EnsureTextChild(codexView.transform, uiLayer, "ProgressText", "收集进度：0 / 12", 24,
+                new Vector2(-118, 302), new Vector2(420, 42), new Color(0.42f, 0.25f, 0.13f, 1f), TextAlignmentOptions.Center);
+            progressText.fontSize = 24;
+            var pageText = EnsureTextChild(codexView.transform, uiLayer, "PageText", "1 / 1", 22,
+                new Vector2(-250, -348), new Vector2(190, 38), new Color(0.42f, 0.25f, 0.13f, 1f), TextAlignmentOptions.Center);
+            var clickHint = EnsureTextChild(codexView.transform, uiLayer, "ClickHintText", "点击花卉可查看详情", 22,
+                new Vector2(290, -348), new Vector2(380, 38), new Color(0.42f, 0.25f, 0.13f, 1f), TextAlignmentOptions.Center);
+            clickHint.fontStyle = FontStyles.Normal;
+
+            var cardsRoot = EnsureChild(codexView.transform, "Cards", uiLayer);
+            var cardsRootRt = GetOrAdd<RectTransform>(cardsRoot);
+            cardsRootRt.anchorMin = new Vector2(0.5f, 0.5f);
+            cardsRootRt.anchorMax = new Vector2(0.5f, 0.5f);
+            cardsRootRt.pivot = new Vector2(0.5f, 0.5f);
+            cardsRootRt.anchoredPosition = Vector2.zero;
+            cardsRootRt.sizeDelta = Vector2.zero;
+
+            var cardSlotsProp = so.FindProperty("_cardSlots");
+            if (cardSlotsProp != null) cardSlotsProp.arraySize = 12;
+
+            var cardPositions = new[]
+            {
+                new Vector2(-534, 118), new Vector2(-354, 118), new Vector2(-174, 118),
+                new Vector2(-534, -142), new Vector2(-354, -142), new Vector2(-174, -142),
+                new Vector2(210, 118), new Vector2(390, 118), new Vector2(570, 118),
+                new Vector2(210, -142), new Vector2(390, -142), new Vector2(570, -142)
+            };
+
+            for (int i = 0; i < cardPositions.Length; i++)
+            {
+                var slot = EnsureCodexCardSlot(cardsRoot.transform, uiLayer, i, cardPositions[i], cardSprite, unknownSprite);
+                ApplyRect(slot, cardPositions[i], new Vector2(154, 216));
+                if (cardSlotsProp != null)
+                {
+                    BindCardSlot(cardSlotsProp.GetArrayElementAtIndex(i), slot);
+                }
+            }
+
+            EnsureImageChild(detailView.transform, "Book", uiLayer, detailBookSprite, Vector2.zero, new Vector2(1663, 966));
+            var detailClose = EnsureImageButton(detailView.transform, "CloseButton", uiLayer, detailCloseSprite,
+                new Vector2(728, 372), new Vector2(58, 58));
+            var detailBack = EnsureImageButton(detailView.transform, "BackButton", uiLayer, detailLeftSprite,
+                new Vector2(-728, 372), new Vector2(58, 58));
+            var detailPrevious = EnsureImageButton(detailView.transform, "PreviousButton", uiLayer, detailLeftSprite,
+                new Vector2(-768, -8), new Vector2(68, 96));
+            var detailNext = EnsureImageButton(detailView.transform, "NextButton", uiLayer, detailRightSprite,
+                new Vector2(768, -8), new Vector2(68, 96));
+
+            var detailFlower = EnsureImageChild(detailView.transform, "FlowerImage", uiLayer, null,
+                new Vector2(-392, 20), new Vector2(330, 330));
+            detailFlower.color = new Color(1f, 1f, 1f, 0.35f);
+            detailFlower.raycastTarget = false;
+            var detailNumber = EnsureTextChild(detailView.transform, uiLayer, "NumberText", "No. 027", 28,
+                new Vector2(-392, -282), new Vector2(260, 46), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.Center);
+
+            var stockPlate = EnsureImageChild(detailView.transform, "StockPlate", uiLayer, detailStockSprite,
+                new Vector2(-210, -306), new Vector2(220, 30));
+            stockPlate.raycastTarget = false;
+            var stockText = EnsureTextChild(stockPlate.transform, uiLayer, "StockText", "0", 18,
+                Vector2.zero, new Vector2(200, 28), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.Center);
+
+            var detailName = EnsureTextChild(detailView.transform, uiLayer, "NameText", "情绪之花", 40,
+                new Vector2(330, 218), new Vector2(460, 64), new Color(0.33f, 0.18f, 0.1f, 1f), TextAlignmentOptions.Center);
+            var detailCreated = EnsureTextChild(detailView.transform, uiLayer, "CreatedText", "累计收集 0 朵", 24,
+                new Vector2(330, 142), new Vector2(420, 44), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.Center);
+            var detailEmotion = EnsureTextChild(detailView.transform, uiLayer, "EmotionText", "情绪", 24,
+                new Vector2(220, 62), new Vector2(240, 40), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.Left);
+            var detailOwner = EnsureTextChild(detailView.transform, uiLayer, "OwnerText", "培育者", 24,
+                new Vector2(475, 62), new Vector2(240, 40), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.Left);
+            var phraseTitle = EnsureTextChild(detailView.transform, uiLayer, "PhraseTitleText", "花语", 30,
+                new Vector2(330, -70), new Vector2(460, 46), new Color(0.33f, 0.18f, 0.1f, 1f), TextAlignmentOptions.Center);
+            var phraseBody = EnsureTextChild(detailView.transform, uiLayer, "PhraseBodyText", "在这里显示这朵花的记录。", 22,
+                new Vector2(330, -186), new Vector2(560, 150), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.TopLeft);
+
+            so.FindProperty("_codexView").objectReferenceValue = codexView;
+            so.FindProperty("_detailView").objectReferenceValue = detailView;
+            so.FindProperty("_progressText").objectReferenceValue = progressText;
+            so.FindProperty("_pageText").objectReferenceValue = pageText;
+            so.FindProperty("_previousPageButton").objectReferenceValue = codexPrevious;
+            so.FindProperty("_nextPageButton").objectReferenceValue = codexNext;
+            so.FindProperty("_detailFlowerImage").objectReferenceValue = detailFlower;
+            so.FindProperty("_detailNumberText").objectReferenceValue = detailNumber;
+            so.FindProperty("_detailNameText").objectReferenceValue = detailName;
+            so.FindProperty("_detailCreatedText").objectReferenceValue = detailCreated;
+            so.FindProperty("_detailEmotionText").objectReferenceValue = detailEmotion;
+            so.FindProperty("_detailOwnerText").objectReferenceValue = detailOwner;
+            so.FindProperty("_detailPhraseTitleText").objectReferenceValue = phraseTitle;
+            so.FindProperty("_detailPhraseBodyText").objectReferenceValue = phraseBody;
+            so.FindProperty("_detailStockText").objectReferenceValue = stockText;
+            so.FindProperty("_detailBackButton").objectReferenceValue = detailBack;
+            so.FindProperty("_detailPreviousButton").objectReferenceValue = detailPrevious;
+            so.FindProperty("_detailNextButton").objectReferenceValue = detailNext;
+            so.FindProperty("_detailCloseButton").objectReferenceValue = detailClose;
+            so.FindProperty("_closeButton").objectReferenceValue = codexClose;
+            so.ApplyModifiedProperties();
+
+            codexView.SetActive(true);
+            detailView.SetActive(false);
+        }
+
+        private static Sprite? LoadFlowerCodexSprite(string fileName)
+        {
+            return AssetDatabase.LoadAssetAtPath<Sprite>($"{FlowerCodexArtDir}/{fileName}.png");
+        }
+
+        private static Sprite? LoadFlowerInfoSprite(string fileName)
+        {
+            return AssetDatabase.LoadAssetAtPath<Sprite>($"{FlowerInfoArtDir}/{fileName}.png");
+        }
+
+        private static GameObject EnsureFullRect(Transform parent, string name, int uiLayer)
+        {
+            var go = EnsureChild(parent, name, uiLayer);
+            var rt = GetOrAdd<RectTransform>(go);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            return go;
+        }
+
+        private static Image EnsureImageChild(Transform parent, string name, int uiLayer, Sprite? sprite,
+            Vector2 anchoredPosition, Vector2 sizeDelta)
+        {
+            bool isNew = parent.Find(name) == null;
+            var go = EnsureChild(parent, name, uiLayer);
+            var rt = GetOrAdd<RectTransform>(go);
+            if (isNew)
+            {
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = anchoredPosition;
+                rt.sizeDelta = sizeDelta;
+            }
+
+            var image = GetOrAdd<Image>(go);
+            image.sprite = sprite;
+            image.color = sprite == null ? new Color(1f, 1f, 1f, 0.16f) : Color.white;
+            image.raycastTarget = false;
+            image.preserveAspect = true;
+            return image;
+        }
+
+        private static Button EnsureImageButton(Transform parent, string name, int uiLayer, Sprite? sprite,
+            Vector2 anchoredPosition, Vector2 sizeDelta)
+        {
+            var image = EnsureImageChild(parent, name, uiLayer, sprite, anchoredPosition, sizeDelta);
+            image.raycastTarget = true;
+            if (sprite == null) image.color = new Color(0.35f, 0.2f, 0.12f, 0.55f);
+            var button = GetOrAdd<Button>(image.gameObject);
+            button.targetGraphic = image;
+            return button;
+        }
+
+        private static TextMeshProUGUI EnsureTextChild(Transform parent, int uiLayer, string name, string text, int fontSize,
+            Vector2 anchoredPosition, Vector2 sizeDelta, Color color, TextAlignmentOptions alignment)
+        {
+            bool isNew = parent.Find(name) == null;
+            var go = EnsureChild(parent, name, uiLayer);
+            var rt = GetOrAdd<RectTransform>(go);
+            if (isNew)
+            {
+                rt.anchorMin = new Vector2(0.5f, 0.5f);
+                rt.anchorMax = new Vector2(0.5f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = anchoredPosition;
+                rt.sizeDelta = sizeDelta;
+            }
+
+            var tmp = GetOrAdd<TextMeshProUGUI>(go);
+            if (isNew || string.IsNullOrEmpty(tmp.text)) tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.color = color;
+            tmp.alignment = alignment;
+            tmp.enableWordWrapping = true;
+            tmp.raycastTarget = false;
+            return tmp;
+        }
+
+        private static void EnsureCodexTitlePlate(Transform parent, int uiLayer)
+        {
+            var plateGo = EnsureChild(parent, "TitlePlate", uiLayer);
+            ApplyRect(plateGo, new Vector2(-510, 315), new Vector2(260, 64));
+            var plateImage = GetOrAdd<Image>(plateGo);
+            plateImage.color = new Color(0.92f, 0.76f, 0.46f, 0.76f);
+            plateImage.raycastTarget = false;
+
+            var title = EnsureTextChild(plateGo.transform, uiLayer, "TitleText", "花卉图鉴", 32,
+                Vector2.zero, new Vector2(230, 48), new Color(0.38f, 0.2f, 0.1f, 1f), TextAlignmentOptions.Center);
+            title.fontStyle = FontStyles.Bold;
+        }
+
+        private static void EnsureCodexCategoryTabs(Transform parent, int uiLayer)
+        {
+            var tabsRoot = EnsureChild(parent, "CategoryTabs", uiLayer);
+            ApplyRect(tabsRoot, new Vector2(400, 300), new Vector2(560, 52));
+
+            string[] labels = { "全部", "温柔", "活力", "治愈", "稀有" };
+            for (int i = 0; i < labels.Length; i++)
+            {
+                var tabGo = EnsureChild(tabsRoot.transform, $"CategoryTab_{i:00}", uiLayer);
+                ApplyRect(tabGo, new Vector2(-224 + i * 112, 0), new Vector2(96, 40));
+                var tabImage = GetOrAdd<Image>(tabGo);
+                tabImage.color = i == 0
+                    ? new Color(0.92f, 0.68f, 0.32f, 0.9f)
+                    : new Color(0.84f, 0.66f, 0.42f, 0.45f);
+                tabImage.raycastTarget = false;
+
+                var label = EnsureTextChild(tabGo.transform, uiLayer, "Label", labels[i], 22,
+                    Vector2.zero, new Vector2(86, 30), new Color(0.42f, 0.25f, 0.13f, 1f), TextAlignmentOptions.Center);
+                label.fontStyle = i == 0 ? FontStyles.Bold : FontStyles.Normal;
+            }
+        }
+
+        private static void ApplyRect(GameObject go, Vector2 anchoredPosition, Vector2 sizeDelta)
+        {
+            var rt = GetOrAdd<RectTransform>(go);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPosition;
+            rt.sizeDelta = sizeDelta;
+        }
+
+        private static GameObject EnsureCodexCardSlot(Transform parent, int uiLayer, int index, Vector2 anchoredPosition,
+            Sprite? cardSprite, Sprite? unknownSprite)
+        {
+            string name = $"CodexCardSlot_{index:00}";
+            var slot = EnsureChild(parent, name, uiLayer);
+            var rt = GetOrAdd<RectTransform>(slot);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = anchoredPosition;
+            rt.sizeDelta = new Vector2(154, 216);
+
+            var cardImage = GetOrAdd<Image>(slot);
+            cardImage.sprite = cardSprite;
+            cardImage.color = cardSprite == null ? new Color(1f, 1f, 1f, 0.16f) : Color.white;
+            cardImage.preserveAspect = true;
+            var button = GetOrAdd<Button>(slot);
+            button.targetGraphic = cardImage;
+
+            var lockedImage = EnsureImageChild(slot.transform, "LockedImage", uiLayer, unknownSprite, Vector2.zero, new Vector2(150, 203));
+            EnsureStretch(lockedImage.gameObject);
+            lockedImage.raycastTarget = false;
+
+            var flowerImage = EnsureImageChild(slot.transform, "FlowerImage", uiLayer, null, new Vector2(0, 18), new Vector2(98, 98));
+            ApplyRect(flowerImage.gameObject, new Vector2(0, 18), new Vector2(98, 98));
+            flowerImage.raycastTarget = false;
+
+            var unlockedContent = EnsureFullRect(slot.transform, "UnlockedContent", uiLayer);
+            var numberText = EnsureTextChild(unlockedContent.transform, uiLayer, "NumberText", "No. 027", 16,
+                new Vector2(0, 82), new Vector2(126, 26), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.Center);
+            numberText.fontStyle = FontStyles.Normal;
+            var nameText = EnsureTextChild(unlockedContent.transform, uiLayer, "NameText", "情绪之花", 18,
+                new Vector2(0, -62), new Vector2(132, 32), new Color(0.33f, 0.18f, 0.1f, 1f), TextAlignmentOptions.Center);
+            nameText.fontStyle = FontStyles.Bold;
+            EnsureTextChild(unlockedContent.transform, uiLayer, "MetaText", "培育者 · 0", 14,
+                new Vector2(0, -88), new Vector2(132, 26), new Color(0.45f, 0.28f, 0.17f, 1f), TextAlignmentOptions.Center);
+
+            return slot;
+        }
+
+        private static void EnsureStretch(GameObject go)
+        {
+            var rt = GetOrAdd<RectTransform>(go);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.pivot = new Vector2(0.5f, 0.5f);
+        }
+
+        private static void BindCardSlot(SerializedProperty slotProp, GameObject slot)
+        {
+            slotProp.FindPropertyRelative("_button").objectReferenceValue = slot.GetComponent<Button>();
+            slotProp.FindPropertyRelative("_cardImage").objectReferenceValue = slot.GetComponent<Image>();
+            slotProp.FindPropertyRelative("_lockedImage").objectReferenceValue = slot.transform.Find("LockedImage")?.GetComponent<Image>();
+            slotProp.FindPropertyRelative("_flowerImage").objectReferenceValue = slot.transform.Find("FlowerImage")?.GetComponent<Image>();
+            slotProp.FindPropertyRelative("_unlockedContent").objectReferenceValue = slot.transform.Find("UnlockedContent")?.gameObject;
+            slotProp.FindPropertyRelative("_numberText").objectReferenceValue = slot.transform.Find("UnlockedContent/NumberText")?.GetComponent<TextMeshProUGUI>();
+            slotProp.FindPropertyRelative("_nameText").objectReferenceValue = slot.transform.Find("UnlockedContent/NameText")?.GetComponent<TextMeshProUGUI>();
+            slotProp.FindPropertyRelative("_metaText").objectReferenceValue = slot.transform.Find("UnlockedContent/MetaText")?.GetComponent<TextMeshProUGUI>();
+        }
 
         private static void SetupFlowerCollectionContent(GameObject panel, int uiLayer)
         {

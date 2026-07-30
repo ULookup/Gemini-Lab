@@ -1,6 +1,6 @@
 # Gemini-Lab Memory Main
 
-Updated: 2026-07-28
+Updated: 2026-07-29
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -99,6 +99,16 @@ Updated: 2026-07-28
   - `PetController` 的 `WalkableSurface` 刷新帧初值已修正，避免 `int.MinValue` 帧差溢出导致首次刷新被跳过
   - `PetController.ResolveGroundY` 现在把桥面 surface Y 视为脚底/行走锚点高度，并通过 `_sortingAnchor`、`CapsuleCollider2D` 底部或 `SpriteRenderer` 底部换算成 transform Y，避免中心 pivot 贴桥导致脚底下穿
   - `tools/check-task-gate.ps1 write`、`git diff --check`、`dotnet build GeminiLab.Modules.Pet.csproj --no-restore`、`dotnet build Assembly-CSharp-Editor.csproj --no-restore` 已通过；Unity PlayMode 仍需人工验证
+- `2026-07-29` 已接入 WorldMap 情绪花图鉴列表页与详情页 UI 美术资源的脚本侧和 authoring 入口：
+  - 资源来源为 `Assets/_Project/Art/WorldMap/flowerCodex` 与 `Assets/_Project/Art/WorldMap/flower_info`
+  - `FlowerCollectionPanelStub` 已改为 Scene/Inspector 友好结构：运行时只读取 `IEmotionGardenService.GetAllClusters()`、填充卡槽/详情文本、切换 `CodexView` 与 `DetailView`，不再生成旧滚动列表最终视觉
+  - `WorldMapEmotionGardenUIPatch.SetupFlowerCollectionBookContent` 会在 `Panel_EmotionCollection/Content` 下作者化真实 UI 子节点：书本背景、12 个图鉴卡槽、未知卡、左右翻页、关闭、详情页花图插槽、库存条和文本字段
+  - 当前资源未提供独立花朵 Sprite，因此卡片与详情页的花图字段保留为 Inspector 可绑定插槽；有正式花朵图后直接在 Scene 中替换
+  - `AutoSetup` 已升级到版本 22；本轮已通过项目本地 `tools/run-unity-editor-method.ps1` batchmode runner 直接执行 `WorldMapEmotionGardenUIPatch.Patch()` 并落盘 `WorldMap_Main.unity`
+  - `tools/run-unity-editor-method.ps1` 已改为可靠 batchmode runner：默认带 `-nographics`，通过子进程 watchdog 监控 Unity；如果启动阶段长期不创建日志或总执行超时，会停止本次 Unity PID 并返回非 0，不再无期限阻塞 PowerShell
+  - 为解除 Unity 打开阻塞，`Packages/manifest.json` 中 `com.kirurobo.uniwinc` 已从失效本地 `file:` 路径改为官方 GitHub UPM URL，`Packages/packages-lock.json` 记录 hash `304f9ba2aa4a8fae7f3c71f38118c44722a2f6cc`
+  - `WorldMap_Main.unity` 已存在 `CodexView`、`DetailView`、`TitlePlate`、`CategoryTabs`、`CodexCardSlot_00...11`、`StockPlate`、`FlowerImage` 等图鉴 UI 节点；`Logs/UnityBatchmode/WorldMapEmotionGardenUIPatch.codex-list.log` 记录了成功执行
+  - `tools/check-task-gate.ps1 write`、`git diff --check`、`dotnet build GeminiLab.Modules.HubUI.csproj` 与 `dotnet build Assembly-CSharp-Editor.csproj` 已通过；PlayMode 点击、详情切换和最终视觉微调仍需在 Unity 中按 `docs/manual-validation-checklist.md` 的 B10 章节人工验证
 - `2026-04-28` 已开始推进任务 1：现有场景家具接入 `FurnitureService`，并让 Apartment 场景里的状态/库存/概览面板显示真实运行时数据。
 - `2026-04-28` 已完成任务 2 的首轮范围确认，并把现有 `Move` 动画 controller 显式绑定到 `Apartment_Main.unity` 中的 `Pet_Angel`。
 - `2026-04-28` 已基于新增美术资源补上两个交互动画 clip：`Interact_Read` 与 `Interact_BesideDoor`，并把它们接进现有 `Pet_Angel.controller`。

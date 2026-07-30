@@ -1,6 +1,6 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-07-28
+Updated: 2026-07-29
 
 ## 入口文件
 - `AGENTS.md`
@@ -19,6 +19,8 @@ Updated: 2026-07-28
   - 当前人工版“做梦整理”执行清单。
 - `tools/check-task-gate.ps1`
   - 当前最小闭环执行闸门脚本。
+- `tools/run-unity-editor-method.ps1`
+  - 项目本地 Unity batchmode runner，可定位 Unity Editor 并执行 editor static method；当前用于在没有完整 MCP 的情况下落地场景 authoring，并带 `-nographics`、启动日志超时、总执行超时和子进程 watchdog，避免 Unity 启动卡住时无期限阻塞。
 - `README.md`
   - 项目总说明，面向产品、技术栈、整体架构和路线图。
 - `Assets/README.md`
@@ -73,6 +75,9 @@ Updated: 2026-07-28
 - `Assets/_Project/Scripts/Editor/Tools/ReadingBubbleLayoutSync.cs`
 - `Assets/_Project/Scripts/Editor/Tools/SaveSlotTemplateCreator.cs`
 - `Assets/_Project/Scripts/Editor/SceneBootstrap/SettingsAndSaveSlotsPanelAuthoring.cs`
+- `Assets/_Project/Scripts/Editor/SceneBootstrap/AutoSetup.cs`
+- `Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapEmotionGardenUIPatch.cs`
+- `Assets/_Project/Scripts/Modules/HubUI/Panels/FlowerCollectionPanelStub.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/SceneFurnitureDefinitionHint.cs`
@@ -85,6 +90,8 @@ Updated: 2026-07-28
 - `docs/art-replacement-workflow.md`
 - `docs/apartment-scene-sprite-naming-guide.md`
 - `Assets/_Project/Art/README.md`
+- `Assets/_Project/Art/WorldMap/flowerCodex`
+- `Assets/_Project/Art/WorldMap/flower_info`
 - `Assets/_Project/Art/Sprites/Furniture/README.md`
 - `Assets/_Project/Art/Sprites/Pet/README.md`
 - `Assets/_Project/Prefabs/README.md`
@@ -135,6 +142,8 @@ Updated: 2026-07-28
   - 当前项目人工版做梦整理清单
 - `tools/check-task-gate.ps1`
   - 当前项目最小闭环执行闸门
+- `tools/run-unity-editor-method.ps1`
+  - 当前项目本地 Unity batchmode 执行入口，带 watchdog 和超时保护
 - `docs/`
   - 项目文档根目录
 - `docs/ai-memory/`
@@ -189,8 +198,9 @@ Updated: 2026-07-28
 9. `Assets/_Project/Animations/Pet/` 当前除 3 个 move clip 外，已新增 `Pet_Angel_Interact_Read.anim` 与 `Pet_Angel_Interact_BesideDoor.anim`，并新增 `Pet_Devil_Move_* / Pet_Devil_Idle_* / Pet_Devil_Sleep.anim`、`Pet_Devil_Interact_BesideDoor.anim`、`Pet_Devil_Interact_Write.anim` 与 `Pet_Devil_Interact_PlayingMusic.anim`；但恶魔其余完整交互动画仍未补齐。
 10. `2026-05-25` 起，Apartment 场景已开始搭第一版 `viewport` 结构：当前 `ApartmentViewportHost` 与 `ApartmentViewportImage` 已归属 `Panel_SpaceSys/Content`，并新增 `ArtGenerated/ApartmentViewportCamera`；当前 `RenderTexture` 资产路径为 `Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture`。同日已补 `ApartmentViewportInputBridge`，当前可把 viewport 内点击先桥接到桌宠点击，再桥接到当前宠物的家具交互链路；当 `BuildModeController` 开启时，也会优先桥接到建造模式的放置/删除家具入口。
 11. `2026-07-28` 起，`WorldMap_Main.unity` 中桥对象 `桥` 的过桥移动轮廓由同物体 `PolygonCollider2D` 上侧轮廓直接提供。`WalkableSurface` 是运行时读取入口，`WorldMapSceneObjectsPatch` 只确保桥对象有 `WalkableSurface` 并保留现有 collider 点位，不再维护 `_profileLocalPoints` 独立折线轨道。`PetController.ResolveGroundY` 会把桥面 surface Y 当作脚底/行走锚点高度，再换算成 transform Y。相关 PlayMode 表现仍需按 `docs/manual-validation-checklist.md` 的 B9 章节人工补验。
-12. `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前已经从旧的平铺命名，切换为 `正面 / 背面 / 侧面` 三个子目录；对应导入链路由 `PetMoveAnimationSetupEditor` 兼容新旧两套来源。
-13. `Assets/_Project/Art/Sprites/Pet/Frames/Interact/` 当前两组交互帧已经统一改为规范命名：`Pet_Angel_Interact_Read_0001...` 与 `Pet_Angel_Interact_BesideDoor_0001...`，不再使用 `IMG_986x.PNG`。
+12. `2026-07-29` 起，WorldMap 情绪花图鉴列表页与详情页的美术资源入口为 `Assets/_Project/Art/WorldMap/flowerCodex` 与 `Assets/_Project/Art/WorldMap/flower_info`。运行时入口是 `FlowerCollectionPanelStub`，编辑器作者化入口是 `WorldMapEmotionGardenUIPatch.SetupFlowerCollectionBookContent`。设计要求是 Scene/Inspector 可调：`Panel_EmotionCollection/Content` 下应由 `CodexView`、`DetailView`、书本背景、卡槽、按钮和文本字段这些真实 UI 子节点组成；运行时只填数据和切换视图。本轮已通过 `tools/run-unity-editor-method.ps1` 在 Unity batchmode 中执行 `WorldMapEmotionGardenUIPatch.Patch()` 并落盘 `WorldMap_Main.unity`，场景 YAML 已能命中 `CodexView`、`DetailView`、`CodexCardSlot_00`、`StockPlate` 等节点；PlayMode 点击和最终视觉微调仍需在 Unity 中补验。
+13. `Assets/_Project/Art/Sprites/Pet/Frames/Move/` 当前已经从旧的平铺命名，切换为 `正面 / 背面 / 侧面` 三个子目录；对应导入链路由 `PetMoveAnimationSetupEditor` 兼容新旧两套来源。
+14. `Assets/_Project/Art/Sprites/Pet/Frames/Interact/` 当前两组交互帧已经统一改为规范命名：`Pet_Angel_Interact_Read_0001...` 与 `Pet_Angel_Interact_BesideDoor_0001...`，不再使用 `IMG_986x.PNG`。
 14. `2026-06-02` 起，项目已补一条 Windows 构建防护：`Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs` 会把 `Assets/Plugins/NuGet` 下由 Unity MCP 依赖解析器解压出的 `McpPlugin / SignalR / Microsoft.Extensions.*` DLL 统一校正为 `Editor-only`，避免它们以 Player 插件身份进入 Bee / Burst 构建链。
 15. `2026-06-02` 同日，项目又把 4 个 Unity MCP 包临时从 `Packages/` 移到了 `PackageBackups/MCP-disabled-2026-06-02/`，并从 `Packages/manifest.json` 取消引用；当前保留不动的是 `Packages/SkillsForUnity`。
 16. `2026-06-02` 同日，项目还把 `Assets/Plugins/NuGet` 整个目录及其 `.meta` 软移出到了 `PackageBackups/NuGet-disabled-2026-06-02/`，并清空了 `ProjectSettings/ProjectSettings.asset` 里的 `Standalone` `UNITY_MCP_READY`，用于让 Windows Build 不再继续命中这批 MCP NuGet 残留 DLL。

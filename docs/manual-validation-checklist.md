@@ -1,6 +1,6 @@
 # Gemini-Lab 人工验证清单
 
-Updated: 2026-07-28
+Updated: 2026-07-29
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -63,6 +63,25 @@ Updated: 2026-07-28
 | `Pet_Devil` 玩家控制横向走到桥 X 范围时，脚底/行走锚点会沿桥 `PolygonCollider2D` 上轮廓抬升和下降 | 未验证 | 需在 Unity PlayMode 点击切换主控后验证 |
 | 未被选中的桌宠自动横向漫游经过桥时，脚底/行走锚点同样跟随桥上轮廓 | 未验证 | 需在 Unity PlayMode 等待随机漫游过桥 |
 | 离开桥两端后，桌宠回到横板基准地面而不是停留在桥面高度 | 未验证 | 需在 Unity PlayMode 验证左右两端 |
+
+## B10. WorldMap 情绪花图鉴 UI 美术接入（2026-07-29）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标面板：`Panel_EmotionCollection`
+- 列表页资源：`Assets/_Project/Art/WorldMap/flowerCodex`
+- 详情页资源：`Assets/_Project/Art/WorldMap/flower_info`
+- 当前实现原则：书本、卡槽、未知卡、左右箭头、关闭按钮、库存条和文本区域均由 Scene 中真实 UI 子节点承载；`FlowerCollectionPanelStub` 只负责运行时填数据与切换 `CodexView` / `DetailView`，不在 `Awake` / `Start` 临时拼最终视觉。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `FlowerCollectionPanelStub` 使用 `_codexView`、`_detailView`、`_cardSlots` 与详情字段的序列化引用，不再运行时生成旧列表条目 | 通过 | `dotnet build GeminiLab.Modules.HubUI.csproj` 通过 |
+| `WorldMapEmotionGardenUIPatch` 的 `SetupFlowerCollectionBookContent` 会从 `flowerCodex` / `flower_info` 加载拆分美术资源，而不是直接使用整张 mock 合成图 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
+| `AutoSetup` 升级到版本 22 后，会调用 `WorldMapEmotionGardenUIPatch.Patch()` 自动落地图鉴 UI authoring | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
+| 本地 Unity batchmode runner 可执行 editor static method，且不会无期限卡住 | 通过 | `tools/run-unity-editor-method.ps1` 已加入 `-nographics`、启动日志超时、总执行超时和子进程 watchdog；`WorldMapEmotionGardenUIPatch.watchdog-test.log.runner.log` 验证 5 秒未生成日志时会停止本次 Unity PID |
+| 执行 WorldMap UI authoring 后，`Panel_EmotionCollection/Content/CodexView` 下存在 `Book`、`TitlePlate`、`CategoryTabs`、`Cards/CodexCardSlot_00...11`、`PreviousPageButton`、`NextPageButton`、`CloseButton`、`ProgressText`、`PageText`、`ClickHintText` | 通过 | Unity batchmode patch 成功，日志在 `Logs/UnityBatchmode/WorldMapEmotionGardenUIPatch.codex-list.log`；`rg` 已在 `WorldMap_Main.unity` 命中列表页关键节点；需在 Scene 视图继续做视觉微调 |
+| 执行 WorldMap UI authoring 后，`Panel_EmotionCollection/Content/DetailView` 下存在 `Book`、`FlowerImage`、`StockPlate/StockText`、详情文字字段、返回/翻页/关闭按钮 | 通过 | `rg` 已在 `WorldMap_Main.unity` 命中 `DetailView`、`StockPlate`、`FlowerImage` 等节点；需在 Scene 视图继续做视觉微调 |
+| PlayMode 中点击 `Btn_EmotionCollection` 打开图鉴列表页，关闭按钮可关闭面板 | 未验证 | 需 Unity PlayMode 人工验证 |
+| PlayMode 中已解锁卡片可切到详情页，详情页返回按钮可回到列表页，左右按钮只在存在可切换项时可用 | 未验证 | 需已有情绪花数据或调试数据 |
 
 ## B3. 塔罗垂直切片（B1 2026-05-10 新增）
 | 检查项 | 结果 | 备注 |
