@@ -9,9 +9,7 @@ using UnityEngine.UI;
 namespace GeminiLab.Modules.HubUI.Panels
 {
     /// <summary>
-    /// 每日情绪输入面板。输入心情文本 → 提交生成情绪花。
-    /// 当前阶段：方块 UI 占位，情绪固定为"悲伤"。
-    /// 通过 payload 传入 owner ("angel" / "demon")。
+    /// 每日情绪输入面板。读取心情文本，提交后生成对应的情绪花。
     /// </summary>
     public sealed class EmotionInputPanelStub : StubPanelBase
     {
@@ -24,19 +22,34 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private TMP_Text? _ownerText;
 
         private IEmotionGardenService? _service;
-        private string _owner = "angel";
+        private IUIRouter? _router;
+        private string _owner = EmotionFlowerCatalog.OwnerAngel;
 
         public override void OnOpen(object? payload)
         {
             base.OnOpen(payload);
 
-            if (payload is string owner) _owner = owner;
+            if (payload is string owner)
+            {
+                _owner = EmotionFlowerCatalog.NormalizeOwner(owner);
+            }
 
-            _service ??= ServiceLocator.TryResolve(out IEmotionGardenService? s) ? s : null;
+            _service ??= ServiceLocator.TryResolve(out IEmotionGardenService? service) ? service : null;
+            _router ??= ServiceLocator.TryResolve(out IUIRouter? router) ? router : null;
 
-            if (_ownerText != null) _ownerText.text = $"培育者: {(_owner == "angel" ? "天使" : "恶魔")}";
+            if (_service == null)
+            {
+                SetInteractable(false);
+                if (_statusText != null) _statusText.text = "情绪花园服务未就绪";
+                return;
+            }
 
-            if (_service != null && !_service.CanSubmitToday())
+            if (_ownerText != null)
+            {
+                _ownerText.text = $"培育者: {EmotionFlowerCatalog.ResolveOwnerDisplayName(_owner)}";
+            }
+
+            if (!_service.CanSubmitToday())
             {
                 SetInteractable(false);
                 if (_statusText != null) _statusText.text = "今天已经提交过心情了";
@@ -44,28 +57,32 @@ namespace GeminiLab.Modules.HubUI.Panels
             else
             {
                 SetInteractable(true);
-                if (_statusText != null) _statusText.text = "";
+                if (_statusText != null) _statusText.text = string.Empty;
             }
         }
 
         public void OnSubmitClick()
         {
-            if (_service == null) return;
+            if (_service == null)
+            {
+                if (_statusText != null) _statusText.text = "情绪花园服务未就绪";
+                return;
+            }
+
             if (!_service.CanSubmitToday())
             {
                 if (_statusText != null) _statusText.text = "今天已经提交过心情了";
                 return;
             }
 
-            var detail = _inputField != null ? _inputField.text : "";
+            var detail = _inputField != null ? _inputField.text : string.Empty;
             if (string.IsNullOrWhiteSpace(detail))
             {
                 if (_statusText != null) _statusText.text = "请输入心情";
                 return;
             }
 
-            // 当前阶段固定返回"悲伤"
-            var flower = _service.SubmitEmotion("悲伤", detail, _owner);
+            var flower = _service.SubmitEmotion(string.Empty, detail, _owner);
             if (flower == null)
             {
                 if (_statusText != null) _statusText.text = "提交失败";
@@ -73,7 +90,12 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
 
             SetInteractable(false);
-            if (_statusText != null) _statusText.text = $"已生成: {_owner}·悲伤花 ({flower.Value.DateIso})";
+            if (_statusText != null)
+            {
+                _statusText.text = $"已生成 {flower.Value.FlowerName}（{flower.Value.EmotionType}）";
+            }
+
+            _router?.Open(PanelId.WeeklyGardenView);
         }
 
         private void SetInteractable(bool interactable)

@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using GeminiLab.Core;
+using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.EmotionGarden;
 using TMPro;
@@ -47,6 +48,10 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _detailCloseButton;
 
         private IEmotionGardenService? _service;
+        private EventBus? _eventBus;
+        private IDisposable? _submittedSub;
+        private IDisposable? _bloomedSub;
+        private IDisposable? _clearedSub;
         private readonly List<ClusterProgress> _clusters = new();
         private int _currentPage;
         private int _selectedClusterIndex = -1;
@@ -73,10 +78,52 @@ namespace GeminiLab.Modules.HubUI.Panels
         {
             base.OnOpen(payload);
             _service ??= ServiceLocator.TryResolve(out IEmotionGardenService? service) ? service : null;
+            _eventBus ??= ServiceLocator.TryResolve(out EventBus? eventBus) ? eventBus : null;
             _currentPage = 0;
             _selectedClusterIndex = -1;
+            EnsureSubscriptions();
             RefreshClusters();
             ShowCodexView();
+        }
+
+        public override void OnClose()
+        {
+            _submittedSub?.Dispose();
+            _bloomedSub?.Dispose();
+            _clearedSub?.Dispose();
+            _submittedSub = null;
+            _bloomedSub = null;
+            _clearedSub = null;
+            base.OnClose();
+        }
+
+        protected override void OnDestroy()
+        {
+            _submittedSub?.Dispose();
+            _bloomedSub?.Dispose();
+            _clearedSub?.Dispose();
+            base.OnDestroy();
+        }
+
+        private void EnsureSubscriptions()
+        {
+            if (_eventBus == null) return;
+
+            _submittedSub ??= _eventBus.Subscribe<EmotionFlowerSubmittedEvent>(_ =>
+            {
+                RefreshClusters();
+                RefreshVisibleView();
+            });
+            _bloomedSub ??= _eventBus.Subscribe<EmotionFlowerBloomedEvent>(_ =>
+            {
+                RefreshClusters();
+                RefreshVisibleView();
+            });
+            _clearedSub ??= _eventBus.Subscribe<EmotionGardenClearedEvent>(_ =>
+            {
+                RefreshClusters();
+                RefreshVisibleView();
+            });
         }
 
         private void RefreshClusters()
@@ -91,6 +138,17 @@ namespace GeminiLab.Modules.HubUI.Panels
 
             int maxPage = GetMaxPage();
             _currentPage = Mathf.Clamp(_currentPage, 0, maxPage);
+        }
+
+        private void RefreshVisibleView()
+        {
+            if (_detailView != null && _detailView.activeSelf)
+            {
+                RefreshDetail();
+                return;
+            }
+
+            RefreshCodexCards();
         }
 
         private void ShowCodexView()
@@ -134,7 +192,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
             if (_progressText != null)
             {
-                _progressText.text = $"收集进度： {collected} / {displayTotal}";
+                _progressText.text = $"收集进度：{collected} / {displayTotal}";
             }
 
             if (_pageText != null)
@@ -288,14 +346,20 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private static int CompareClusters(ClusterProgress a, ClusterProgress b)
         {
-            int owner = string.Compare(a.Owner, b.Owner, StringComparison.Ordinal);
+            int emotion = EmotionFlowerCatalog.GetEmotionSortIndex(a.EmotionType)
+                .CompareTo(EmotionFlowerCatalog.GetEmotionSortIndex(b.EmotionType));
+            if (emotion != 0) return emotion;
+
+            int owner = EmotionFlowerCatalog.GetOwnerSortIndex(a.Owner)
+                .CompareTo(EmotionFlowerCatalog.GetOwnerSortIndex(b.Owner));
             if (owner != 0) return owner;
-            return string.Compare(a.EmotionType, b.EmotionType, StringComparison.Ordinal);
+
+            return string.Compare(a.Owner, b.Owner, StringComparison.Ordinal);
         }
 
         private static string BuildFlowerName(ClusterProgress cluster)
         {
-            return $"{ResolveEmotionName(cluster.EmotionType)}之花";
+            return EmotionFlowerCatalog.ResolveFlowerName(cluster.EmotionType, cluster.Owner);
         }
 
         private static string BuildCardMeta(ClusterProgress cluster)
@@ -317,18 +381,12 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private static string ResolveOwnerName(string owner)
         {
-            return owner switch
-            {
-                "angel" => "天使",
-                "demon" => "恶魔",
-                "devil" => "恶魔",
-                _ => string.IsNullOrWhiteSpace(owner) ? "未知" : owner
-            };
+            return EmotionFlowerCatalog.ResolveOwnerDisplayName(owner);
         }
 
         private static string ResolveEmotionName(string emotionType)
         {
-            return string.IsNullOrWhiteSpace(emotionType) ? "情绪" : emotionType;
+            return EmotionFlowerCatalog.ResolveEmotionDisplayName(emotionType);
         }
 
         [Serializable]

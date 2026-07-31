@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-07-29
+# Updated: 2026-07-30
 
 AGENTS.md
 docs/current-task-card.md
@@ -63,9 +63,14 @@ Assets/_Project/Scripts/Modules/HubUI/Panels/ProfilePanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/TarotPanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/InventoryPanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/FlowerCollectionPanelStub.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/WeeklyGardenPanelStub.cs
+Assets/_Project/Scripts/Modules/EmotionGarden/EmotionFlowerModels.cs
+Assets/_Project/Scripts/Modules/EmotionGarden/EmotionGardenService.cs
+Assets/_Project/Scripts/Modules/EmotionGarden/EmotionGardenRuntimeBootstrap.cs
 Assets/_Project/Art/Sprites/Environment/ApartmentScene_Extracted/README.md
 Assets/_Project/Art/WorldMap/flowerCodex
 Assets/_Project/Art/WorldMap/flower_info
+Assets/_Project/Art/WorldMap/growth
 Assets/_Project/Audio/README.md
 Assets/_Project/Settings/README.md
 Assets/_Project/Scripts/README.md
@@ -79,6 +84,12 @@ Assets/_Project/Scripts/Modules/Pet/PetPlayerInputController.cs
 Assets/_Project/Scripts/Modules/Pet/PetPlayerFurnitureInteractionController.cs
 Assets/_Project/Scripts/Modules/Pet/PetClickReactionController.cs
 Assets/_Project/Scripts/Modules/Pet/PetClickResponseLibrary.cs
+Assets/_Project/Scripts/Core/DevMode.cs
+Assets/_Project/Scripts/Modules/WorldMap/CabinReturnPortal.cs
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapGardenZone.cs
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapCameraController.cs
+Assets/_Project/Scripts/Modules/WorldMap/ClickableSceneObject.cs
+Assets/_Project/Scripts/Modules/WorldMap/BaselineItem.cs
 Assets/_Project/Scripts/Modules/Furniture/README.md
 Assets/_Project/Scripts/Modules/Navigation/README.md
 Assets/_Project/Scripts/Modules/Gateway/README.md
@@ -89,6 +100,7 @@ Assets/_Project/Scripts/UI/README.md
 Assets/_Project/Scripts/Modules/Pet/PetRuntimeSnapshotChangedEvent.cs
 Assets/_Project/Scripts/Editor/Furniture/ApartmentFurnitureAuthoringBootstrapEditor.cs
 Assets/_Project/Scripts/Editor/SceneBootstrap/AutoSetup.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/EditorBootSceneLoader.cs
 Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapSceneObjectsPatch.cs
 Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapEmotionGardenUIPatch.cs
 Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs

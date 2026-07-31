@@ -1,4 +1,4 @@
-#nullable enable
+﻿#nullable enable
 #if UNITY_EDITOR
 using GeminiLab.Core;
 using GeminiLab.Core.UI;
@@ -302,10 +302,16 @@ namespace GeminiLab.Editor.SceneBootstrap
         // ── 每周培育面板内容 ──────────────────────────────────
 
         private const string GardenWeekArtDir = "Assets/_Project/Art/WorldMap/garden_week";
+        private const string GrowthArtDir = "Assets/_Project/Art/WorldMap/growth";
 
         private static Sprite? LoadGardenWeekSprite(string fileName)
         {
             return AssetDatabase.LoadAssetAtPath<Sprite>($"{GardenWeekArtDir}/{fileName}.png");
+        }
+
+        private static Sprite? LoadGrowthSprite(string fileName)
+        {
+            return AssetDatabase.LoadAssetAtPath<Sprite>($"{GrowthArtDir}/{fileName}.png");
         }
 
         private static void SetupWeeklyGardenContent(GameObject panel, int uiLayer)
@@ -322,6 +328,8 @@ namespace GeminiLab.Editor.SceneBootstrap
             var closeSprite = LoadGardenWeekSprite("close");
             var barSprite = LoadGardenWeekSprite("UIbar");
             var bottleSprite = LoadGardenWeekSprite("bottle");
+            var seedSprite = LoadGrowthSprite("seed");
+            var budSprite = LoadGrowthSprite("bud");
 
             // ── 替换 Content 背景为 UI.png ──
             var bgImg = content.GetComponent<Image>();
@@ -407,16 +415,8 @@ namespace GeminiLab.Editor.SceneBootstrap
             grt.pivot = new Vector2(0.5f, 0.5f);
             grt.anchoredPosition = new Vector2(0, -180);
             grt.sizeDelta = new Vector2(1600, 400);
-            var hlg = GetOrAdd<HorizontalLayoutGroup>(gridGo);
-            hlg.spacing = 14;
-            hlg.childAlignment = TextAnchor.MiddleCenter;
-            hlg.childControlWidth = true;
-            hlg.childControlHeight = false;
-            hlg.childForceExpandWidth = false;
-            hlg.childForceExpandHeight = false;
-
             // ── 创建瓶子单元格模板 ──
-            SetupBottleCellTemplate(gridGo, uiLayer, bottleSprite, so);
+            SetupBottleCellTemplate(gridGo, uiLayer, bottleSprite, seedSprite, budSprite, so);
 
             // ── 数据绑定 ──
             so.FindProperty("_gridRoot").objectReferenceValue = gridGo.transform;
@@ -425,16 +425,8 @@ namespace GeminiLab.Editor.SceneBootstrap
         }
 
         private static void SetupBottleCellTemplate(GameObject gridGo, int uiLayer,
-            Sprite? bottleSprite, SerializedObject stubSo)
+            Sprite? bottleSprite, Sprite? seedSprite, Sprite? budSprite, SerializedObject stubSo)
         {
-            // 清理旧的占位 cells + Day0~Day6（强制重建，确保使用新瓶子资源）
-            for (int i = gridGo.transform.childCount - 1; i >= 0; i--)
-            {
-                var child = gridGo.transform.GetChild(i);
-                if (child.name == "CellTemplate") continue;
-                Object.DestroyImmediate(child.gameObject);
-            }
-
             // 强制重建 CellTemplate（确保结构完整：Bottle + DayLabel/DaySprite + DayLabel/DayText + Label）
             var template = gridGo.transform.Find("CellTemplate")?.gameObject;
             if (template != null) Object.DestroyImmediate(template);
@@ -446,12 +438,6 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             var trt = template.AddComponent<RectTransform>();
             trt.sizeDelta = new Vector2(160, 320);
-
-            var layout = template.AddComponent<LayoutElement>();
-            layout.preferredWidth = 160;
-            layout.preferredHeight = 320;
-            layout.minWidth = 120;
-            layout.minHeight = 280;
 
             // 瓶子背景
             var bottleGo = new GameObject("Bottle");
@@ -465,6 +451,20 @@ namespace GeminiLab.Editor.SceneBootstrap
             if (bottleSprite != null)
                 bimg.sprite = bottleSprite;
             bimg.color = Color.white;
+
+            var growthGo = new GameObject("Growth");
+            growthGo.transform.SetParent(template.transform, false);
+            growthGo.layer = uiLayer;
+            var grt = growthGo.AddComponent<RectTransform>();
+            grt.anchorMin = new Vector2(0.5f, 0.5f);
+            grt.anchorMax = new Vector2(0.5f, 0.5f);
+            grt.pivot = new Vector2(0.5f, 0.5f);
+            grt.sizeDelta = new Vector2(96, 96);
+            grt.anchoredPosition = new Vector2(0f, -8f);
+            var gimg = growthGo.AddComponent<Image>();
+            gimg.preserveAspect = true;
+            gimg.color = Color.white;
+            gimg.raycastTarget = false;
 
             // 天数标签
             var dayLabelGo = new GameObject("DayLabel");
@@ -567,6 +567,14 @@ namespace GeminiLab.Editor.SceneBootstrap
                     if (match == null)
                         Debug.LogWarning($"[WorldMapEmotionGardenUI] 未在 weekUI.psd 中找到精灵: {bottleNames[b]}");
                 }
+            }
+
+            var growthSpritesProp = stubSo.FindProperty("_growthSprites");
+            if (growthSpritesProp != null)
+            {
+                growthSpritesProp.arraySize = 2;
+                growthSpritesProp.GetArrayElementAtIndex(0).objectReferenceValue = seedSprite;
+                growthSpritesProp.GetArrayElementAtIndex(1).objectReferenceValue = budSprite;
             }
 
             // ── 预置 7 个可见格子到场景中（方便 Scene 视图编辑）──

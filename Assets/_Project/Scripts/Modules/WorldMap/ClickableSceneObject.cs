@@ -1,4 +1,5 @@
 #nullable enable
+using GeminiLab.Core;
 using UnityEngine;
 
 namespace GeminiLab.Modules.WorldMap
@@ -10,9 +11,25 @@ namespace GeminiLab.Modules.WorldMap
     {
         [SerializeField] private string _displayName = "场景物";
         [SerializeField] private string _clickMessage = "点击了 {0}";
+        private Collider2D? _clickCollider;
+
+        private void Awake()
+        {
+            _clickCollider = GetComponent<Collider2D>();
+        }
 
         private void OnMouseDown()
         {
+            if (ClickOcclusionUtility.IsPointerOverUI())
+            {
+                return;
+            }
+
+            if (!ClickOcclusionUtility.IsTopmostColliderUnderMouse(_clickCollider))
+            {
+                return;
+            }
+
             Debug.Log($"[ClickableSceneObject] {string.Format(_clickMessage, _displayName)}");
         }
     }

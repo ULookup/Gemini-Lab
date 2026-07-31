@@ -1,6 +1,6 @@
-# Gemini-Lab Memory Main
+﻿# Gemini-Lab Memory Main
 
-Updated: 2026-07-29
+Updated: 2026-07-30
 
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
@@ -104,11 +104,27 @@ Updated: 2026-07-29
   - `FlowerCollectionPanelStub` 已改为 Scene/Inspector 友好结构：运行时只读取 `IEmotionGardenService.GetAllClusters()`、填充卡槽/详情文本、切换 `CodexView` 与 `DetailView`，不再生成旧滚动列表最终视觉
   - `WorldMapEmotionGardenUIPatch.SetupFlowerCollectionBookContent` 会在 `Panel_EmotionCollection/Content` 下作者化真实 UI 子节点：书本背景、12 个图鉴卡槽、未知卡、左右翻页、关闭、详情页花图插槽、库存条和文本字段
   - 当前资源未提供独立花朵 Sprite，因此卡片与详情页的花图字段保留为 Inspector 可绑定插槽；有正式花朵图后直接在 Scene 中替换
-  - `AutoSetup` 已升级到版本 22；本轮已通过项目本地 `tools/run-unity-editor-method.ps1` batchmode runner 直接执行 `WorldMapEmotionGardenUIPatch.Patch()` 并落盘 `WorldMap_Main.unity`
+  - `AutoSetup` 已升级到版本 23；本轮仍保留 `WorldMapEmotionGardenUIPatch.Patch()` 的自动作者化入口，但本机 batchmode runner 在 Unity 启动阶段超时，scene 落盘改由下次编辑器初始化时的 `AutoSetup` 兜底重跑
   - `tools/run-unity-editor-method.ps1` 已改为可靠 batchmode runner：默认带 `-nographics`，通过子进程 watchdog 监控 Unity；如果启动阶段长期不创建日志或总执行超时，会停止本次 Unity PID 并返回非 0，不再无期限阻塞 PowerShell
   - 为解除 Unity 打开阻塞，`Packages/manifest.json` 中 `com.kirurobo.uniwinc` 已从失效本地 `file:` 路径改为官方 GitHub UPM URL，`Packages/packages-lock.json` 记录 hash `304f9ba2aa4a8fae7f3c71f38118c44722a2f6cc`
   - `WorldMap_Main.unity` 已存在 `CodexView`、`DetailView`、`TitlePlate`、`CategoryTabs`、`CodexCardSlot_00...11`、`StockPlate`、`FlowerImage` 等图鉴 UI 节点；`Logs/UnityBatchmode/WorldMapEmotionGardenUIPatch.codex-list.log` 记录了成功执行
+  - `UIRouter.Open` 现在会在打开新顶层面板前先关闭当前已开的顶层面板，因此 `Panel_EmotionInput`、`Panel_EmotionCollection` 这类入口会互斥切换，不再同时叠在一起
   - `tools/check-task-gate.ps1 write`、`git diff --check`、`dotnet build GeminiLab.Modules.HubUI.csproj` 与 `dotnet build Assembly-CSharp-Editor.csproj` 已通过；PlayMode 点击、详情切换和最终视觉微调仍需在 Unity 中按 `docs/manual-validation-checklist.md` 的 B10 章节人工验证
+  - `EditorBootSceneLoader` 现在也会手动触发 `EmotionGardenRuntimeBootstrap` 的 Awake，避免编辑器直启 `WorldMap_Main` 时情绪花园服务没注册
+  - `WeeklyGardenPanelStub` 现在会在瓶子里显示 `Assets/_Project/Art/WorldMap/growth` 的 `seed / bud` 资源，并订阅提交 / 开花 / 清空事件自动刷新
+  - `WorldMapEmotionGardenUIPatch` 现在会作者化 `Growth` 子节点并绑定 `_growthSprites`，确保 Scene 里能直接调整瓶内成长层的布局与大小
+- `2026-07-30` 已收口 WorldMap 室内入口点击优先级与双宠室外碰撞：
+  - 通用点击裁决工具 `ClickOcclusionUtility` 已收在 `Assets/_Project/Scripts/Core/DevMode.cs`
+  - `CabinReturnPortal`、`WorldMapGardenZone`、`ClickableSceneObject`、`BaselineItem`、`PetPlayerInputController`、`PetClickReactionController` 与 `WorldMapCameraController` 现在都会先判断鼠标点下的最上层 2D 点击目标再决定是否响应
+  - `PetController` 新增 WorldMap 场景级双宠碰撞忽略逻辑，`Pet_Angel` 与 `Pet_Devil` 在 `WorldMap_Main` 中不会再互相挡路
+  - `dotnet build Assembly-CSharp-Editor.csproj` 与 `git diff --check` 已通过；房子被桌宠或 UI 遮挡时不响应、以及双宠贴身经过时的实际 PlayMode 体感仍需人工补验
+- `2026-07-31` 已恢复情绪花园的真实种植逻辑接线：
+  - `EmotionFlowerModels` 中新增 `EmotionFlowerCatalog` 本地目录表，负责 9 种情绪的轻量文本判定，以及 `angel / demon` 两位培育者对应的 18 个花名映射
+  - `EmotionGardenService` 现在会在提交时生成真实花名，并把花名写入 `EmotionFlowerData.FlowerName`
+  - `EmotionInputPanelStub` 不再提交固定“悲伤”，而是读取心情文本后交给情绪花园服务判定；提交成功后会自动切到 `WeeklyGardenView`
+  - `WeeklyGardenPanelStub` 现在会按真实数据展示花名、情绪、培育者和开花状态，并在空格回退时恢复默认瓶子底图
+  - `FlowerCollectionPanelStub` 现在按情绪顺序 + 培育者顺序展示图鉴，点击已解锁卡片后进入详情页
+  - `dotnet build GeminiLab.Modules.EmotionGarden.csproj --no-restore`、`dotnet build GeminiLab.Modules.HubUI.csproj --no-restore` 与 `dotnet build Assembly-CSharp-Editor.csproj --no-restore` 已通过
 - `2026-04-28` 已开始推进任务 1：现有场景家具接入 `FurnitureService`，并让 Apartment 场景里的状态/库存/概览面板显示真实运行时数据。
 - `2026-04-28` 已完成任务 2 的首轮范围确认，并把现有 `Move` 动画 controller 显式绑定到 `Apartment_Main.unity` 中的 `Pet_Angel`。
 - `2026-04-28` 已基于新增美术资源补上两个交互动画 clip：`Interact_Read` 与 `Interact_BesideDoor`，并把它们接进现有 `Pet_Angel.controller`。
@@ -305,3 +321,6 @@ Updated: 2026-07-29
 - 文件结构变化
 - 已知问题状态变化
 - 推荐开发顺序变化
+
+- `2026-07-30` 起，`WorldMap_Main.unity` 中 `Panel_WeeklyGarden/Grid/CellTemplate` 需要保持场景里可编辑但默认不可见；`WeeklyGardenPanelStub` 会在运行时兜底隐藏模板，实际面板只应显示 7 个 Day cell。`tools/check-task-gate.ps1 write` 已通过，Scene 视图仍需补验确认没有第 8 个瓶子。
+- `2026-07-30` 同轮，`Panel_WeeklyGarden/Grid` 已从自动布局改为纯容器，`Day0`~`Day6` 可以在 Scene / Inspector 里单独移动；作者化脚本不再清理现有格子位置，也不再给模板和新格子补 `HorizontalLayoutGroup` / `LayoutElement`。

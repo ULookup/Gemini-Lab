@@ -1,6 +1,6 @@
-# Gemini-Lab 项目结构总览
+﻿# Gemini-Lab 项目结构总览
 
-Updated: 2026-07-29
+Updated: 2026-07-30
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -21,6 +21,8 @@ Gemini-Lab 当前已经不再是纯骨架仓库，而是“文档 + 原型实现
 - `docs/skill-design-boundary.md`
 - `docs/git-fork-upstream-pr-workflow.md`
 - `tools/run-unity-editor-method.ps1`：本地 Unity batchmode 执行入口，当前带 `-nographics`、启动日志超时、总执行超时和子进程 watchdog，避免 Unity 启动卡住时无期限阻塞
+- `Assets/_Project/Scripts/Core/UI/UIRouter.cs`：当前顶层面板互斥切换的统一入口；打开新面板前会关闭当前已开的顶层面板，避免输入面板和图鉴面板同时显示
+- `Assets/_Project/Scripts/Core/DevMode.cs`：当前还收口了通用点击遮挡裁决工具 `ClickOcclusionUtility`，供世界地图入口、宠物点击和相机取消选中共用
 
 ### `AGENTS.md`
 当前项目总入口文档。
@@ -102,6 +104,10 @@ AI 协作工具链目录。
 - 本轮未能在当前 shell 直接运行 Unity Editor / `unity-mcp-cli`，所以 viewport 点击、Sidebar 面板切换、建造模式桥接仍需在 Unity PlayMode 中按 `docs/manual-validation-checklist.md` 的 E2 章节补验。
 - `2026-07-28` 起，`WorldMap_Main.unity` 中桥对象 `桥` 的过桥移动轮廓以同物体 `PolygonCollider2D` 上侧轮廓为唯一事实源；`WalkableSurface` 会按桌宠当前世界 X 取 polygon 边交点的最高 Y，不再维护 `_profileLocalPoints` 独立折线轨道。`PetController.ResolveGroundY` 会把桥面 surface Y 当作脚底/行走锚点高度，再换算成 transform Y。当前脚本级构建已通过，PlayMode 过桥表现仍需人工补验。
 - `2026-07-29` 起，`WorldMap_Main.unity` 的 `Panel_EmotionCollection` 图鉴 UI 改为书本式 Scene 作者化结构：`WorldMapEmotionGardenUIPatch.SetupFlowerCollectionBookContent` 负责在 `Content` 下搭建 `CodexView` 与 `DetailView`，并接入 `Assets/_Project/Art/WorldMap/flowerCodex`、`Assets/_Project/Art/WorldMap/flower_info` 的拆分资源；`FlowerCollectionPanelStub` 运行时只填数据和切换视图。本轮已通过带 watchdog 的 `tools/run-unity-editor-method.ps1` 在 Unity batchmode 中执行 `WorldMapEmotionGardenUIPatch.Patch()` 并落盘，`WorldMap_Main.unity` 已包含 `CodexView`、`DetailView`、`TitlePlate`、`CategoryTabs`、`CodexCardSlot_00...11`、`StockPlate` 等节点；PlayMode 点击和最终视觉微调仍需在 Unity 中补验。
+- `2026-07-31` 起，`Panel_WeeklyGarden` 的瓶内成长层开始接入 `Assets/_Project/Art/WorldMap/growth` 下的 `seed / bud` 资源；`WeeklyGardenPanelStub` 与 `WorldMapEmotionGardenUIPatch` 都已预留 `Growth` 子节点和对应序列化引用，Scene 里可以直接挪动成长层位置，而不是把“是否显示种子”藏进纯运行时拼图逻辑里。
+- `2026-07-30` 起，`WorldMap_Main.unity` 中 `CabinReturnPortal` / `WorldMapGardenZone` / `ClickableSceneObject` / `BaselineItem` / `PetPlayerInputController` / `PetClickReactionController` / `WorldMapCameraController` 都先用 `ClickOcclusionUtility` 裁决“当前最上层 2D 点击目标”再响应，避免房子被桌宠或 UI 遮挡时仍误跳公寓；`PetController` 也已加上 WorldMap 场景级双宠碰撞忽略，`Pet_Angel` 与 `Pet_Devil` 在室外场景不会互相挡路。
+- `2026-07-30` 起，顶层 UI 路由已改为互斥切换：`UIRouter.Open` 会在打开新面板前关闭当前已开的顶层面板，因此 `Panel_EmotionInput` 与 `Panel_EmotionCollection` 这类入口不会再同时显示；`StockPlate` 仍只是详情页里的库存展示牌，不是独立按钮。
+- `2026-07-31` 起，情绪花园的种植链路已经从固定占位值恢复为真实数据流：`EmotionFlowerModels` 中的 `EmotionFlowerCatalog` 负责 9 种情绪的本地轻量判定与 `angel / demon` 两位培育者对应的 18 个花名映射；`EmotionGardenService` 会把最终花名写入 `EmotionFlowerData.FlowerName`；`EmotionInputPanelStub` 提交原始心情文本后会自动切到 `WeeklyGardenView`；`WeeklyGardenPanelStub` 和 `FlowerCollectionPanelStub` 现在都读取真实花数据并显示花名、情绪、培育者与状态。
 
 ### `Assets/_Project/Tests/`
 当前已存在：
@@ -189,3 +195,6 @@ SO 分类规划已写明，而且当前已经开始落地实际 `.asset` 文件�
 5. `Assets/README.md`
 6. `Assets/plan.md`
 7. 再进入 `Assets/_Project/` 的实际脚本、场景与模块 README
+
+- `2026-07-30` 起，`WorldMap_Main.unity` 的 `Panel_WeeklyGarden/Grid/CellTemplate` 维持编辑器模板用途但默认不可见；`WeeklyGardenPanelStub` 会在运行时再次隐藏它，面板实际只显示 7 个瓶子。
+- 同轮，`Panel_WeeklyGarden/Grid` 已改为纯容器，不再依赖 `HorizontalLayoutGroup` 排布，`Day0`~`Day6` 可直接在 Scene 里自由摆位。

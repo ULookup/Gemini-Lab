@@ -1,4 +1,5 @@
 #nullable enable
+using GeminiLab.Core;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Pet
@@ -71,6 +72,16 @@ namespace GeminiLab.Modules.Pet
 
         private void OnMouseDown()
         {
+            if (ClickOcclusionUtility.IsPointerOverUI())
+            {
+                return;
+            }
+
+            if (!ClickOcclusionUtility.IsTopmostColliderUnderMouse(GetComponent<Collider2D>()))
+            {
+                return;
+            }
+
             TakeControl();
         }
 

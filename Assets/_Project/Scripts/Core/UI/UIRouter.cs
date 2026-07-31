@@ -46,13 +46,9 @@ namespace GeminiLab.Core.UI
                 return false;
             }
 
-            int existing = _stack.IndexOf(id);
-            if (existing >= 0)
+            if (_stack.Count > 0)
             {
-                _stack.RemoveAt(existing);
-                _stack.Add(id);
-                _eventBus?.Publish(new UIPanelOpenedEvent(id));
-                return true;
+                CloseAll();
             }
 
             _stack.Add(id);

@@ -48,6 +48,7 @@ namespace GeminiLab.Modules.Pet
         private const string InteractSleepStateName = "Interact_DevilSleep";
         private const string BaseLayerStatePrefix = "Base Layer.";
         private const string DevilFTracePrefix = "[DEVIL_F_TRACE]";
+        private const string WorldMapSceneName = "WorldMap_Main";
 
         private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
         private static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -65,6 +66,7 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private Transform? _sortingAnchor;
         [SerializeField] private int _sortingOrderOffset;
         [SerializeField] private PetId _petId = PetId.Angel;
+        [SerializeField] private bool _ignoreOtherPetCollisions = true;
         [SerializeField] private PetInteractionVisualStrategy _interactionVisualStrategy = new();
 
         public PetId PetId => _petId;
@@ -118,6 +120,7 @@ namespace GeminiLab.Modules.Pet
         private SpriteRenderer? _sleepInteractionVisualSpriteRenderer;
         private bool _hasStoredPetSpriteVisible;
         private bool _storedPetSpriteVisible;
+        private bool _hasAppliedWorldMapPetCollisionPolicy;
 
         // 可步行表面检测
         private WalkableSurface[] _walkableSurfaces = System.Array.Empty<WalkableSurface>();
@@ -293,6 +296,11 @@ namespace GeminiLab.Modules.Pet
             {
                 roster.Unregister(_petId);
             }
+        }
+
+        private void Start()
+        {
+            ApplyWorldMapPetCollisionPolicy();
         }
 
         private void UpdateDynamicSortingOrder()
@@ -1850,6 +1858,66 @@ namespace GeminiLab.Modules.Pet
                         colliderHeight);
                 }
             }
+        }
+
+        private void ApplyWorldMapPetCollisionPolicy()
+        {
+            if (_hasAppliedWorldMapPetCollisionPolicy ||
+                !_ignoreOtherPetCollisions ||
+                !IsWorldMapScene())
+            {
+                return;
+            }
+
+            _hasAppliedWorldMapPetCollisionPolicy = true;
+
+            Collider2D[] selfColliders = GetComponents<Collider2D>();
+            if (selfColliders.Length == 0)
+            {
+                return;
+            }
+
+            PetController[] otherPets = Object.FindObjectsByType<PetController>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+            for (int i = 0; i < otherPets.Length; i++)
+            {
+                PetController other = otherPets[i];
+                if (other == null ||
+                    ReferenceEquals(other, this) ||
+                    !other._ignoreOtherPetCollisions ||
+                    !other.IsWorldMapScene())
+                {
+                    continue;
+                }
+
+                Collider2D[] otherColliders = other.GetComponents<Collider2D>();
+                for (int j = 0; j < selfColliders.Length; j++)
+                {
+                    Collider2D selfCollider = selfColliders[j];
+                    if (selfCollider == null)
+                    {
+                        continue;
+                    }
+
+                    for (int k = 0; k < otherColliders.Length; k++)
+                    {
+                        Collider2D otherCollider = otherColliders[k];
+                        if (otherCollider == null)
+                        {
+                            continue;
+                        }
+
+                        Physics2D.IgnoreCollision(selfCollider, otherCollider, true);
+                    }
+                }
+            }
+        }
+
+        private bool IsWorldMapScene()
+        {
+            return gameObject.scene.name == WorldMapSceneName;
         }
 
         private void ApplyRuntimePosition(Vector2 position)

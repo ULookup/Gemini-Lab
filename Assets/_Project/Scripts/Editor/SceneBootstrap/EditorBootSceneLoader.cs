@@ -28,6 +28,7 @@ namespace GeminiLab.Editor.SceneBootstrap
             "InventoryRuntimeBootstrap",
             "PersonalityEvolutionBootstrap",
             "GardenRuntimeBootstrap",
+            "EmotionGardenRuntimeBootstrap",
             "UICatalogHost",
             "ToastOverlayController",
             "UIInputRouter",
