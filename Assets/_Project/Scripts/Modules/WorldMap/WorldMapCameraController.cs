@@ -39,6 +39,7 @@ namespace GeminiLab.Modules.WorldMap
         private float _scrollTargetX;
         private float _scrollVelocity;
         private bool _hasScrollTarget;
+        private bool _blockLeftDragUntilMouseUp;
 
         private void Awake()
         {
@@ -58,12 +59,19 @@ namespace GeminiLab.Modules.WorldMap
                         topmostCollider.GetComponentInParent<PetPlayerInputController>() == null)
                     {
                         PetPlayerInputController.ReleaseAllControl();
+                        _blockLeftDragUntilMouseUp = true;
                     }
                 }
                 else
                 {
                     PetPlayerInputController.ReleaseAllControl();
+                    _blockLeftDragUntilMouseUp = true;
                 }
+            }
+
+            if (Input.GetMouseButtonUp(0))
+            {
+                _blockLeftDragUntilMouseUp = false;
             }
 
             Transform? followTarget = PetPlayerInputController.ActiveTransform;
@@ -87,8 +95,9 @@ namespace GeminiLab.Modules.WorldMap
             if (Input.GetKey(_leftKey)) delta -= _keyboardSpeed * Time.unscaledDeltaTime;
             if (Input.GetKey(_rightKey)) delta += _keyboardSpeed * Time.unscaledDeltaTime;
 
-            // 左键或右键拖拽平移（不穿透 UI）
-            if ((Input.GetMouseButton(0) || Input.GetMouseButton(1))
+            // 左键拖拽平移（不穿透 UI）
+            bool allowLeftDrag = Input.GetMouseButton(0) && !_blockLeftDragUntilMouseUp;
+            if (allowLeftDrag
                 && !ClickOcclusionUtility.IsPointerOverUI())
             {
                 Vector3 cur = _camera.ScreenToWorldPoint(Input.mousePosition);
