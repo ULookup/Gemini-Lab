@@ -1,6 +1,6 @@
-# Gemini-Lab 项目结构总览
+﻿# Gemini-Lab 项目结构总览
 
-Updated: 2026-07-12
+Updated: 2026-07-30
 
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
@@ -20,6 +20,9 @@ Gemini-Lab 当前已经不再是纯骨架仓库，而是“文档 + 原型实现
 - `docs/project-skill-catalog.md`
 - `docs/skill-design-boundary.md`
 - `docs/git-fork-upstream-pr-workflow.md`
+- `tools/run-unity-editor-method.ps1`：本地 Unity batchmode 执行入口，当前带 `-nographics`、启动日志超时、总执行超时和子进程 watchdog，避免 Unity 启动卡住时无期限阻塞
+- `Assets/_Project/Scripts/Core/UI/UIRouter.cs`：当前顶层面板互斥切换的统一入口；打开新面板前会关闭当前已开的顶层面板，避免输入面板和图鉴面板同时显示
+- `Assets/_Project/Scripts/Core/DevMode.cs`：当前还收口了通用点击遮挡裁决工具 `ClickOcclusionUtility`，供世界地图入口、宠物点击和相机取消选中共用
 
 ### `AGENTS.md`
 当前项目总入口文档。
@@ -45,6 +48,7 @@ Unity 项目主资源目录。
 - 4 个 Unity MCP 包当前已临时移出到 `PackageBackups/MCP-disabled-2026-06-02/`，不再作为活动包参与解析
 - `Assets/Plugins/NuGet` 当前也已临时移出到 `PackageBackups/NuGet-disabled-2026-06-02/`，避免 Burst 从活动资源路径扫描到 MCP 残留 DLL
 - 已有 `com.unity.ai.navigation`
+- `com.kirurobo.uniwinc` 当前使用官方 GitHub UPM URL；此前失效的本地 `file:` 路径会阻塞 Unity 打开项目
 - 有嵌入式 `SkillsForUnity`
 - 已补 `Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs`，用于阻止 MCP 依赖解析器落地到 `Assets/Plugins/NuGet` 的外部 DLL 进入正式 Player 构建
 - 若后续要恢复 MCP，需把这 4 个包目录移回 `Packages/` 并把对应依赖加回 `Packages/manifest.json`
@@ -81,10 +85,11 @@ AI 协作工具链目录。
 当前已存在真实场景文件：
 - `Boot.unity`
 - `Apartment/Apartment_Main.unity`
+- `WorldMap/WorldMap_Main.unity`
 - `Desktop/Desktop_Overlay.unity`
 
 当前判断：
-- 这 3 个场景已经足以说明仓库不再是“没有场景”的状态
+- 这 4 个场景已经足以说明仓库不再是“没有场景”的状态
 - 但它们仍然更接近原型场景，而不是完整量产场景集
 - `Apartment_Main.unity` 当前已经承载宠物、现成家具与状态/库存/概览面板，是任务 1 的主验证场景
 - `Apartment_Main.unity` 当前也是玩家控制宠物移动的主验证场景；`Pet_Angel` 已开始通过 `WASD` / 方向键直接控制
@@ -97,6 +102,12 @@ AI 协作工具链目录。
 - `2026-05-26` 已撤回此前对 `Panel_PetStatus` 的 `profile` 资料卡美术绑定尝试；场景不再保留刚才绑定的 `profile` 贴图、宠物正面待机预览 Sprite、雷达配色与尺寸微调。具体 UI 美术资源选择、贴图映射与最终视觉作者化后续由人工完成。
 - `2026-05-26` 已完成 Apartment UI 的非美术技术收口：`ApartmentViewportInputBridge` 现在只处理落在 RawImage 矩形内的点击，并暴露可测试的坐标转换；`SidebarController` / `StubPanelBase` 可在直接打开 Apartment 调试时兜底创建 `IUIRouter` / `EventBus`；`ProfilePanelStub`、`TarotPanelStub`、`InventoryPanelStub` 已补服务缺失或空数据提示。
 - 本轮未能在当前 shell 直接运行 Unity Editor / `unity-mcp-cli`，所以 viewport 点击、Sidebar 面板切换、建造模式桥接仍需在 Unity PlayMode 中按 `docs/manual-validation-checklist.md` 的 E2 章节补验。
+- `2026-07-28` 起，`WorldMap_Main.unity` 中桥对象 `桥` 的过桥移动轮廓以同物体 `PolygonCollider2D` 上侧轮廓为唯一事实源；`WalkableSurface` 会按桌宠当前世界 X 取 polygon 边交点的最高 Y，不再维护 `_profileLocalPoints` 独立折线轨道。`PetController.ResolveGroundY` 会把桥面 surface Y 当作脚底/行走锚点高度，再换算成 transform Y。当前脚本级构建已通过，PlayMode 过桥表现仍需人工补验。
+- `2026-07-29` 起，`WorldMap_Main.unity` 的 `Panel_EmotionCollection` 图鉴 UI 改为书本式 Scene 作者化结构：`WorldMapEmotionGardenUIPatch.SetupFlowerCollectionBookContent` 负责在 `Content` 下搭建 `CodexView` 与 `DetailView`，并接入 `Assets/_Project/Art/WorldMap/flowerCodex`、`Assets/_Project/Art/WorldMap/flower_info` 的拆分资源；`FlowerCollectionPanelStub` 运行时只填数据和切换视图。本轮已通过带 watchdog 的 `tools/run-unity-editor-method.ps1` 在 Unity batchmode 中执行 `WorldMapEmotionGardenUIPatch.Patch()` 并落盘，`WorldMap_Main.unity` 已包含 `CodexView`、`DetailView`、`TitlePlate`、`CategoryTabs`、`CodexCardSlot_00...11`、`StockPlate` 等节点；PlayMode 点击和最终视觉微调仍需在 Unity 中补验。
+- `2026-07-31` 起，`Panel_WeeklyGarden` 的瓶内成长层开始接入 `Assets/_Project/Art/WorldMap/growth` 下的 `seed / bud` 资源；`WeeklyGardenPanelStub` 与 `WorldMapEmotionGardenUIPatch` 都已预留 `Growth` 子节点和对应序列化引用，Scene 里可以直接挪动成长层位置，而不是把“是否显示种子”藏进纯运行时拼图逻辑里。
+- `2026-07-30` 起，`WorldMap_Main.unity` 中 `CabinReturnPortal` / `WorldMapGardenZone` / `ClickableSceneObject` / `BaselineItem` / `PetPlayerInputController` / `PetClickReactionController` / `WorldMapCameraController` 都先用 `ClickOcclusionUtility` 裁决“当前最上层 2D 点击目标”再响应，避免房子被桌宠或 UI 遮挡时仍误跳公寓；`PetController` 也已加上 WorldMap 场景级双宠碰撞忽略，`Pet_Angel` 与 `Pet_Devil` 在室外场景不会互相挡路。
+- `2026-07-30` 起，顶层 UI 路由已改为互斥切换：`UIRouter.Open` 会在打开新面板前关闭当前已开的顶层面板，因此 `Panel_EmotionInput` 与 `Panel_EmotionCollection` 这类入口不会再同时显示；`StockPlate` 仍只是详情页里的库存展示牌，不是独立按钮。
+- `2026-07-31` 起，情绪花园的种植链路已经从固定占位值恢复为真实数据流：`EmotionFlowerModels` 中的 `EmotionFlowerCatalog` 负责 9 种情绪的本地轻量判定与 `angel / demon` 两位培育者对应的 18 个花名映射；`EmotionGardenService` 会把最终花名写入 `EmotionFlowerData.FlowerName`；`EmotionInputPanelStub` 提交原始心情文本后会自动切到 `WeeklyGardenView`；`WeeklyGardenPanelStub` 和 `FlowerCollectionPanelStub` 现在都读取真实花数据并显示花名、情绪、培育者与状态。
 
 ### `Assets/_Project/Tests/`
 当前已存在：
@@ -133,6 +144,7 @@ SO 分类规划已写明，而且当前已经开始落地实际 `.asset` 文件�
 - 家具与环境示例 Sprite
 - `Art/Sprites/Furniture/` 下已开始承接从 `公寓场景.psd` 派生出来、准备进入家具系统接线的独立 Sprite，后续按中文语义命名维护
 - 宠物动画片段与 Animator Controller
+- WorldMap 图鉴 UI 资源：`Assets/_Project/Art/WorldMap/flowerCodex` 当前承载图鉴列表页书本、卡、未知卡、关闭和左右按钮；`Assets/_Project/Art/WorldMap/flower_info` 当前承载详情页书本、库存条、关闭和左右按钮。`flower_codex.png` 与 `flower_info.png` 是参考合成图，不应作为最终整张锁死背景使用。
 - `2026-05-23` 起，恶魔也已拥有自己的门边交互动画 `Pet_Devil_Interact_BesideDoor.anim`，当前通过 `Pet_Devil.controller` 的 `Interact_BesideDoor` 状态接入
 - `2026-05-27` 起，恶魔还新增 `Pet_Devil_Interact_Write.anim` 与 `Pet_Devil_Interact_PlayingMusic.anim`，当前分别通过 `Pet_Devil.controller` 的 `Interact_Write` 与 `Interact_PlayingMusic` 状态接入
 - `2026-05-27` 起，`Apartment_Main.unity` 中恶魔现有玩家交互绑定已把旧的天使竖琴 / 写字目标替换为恶魔 `玩掌机 / 画画`：`玩掌机` 坐到 `家具_装饰_沙发_恶魔_02`，`画画` 对着 `家具_休闲_画架_恶魔_01` 触发并坐到 `家具_装饰_椅子_恶魔_01`
@@ -183,3 +195,6 @@ SO 分类规划已写明，而且当前已经开始落地实际 `.asset` 文件�
 5. `Assets/README.md`
 6. `Assets/plan.md`
 7. 再进入 `Assets/_Project/` 的实际脚本、场景与模块 README
+
+- `2026-07-30` 起，`WorldMap_Main.unity` 的 `Panel_WeeklyGarden/Grid/CellTemplate` 维持编辑器模板用途但默认不可见；`WeeklyGardenPanelStub` 会在运行时再次隐藏它，面板实际只显示 7 个瓶子。
+- 同轮，`Panel_WeeklyGarden/Grid` 已改为纯容器，不再依赖 `HorizontalLayoutGroup` 排布，`Day0`~`Day6` 可直接在 Scene 里自由摆位。

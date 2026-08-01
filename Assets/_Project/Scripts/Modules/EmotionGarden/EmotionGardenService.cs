@@ -16,7 +16,7 @@ namespace GeminiLab.Modules.EmotionGarden
     /// </summary>
     public sealed class EmotionGardenService : MonoBehaviour, IEmotionGardenService, IPersistentService
     {
-        private const int SaveVersion = 1;
+        private const int SaveVersion = 2;
 
         private IGameClock? _clock;
         private EventBus? _eventBus;
@@ -46,17 +46,24 @@ namespace GeminiLab.Modules.EmotionGarden
             if (_clock == null) return null;
             if (!CanSubmitToday()) return null;
 
+            var resolvedEmotionType = EmotionFlowerCatalog.IsKnownEmotionType(emotionType)
+                ? EmotionFlowerCatalog.NormalizeEmotionType(emotionType)
+                : EmotionFlowerCatalog.ClassifyEmotion(emotionDetail);
+            var normalizedOwner = EmotionFlowerCatalog.NormalizeOwner(owner);
+            var flowerName = EmotionFlowerCatalog.ResolveFlowerName(resolvedEmotionType, normalizedOwner);
+
             var today = _clock.TodayIso;
             var weekId = ComputeWeekIdFromIso(today);
 
             var flower = new EmotionFlowerData
             {
-                FlowerId = $"{emotionType}_{owner}_{today}",
+                FlowerId = $"{resolvedEmotionType}_{normalizedOwner}_{today}",
                 DateIso = today,
                 WeekId = weekId,
-                EmotionType = emotionType,
+                EmotionType = resolvedEmotionType,
+                FlowerName = flowerName,
                 EmotionDetail = emotionDetail,
-                Owner = owner,
+                Owner = normalizedOwner,
                 State = GrowthState.Growing,
                 IsCollected = false,
                 CreatedAtUtcTicks = _clock.UtcNow.Ticks
@@ -67,7 +74,7 @@ namespace GeminiLab.Modules.EmotionGarden
 
             _eventBus?.Publish(new EmotionFlowerSubmittedEvent(flower));
 
-            Debug.Log($"[EmotionGarden] 提交情绪: {flower.FlowerId}");
+            Debug.Log($"[EmotionGarden] 提交情绪: {flower.FlowerName} ({flower.EmotionType}/{flower.Owner})");
             return flower;
         }
 
@@ -235,12 +242,22 @@ namespace GeminiLab.Modules.EmotionGarden
                 for (int i = 0; i < _flowers.Count; i++)
                 {
                     var f = _flowers[i];
+                    f.Owner = EmotionFlowerCatalog.NormalizeOwner(f.Owner);
+                    f.EmotionType = EmotionFlowerCatalog.IsKnownEmotionType(f.EmotionType)
+                        ? EmotionFlowerCatalog.NormalizeEmotionType(f.EmotionType)
+                        : EmotionFlowerCatalog.DefaultEmotionType;
+                    if (string.IsNullOrWhiteSpace(f.FlowerName))
+                    {
+                        f.FlowerName = EmotionFlowerCatalog.ResolveFlowerName(f.EmotionType, f.Owner);
+                    }
+
                     var recomputed = ComputeWeekIdFromIso(f.DateIso);
                     if (recomputed != 0 && recomputed != f.WeekId)
                     {
                         f.WeekId = recomputed;
-                        _flowers[i] = f;
                     }
+
+                    _flowers[i] = f;
                 }
 
                 _clusters.Clear();
@@ -248,7 +265,12 @@ namespace GeminiLab.Modules.EmotionGarden
                 {
                     foreach (var c in save.Clusters)
                     {
-                        _clusters[ClusterKey(c.EmotionType, c.Owner)] = c;
+                        var normalized = c;
+                        normalized.Owner = EmotionFlowerCatalog.NormalizeOwner(normalized.Owner);
+                        normalized.EmotionType = EmotionFlowerCatalog.IsKnownEmotionType(normalized.EmotionType)
+                            ? EmotionFlowerCatalog.NormalizeEmotionType(normalized.EmotionType)
+                            : EmotionFlowerCatalog.DefaultEmotionType;
+                        _clusters[ClusterKey(normalized.EmotionType, normalized.Owner)] = normalized;
                     }
                 }
 

@@ -48,6 +48,7 @@ namespace GeminiLab.Modules.Pet
         private const string InteractSleepStateName = "Interact_DevilSleep";
         private const string BaseLayerStatePrefix = "Base Layer.";
         private const string DevilFTracePrefix = "[DEVIL_F_TRACE]";
+        private const string WorldMapSceneName = "WorldMap_Main";
 
         private static readonly int IsMovingHash = Animator.StringToHash("IsMoving");
         private static readonly int MoveXHash = Animator.StringToHash("MoveX");
@@ -65,6 +66,7 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private Transform? _sortingAnchor;
         [SerializeField] private int _sortingOrderOffset;
         [SerializeField] private PetId _petId = PetId.Angel;
+        [SerializeField] private bool _ignoreOtherPetCollisions = true;
         [SerializeField] private PetInteractionVisualStrategy _interactionVisualStrategy = new();
 
         public PetId PetId => _petId;
@@ -80,6 +82,7 @@ namespace GeminiLab.Modules.Pet
         private CapsuleCollider2D? _capsuleCollider2D;
         private GeminiLab.Modules.Furniture.Furniture[]? _dynamicOcclusionFurniture;
         private int _defaultSortingOrder;
+        private float _initialGroundY;
         private Vector2 _lastAnimationPosition;
         private Vector2 _lastMoveDirection = Vector2.down;
         private Vector2 _playerAnimationDirection = Vector2.down;
@@ -117,11 +120,12 @@ namespace GeminiLab.Modules.Pet
         private SpriteRenderer? _sleepInteractionVisualSpriteRenderer;
         private bool _hasStoredPetSpriteVisible;
         private bool _storedPetSpriteVisible;
+        private bool _hasAppliedWorldMapPetCollisionPolicy;
 
         // 可步行表面检测
         private WalkableSurface[] _walkableSurfaces = System.Array.Empty<WalkableSurface>();
-        private int _lastWalkableSurfaceRefreshFrame = int.MinValue;
         private const int WalkableSurfaceRefreshInterval = 60;
+        private int _lastWalkableSurfaceRefreshFrame = -WalkableSurfaceRefreshInterval;
 
         public string CurrentState => _context?.RuntimeData.CurrentState ?? "None";
 
@@ -136,6 +140,7 @@ namespace GeminiLab.Modules.Pet
             _rigidbody2D = GetComponent<Rigidbody2D>();
             _capsuleCollider2D = GetComponent<CapsuleCollider2D>();
             _playerInputController = GetComponent<PetPlayerInputController>();
+            _initialGroundY = transform.position.y;
             TryAutoBindSortingAnchor();
             EnsureAnimatorBinding();
             EnsurePhysicsBinding();
@@ -242,10 +247,22 @@ namespace GeminiLab.Modules.Pet
 
         private void FixedUpdate()
         {
-            if (IsInactivePlayerPet())
+            bool isInactivePlayerPet = IsInactivePlayerPet();
+
+            // 所有桌宠统一适配 WalkableSurface 的 Y 高度
+            if (_context is not null && _rigidbody2D != null)
             {
-                return;
+                Vector2 pos = _rigidbody2D.position;
+                pos.y = ResolveGroundY(pos.x, ResolveGroundFallbackY(pos.y));
+                _rigidbody2D.position = pos;
+                if (isInactivePlayerPet)
+                {
+                    _context.RuntimeData.Position = pos;
+                }
             }
+
+            if (isInactivePlayerPet)
+                return;
 
             if (_context is not null)
             {
@@ -279,6 +296,11 @@ namespace GeminiLab.Modules.Pet
             {
                 roster.Unregister(_petId);
             }
+        }
+
+        private void Start()
+        {
+            ApplyWorldMapPetCollisionPolicy();
         }
 
         private void UpdateDynamicSortingOrder()
@@ -674,18 +696,23 @@ namespace GeminiLab.Modules.Pet
             CancelPlayerInteraction(context);
             _hasPlayerAnimationDirection = false;
 
-            var wander = GetComponent<RandomWander>();
-            bool isWandering = wander != null && wander.IsMoving;
+            RandomWander? wander = GetComponent<RandomWander>();
+            bool isWandering = false;
 
-            if (isWandering)
+            if (wander != null && wander.IsMoving)
             {
+                isWandering = true;
                 Vector2 current = GetCurrentWorldPosition();
                 Vector2 toTarget = wander.TargetPosition - current;
+                if (wander.HorizontalOnly)
+                {
+                    toTarget.y = 0f;
+                }
 
                 if (toTarget.sqrMagnitude <= wander.ArrivalThreshold * wander.ArrivalThreshold)
                 {
                     SetWanderVelocity(Vector2.zero);
-                    context.RuntimeData.Position = wander.TargetPosition;
+                    context.RuntimeData.Position = ResolveWanderArrivedPosition(wander);
                     wander.NotifyArrived();
                     isWandering = false;
                     _wanderStuckTimer = 0f;
@@ -753,6 +780,18 @@ namespace GeminiLab.Modules.Pet
             {
                 _rigidbody2D.velocity = velocity;
             }
+        }
+
+        private Vector2 ResolveWanderArrivedPosition(RandomWander wander)
+        {
+            if (!wander.HorizontalOnly)
+            {
+                return wander.TargetPosition;
+            }
+
+            Vector2 position = new(wander.TargetPosition.x, wander.HorizontalBaselineY);
+            position.y = ResolveGroundY(position.x, position.y);
+            return position;
         }
 
         public bool TryStartPlayerInteraction(PetPlayerInteractionRequest request)
@@ -1821,10 +1860,70 @@ namespace GeminiLab.Modules.Pet
             }
         }
 
+        private void ApplyWorldMapPetCollisionPolicy()
+        {
+            if (_hasAppliedWorldMapPetCollisionPolicy ||
+                !_ignoreOtherPetCollisions ||
+                !IsWorldMapScene())
+            {
+                return;
+            }
+
+            _hasAppliedWorldMapPetCollisionPolicy = true;
+
+            Collider2D[] selfColliders = GetComponents<Collider2D>();
+            if (selfColliders.Length == 0)
+            {
+                return;
+            }
+
+            PetController[] otherPets = Object.FindObjectsByType<PetController>(
+                FindObjectsInactive.Exclude,
+                FindObjectsSortMode.None);
+
+            for (int i = 0; i < otherPets.Length; i++)
+            {
+                PetController other = otherPets[i];
+                if (other == null ||
+                    ReferenceEquals(other, this) ||
+                    !other._ignoreOtherPetCollisions ||
+                    !other.IsWorldMapScene())
+                {
+                    continue;
+                }
+
+                Collider2D[] otherColliders = other.GetComponents<Collider2D>();
+                for (int j = 0; j < selfColliders.Length; j++)
+                {
+                    Collider2D selfCollider = selfColliders[j];
+                    if (selfCollider == null)
+                    {
+                        continue;
+                    }
+
+                    for (int k = 0; k < otherColliders.Length; k++)
+                    {
+                        Collider2D otherCollider = otherColliders[k];
+                        if (otherCollider == null)
+                        {
+                            continue;
+                        }
+
+                        Physics2D.IgnoreCollision(selfCollider, otherCollider, true);
+                    }
+                }
+            }
+        }
+
+        private bool IsWorldMapScene()
+        {
+            return gameObject.scene.name == WorldMapSceneName;
+        }
+
         private void ApplyRuntimePosition(Vector2 position)
         {
             position = ClampToMovementBounds(position);
-            position.y = ResolveGroundY(position.x, position.y);
+            position.y = ResolveGroundY(position.x, ResolveGroundFallbackY(position.y));
             if (_hasInteractionPhysicsOverride)
             {
                 ApplyDirectRuntimePosition(position);
@@ -1902,6 +2001,35 @@ namespace GeminiLab.Modules.Pet
                 Mathf.Clamp(position.y, minY, maxY));
         }
 
+        private float ResolveGroundFallbackY(float currentY)
+        {
+            if (!IsHorizontalOnlyMovement())
+            {
+                return currentY;
+            }
+
+            RandomWander? wander = GetComponent<RandomWander>();
+            return wander != null && wander.HorizontalOnly
+                ? wander.HorizontalBaselineY
+                : _initialGroundY;
+        }
+
+        private bool IsHorizontalOnlyMovement()
+        {
+            if (_playerInputController == null)
+            {
+                _playerInputController = GetComponent<PetPlayerInputController>();
+            }
+
+            if (_playerInputController != null && _playerInputController.HorizontalOnly)
+            {
+                return true;
+            }
+
+            RandomWander? wander = GetComponent<RandomWander>();
+            return wander != null && wander.HorizontalOnly;
+        }
+
         private void RefreshWalkableSurfaces()
         {
             if (Time.frameCount - _lastWalkableSurfaceRefreshFrame < WalkableSurfaceRefreshInterval)
@@ -1911,17 +2039,38 @@ namespace GeminiLab.Modules.Pet
                 FindObjectsInactive.Exclude, FindObjectsSortMode.None);
         }
 
+        private float ResolveWalkAnchorOffsetY()
+        {
+            if (_sortingAnchor != null)
+            {
+                return _sortingAnchor.position.y - transform.position.y;
+            }
+
+            if (_capsuleCollider2D != null && _capsuleCollider2D.enabled)
+            {
+                return _capsuleCollider2D.bounds.min.y - transform.position.y;
+            }
+
+            if (_spriteRenderer != null)
+            {
+                return _spriteRenderer.bounds.min.y - transform.position.y;
+            }
+
+            return 0f;
+        }
+
         /// <summary>根据 X 坐标查找下方的可步行表面，返回应站立的 Y。</summary>
         private float ResolveGroundY(float x, float fallbackY)
         {
             RefreshWalkableSurfaces();
             float bestY = fallbackY;
+            float walkAnchorOffsetY = ResolveWalkAnchorOffsetY();
             foreach (var surface in _walkableSurfaces)
             {
-                if (!surface.ContainsX(x)) continue;
-                float surfaceY = surface.SurfaceY;
-                // 宠物站在表面上方：取最高的表面（y 最大）
-                if (surfaceY > bestY) bestY = surfaceY;
+                if (!surface.TryGetSurfaceY(x, out float surfaceY)) continue;
+                // WalkableSurface Y is the walk-anchor height; convert it to transform-space Y.
+                float anchoredTransformY = surfaceY - walkAnchorOffsetY;
+                if (anchoredTransformY > bestY) bestY = anchoredTransformY;
             }
             return bestY;
         }

@@ -30,11 +30,22 @@ namespace GeminiLab.Modules.Pet
         private Vector2 _targetPosition;
         private float _waitTimer;
         private bool _isMoving;
+        private float _horizontalBaselineY;
+        private bool _hasHorizontalBaselineY;
 
         public bool IsMoving => _isMoving;
         public Vector2 TargetPosition => _targetPosition;
         public float MoveSpeed => _moveSpeed;
         public float ArrivalThreshold => _arrivalThreshold;
+        public bool HorizontalOnly => _horizontalOnly;
+        public float HorizontalBaselineY
+        {
+            get
+            {
+                EnsureHorizontalBaselineY();
+                return _horizontalBaselineY;
+            }
+        }
 
         /// <summary>PetController 在宠物到达目标后调用。</summary>
         public void NotifyArrived()
@@ -53,6 +64,7 @@ namespace GeminiLab.Modules.Pet
         private void Awake()
         {
             _controller = GetComponent<PetController>();
+            EnsureHorizontalBaselineY();
             PickNewTarget();
             _waitTimer = Random.Range(_minWaitSeconds, _maxWaitSeconds);
         }
@@ -90,11 +102,23 @@ namespace GeminiLab.Modules.Pet
 
         private void PickNewTarget()
         {
+            EnsureHorizontalBaselineY();
             float x = Random.Range(_boundsMin.x, _boundsMax.x);
             float y = _horizontalOnly
-                ? transform.position.y
+                ? _horizontalBaselineY
                 : Random.Range(_boundsMin.y, _boundsMax.y);
             _targetPosition = new Vector2(x, y);
+        }
+
+        private void EnsureHorizontalBaselineY()
+        {
+            if (_hasHorizontalBaselineY)
+            {
+                return;
+            }
+
+            _horizontalBaselineY = transform.position.y;
+            _hasHorizontalBaselineY = true;
         }
 
 #if UNITY_EDITOR

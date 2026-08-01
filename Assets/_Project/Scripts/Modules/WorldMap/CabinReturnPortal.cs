@@ -18,11 +18,13 @@ namespace GeminiLab.Modules.WorldMap
         [SerializeField] private Color _hoverTint = new Color(1.15f, 1.15f, 1.15f, 1f);
 
         private SpriteRenderer? _sprite;
+        private Collider2D? _clickCollider;
         private Color _originalColor;
 
         private void Awake()
         {
             _sprite = GetComponent<SpriteRenderer>();
+            _clickCollider = GetComponent<Collider2D>();
         }
 
         private void Start()
@@ -32,6 +34,16 @@ namespace GeminiLab.Modules.WorldMap
 
         private void OnMouseEnter()
         {
+            if (ClickOcclusionUtility.IsPointerOverUI())
+            {
+                return;
+            }
+
+            if (!ClickOcclusionUtility.IsTopmostColliderUnderMouse(_clickCollider))
+            {
+                return;
+            }
+
             if (_sprite != null) _sprite.color = _originalColor * _hoverTint;
         }
 
@@ -42,6 +54,16 @@ namespace GeminiLab.Modules.WorldMap
 
         private void OnMouseDown()
         {
+            if (ClickOcclusionUtility.IsPointerOverUI())
+            {
+                return;
+            }
+
+            if (!ClickOcclusionUtility.IsTopmostColliderUnderMouse(_clickCollider))
+            {
+                return;
+            }
+
             // 防止 Play 模式启动时 Unity SendMouseEvents 的首帧伪点击
             if (Time.frameCount < 2) return;
 

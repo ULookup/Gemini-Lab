@@ -1,6 +1,6 @@
-# Gemini-Lab 人工验证清单
+﻿# Gemini-Lab 人工验证清单
 
-Updated: 2026-05-27
+Updated: 2026-07-29
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -45,6 +45,58 @@ Updated: 2026-05-27
 | EditorBuildSettings 顺序为 `Boot(0) / MainMenu / Apartment_Main / WorldMap_Main / Desktop_Overlay` |  |  |
 | `DesktopOverlayManagerEditModeTests` 通过 |  |  |
 | Console 无 `CS` 编译错误（CJK 字形 □ 警告在补 CJK 字体前可接受） |  |  |
+
+## B9. WorldMap 桥面行走（2026-07-28）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标对象：桥 GameObject `桥`
+- 当前规则：桥对象上的 `PolygonCollider2D` 上侧轮廓是桌宠过桥移动轮廓的唯一事实源，不再使用 `_profileLocalPoints` 独立折线轨道。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `WalkableSurface.TryGetSurfaceY` 在有启用的 `PolygonCollider2D` 时按当前 X 求所有边交点并取最高 Y | 通过 | `dotnet build GeminiLab.Modules.Pet.csproj --no-restore` 通过 |
+| `PetController` 首次刷新 `WalkableSurface` 列表不会因 `int.MinValue` 帧差溢出而跳过 | 通过 | `_lastWalkableSurfaceRefreshFrame` 初值改为 `-WalkableSurfaceRefreshInterval` |
+| `PetController.ResolveGroundY` 会把桥面 surface Y 从脚底/行走锚点换算成 transform Y | 通过 | `dotnet build GeminiLab.Modules.Pet.csproj --no-restore` 通过；PlayMode 仍需看脚底是否贴合桥上轮廓 |
+| `WorldMapSceneObjectsPatch` 不再回填 `_useProfile/_profileLocalPoints` 独立折线轨道 | 通过 | `Assembly-CSharp-Editor.csproj` 构建通过 |
+| `WorldMap_Main.unity` 桥对象不再序列化 `_useProfile/_profileLocalPoints` | 通过 | `rg` 搜索旧字段无命中 |
+| `Pet_Angel` 玩家控制横向走到桥 X 范围时，脚底/行走锚点会沿桥 `PolygonCollider2D` 上轮廓抬升和下降 | 未验证 | 需在 Unity PlayMode 使用 `A/D` 或方向键验证 |
+| `Pet_Devil` 玩家控制横向走到桥 X 范围时，脚底/行走锚点会沿桥 `PolygonCollider2D` 上轮廓抬升和下降 | 未验证 | 需在 Unity PlayMode 点击切换主控后验证 |
+| 未被选中的桌宠自动横向漫游经过桥时，脚底/行走锚点同样跟随桥上轮廓 | 未验证 | 需在 Unity PlayMode 等待随机漫游过桥 |
+| 离开桥两端后，桌宠回到横板基准地面而不是停留在桥面高度 | 未验证 | 需在 Unity PlayMode 验证左右两端 |
+
+## B10. WorldMap 情绪花图鉴 UI 美术接入（2026-07-29）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标面板：`Panel_EmotionCollection`
+- 列表页资源：`Assets/_Project/Art/WorldMap/flowerCodex`
+- 详情页资源：`Assets/_Project/Art/WorldMap/flower_info`
+- 当前实现原则：书本、卡槽、未知卡、左右箭头、关闭按钮、库存条和文本区域均由 Scene 中真实 UI 子节点承载；`FlowerCollectionPanelStub` 只负责运行时填数据与切换 `CodexView` / `DetailView`，不在 `Awake` / `Start` 临时拼最终视觉。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `FlowerCollectionPanelStub` 使用 `_codexView`、`_detailView`、`_cardSlots` 与详情字段的序列化引用，不再运行时生成旧列表条目 | 通过 | `dotnet build GeminiLab.Modules.HubUI.csproj` 通过 |
+| `WorldMapEmotionGardenUIPatch` 的 `SetupFlowerCollectionBookContent` 会从 `flowerCodex` / `flower_info` 加载拆分美术资源，而不是直接使用整张 mock 合成图 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
+| `AutoSetup` 升级到版本 22 后，会调用 `WorldMapEmotionGardenUIPatch.Patch()` 自动落地图鉴 UI authoring | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
+| 本地 Unity batchmode runner 可执行 editor static method，且不会无期限卡住 | 通过 | `tools/run-unity-editor-method.ps1` 已加入 `-nographics`、启动日志超时、总执行超时和子进程 watchdog；`WorldMapEmotionGardenUIPatch.watchdog-test.log.runner.log` 验证 5 秒未生成日志时会停止本次 Unity PID |
+| 执行 WorldMap UI authoring 后，`Panel_EmotionCollection/Content/CodexView` 下存在 `Book`、`TitlePlate`、`CategoryTabs`、`Cards/CodexCardSlot_00...11`、`PreviousPageButton`、`NextPageButton`、`CloseButton`、`ProgressText`、`PageText`、`ClickHintText` | 通过 | Unity batchmode patch 成功，日志在 `Logs/UnityBatchmode/WorldMapEmotionGardenUIPatch.codex-list.log`；`rg` 已在 `WorldMap_Main.unity` 命中列表页关键节点；需在 Scene 视图继续做视觉微调 |
+| 执行 WorldMap UI authoring 后，`Panel_EmotionCollection/Content/DetailView` 下存在 `Book`、`FlowerImage`、`StockPlate/StockText`、详情文字字段、返回/翻页/关闭按钮 | 通过 | `rg` 已在 `WorldMap_Main.unity` 命中 `DetailView`、`StockPlate`、`FlowerImage` 等节点；需在 Scene 视图继续做视觉微调 |
+| PlayMode 中点击 `Btn_EmotionCollection` 打开图鉴列表页，关闭按钮可关闭面板 | 未验证 | 需 Unity PlayMode 人工验证 |
+| PlayMode 中已解锁卡片可切到详情页，详情页返回按钮可回到列表页，左右按钮只在存在可切换项时可用 | 未验证 | 需已有情绪花数据或调试数据 |
+| 打开 `Panel_EmotionInput` 与 `Panel_EmotionCollection` 时，另一个已开的顶层面板会自动关闭，不会同时叠在一起 | 未验证 | 路由已改为互斥切换，待 Unity PlayMode 再确认视觉表现 |
+
+## B11. WorldMap 房子遮挡点击与双宠碰撞（2026-07-30）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标入口：`室内` / 返回公寓入口
+- 目标宠物：`Pet_Angel`、`Pet_Devil`
+- 当前规则：点击入口时先判断鼠标点下的最上层 2D collider；如果房子被桌宠或 UI 遮挡，则入口不响应。WorldMap 中双宠不应互相碰撞挡路。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `ClickOcclusionUtility` 已收口到 `Assets/_Project/Scripts/Core/DevMode.cs`，且 `CabinReturnPortal` / `WorldMapGardenZone` / `ClickableSceneObject` / `BaselineItem` / `PetPlayerInputController` / `PetClickReactionController` / `WorldMapCameraController` 都改为先裁决最上层点击目标 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
+| `PetController` 的 WorldMap 场景级双宠碰撞忽略逻辑已编译进运行时 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
+| 被 `Pet_Angel` / `Pet_Devil` 或 UI 遮挡时，`室内` 不再误触发跳转到公寓 | 未验证 | 需要 Unity PlayMode 人工验证 |
+| `Pet_Angel` 与 `Pet_Devil` 在 `WorldMap_Main` 中不会互相挡路 | 未验证 | 需要 Unity PlayMode 人工验证 |
 
 ## B3. 塔罗垂直切片（B1 2026-05-10 新增）
 | 检查项 | 结果 | 备注 |
@@ -302,3 +354,30 @@ Updated: 2026-05-27
 | `WorkDesk` 与 `Leisure` 目标当前使用 `Interact_Read` 作为已有资源下的临时交互表现 |  |  |
 | `Decoration` 目标当前使用 `Interact_BesideDoor` 作为已有资源下的临时交互表现 |  |  |
 | `Apartment_Main.unity` 继续使用现有环境贴图，未擅自把 `公寓场景.psd` 替换进场景 |  |  |
+
+## B12. WorldMap 每周培育面板模板可见性（2026-07-30）
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标面板：`Panel_WeeklyGarden`
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `CellTemplate` 在 Scene 层级中保留，但默认不可见 | 未验证 | 已把场景根节点改为 `m_IsActive: 0`，仍需 Unity Scene 视图补验 |
+| `Panel_WeeklyGarden` 只显示 7 个可见瓶子 | 未验证 | 运行时脚本会兜底隐藏模板，最终仍需 Scene / PlayMode 目视确认 |
+| `Panel_WeeklyGarden/Grid` 不再挂 `HorizontalLayoutGroup`，`Day0`~`Day6` 可单独拖动 | 通过 | `rg` 已确认相关文件无 `HorizontalLayoutGroup` / `LayoutElement` 残留 |
+
+## B13. WorldMap 情绪花种植逻辑恢复（2026-07-31）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标面板：`Panel_EmotionInput` / `Panel_WeeklyGarden` / `Panel_EmotionCollection`
+- 当前规则：`EmotionFlowerCatalog` 负责本地情绪判定和花名映射；`EmotionInputPanelStub` 提交原始心情文本；`WeeklyGardenPanelStub` 与 `FlowerCollectionPanelStub` 读取真实花数据并展示花名、情绪、培育者和状态。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| `EmotionFlowerModels.cs` 中的 `EmotionFlowerCatalog` / `EmotionGardenService` / 三个面板脚本可正常编译 | 通过 | `dotnet build GeminiLab.Modules.EmotionGarden.csproj --no-restore`、`dotnet build GeminiLab.Modules.HubUI.csproj --no-restore` 与 `dotnet build Assembly-CSharp-Editor.csproj --no-restore` 已通过 |
+| `EditorBootSceneLoader` 已把 `EmotionGardenRuntimeBootstrap` 纳入 Awake 顺序，编辑器直启时也会注册情绪花园服务 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj --no-restore` 已通过 |
+| `WeeklyGardenPanelStub` 现在会把 `growth/seed.png` / `growth/bud.png` 显示在瓶子内部，并订阅提交 / 开花 / 清空事件自动刷新 | 通过 | `dotnet build GeminiLab.Modules.HubUI.csproj --no-restore` 已通过 |
+| `WorldMapEmotionGardenUIPatch` 现在会绑定 `_growthSprites` 并作者化 `Growth` 子节点；`AutoSetup` 已升到 23 作为兜底 | 通过 | 本轮 batchmode runner 在 Unity 启动阶段超时，待下次编辑器初始化自动重跑 |
+| `EmotionInputPanelStub` 不再提交固定“悲伤”，而是读取心情文本后交给花园服务判定 | 未验证 | 需 Unity PlayMode 输入一段心情文本验证 |
+| 成功提交后会自动切到 `WeeklyGardenView`，不会继续停留在输入面板 | 未验证 | 需 Unity PlayMode 验证面板切换 |
+| `WeeklyGardenPanelStub` 会显示真实花名、情绪、培育者与开花状态，并在空格回退时恢复默认瓶子底图 | 未验证 | 需 Unity PlayMode 翻周 / 刷新验证 |
+| `FlowerCollectionPanelStub` 会按情绪顺序和培育者顺序显示图鉴，点击已解锁卡片可进入详情页 | 未验证 | 需已有花数据或调试数据验证 |
+| `Panel_EmotionInput`、`Panel_WeeklyGarden`、`Panel_EmotionCollection` 不会同时叠在一起 | 未验证 | 路由已是互斥切换，仍需 Unity PlayMode 确认 |

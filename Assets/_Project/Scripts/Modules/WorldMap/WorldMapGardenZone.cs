@@ -12,9 +12,25 @@ namespace GeminiLab.Modules.WorldMap
     public sealed class WorldMapGardenZone : MonoBehaviour
     {
         [SerializeField] private string _owner = "angel";
+        private Collider2D? _clickCollider;
+
+        private void Awake()
+        {
+            _clickCollider = GetComponent<Collider2D>();
+        }
 
         private void OnMouseDown()
         {
+            if (ClickOcclusionUtility.IsPointerOverUI())
+            {
+                return;
+            }
+
+            if (!ClickOcclusionUtility.IsTopmostColliderUnderMouse(_clickCollider))
+            {
+                return;
+            }
+
             if (!TryResolveRouter(out var router)) return;
             router.Open(PanelId.EmotionInput, _owner);
         }

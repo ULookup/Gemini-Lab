@@ -1,4 +1,5 @@
 #nullable enable
+using GeminiLab.Core;
 using UnityEngine;
 
 namespace GeminiLab.Modules.WorldMap
@@ -56,6 +57,8 @@ namespace GeminiLab.Modules.WorldMap
         private void OnMouseDown()
         {
             if (!_allowDrag) return;
+            if (ClickOcclusionUtility.IsPointerOverUI()) return;
+            if (!ClickOcclusionUtility.IsTopmostColliderUnderMouse(_collider)) return;
             _dragOffset = transform.position - GetMouseWorldPoint();
             _isDragging = true;
         }

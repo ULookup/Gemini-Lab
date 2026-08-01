@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "com.kirurobo.uniwinc": "file:D:/unity3d/plugins/UniWindowController-main/UniWinC/Assets/Kirurobo/UniWindowController",
+    "com.kirurobo.uniwinc": "https://github.com/kirurobo/UniWindowController.git#upm",
     "com.unity.ai.navigation": "1.1.5",
     "com.unity.collab-proxy": "2.12.4",
     "com.unity.feature.2d": "2.0.1",

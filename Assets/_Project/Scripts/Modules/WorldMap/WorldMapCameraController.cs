@@ -1,7 +1,7 @@
 #nullable enable
+using GeminiLab.Core;
 using GeminiLab.Modules.Pet;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace GeminiLab.Modules.WorldMap
 {
@@ -39,6 +39,7 @@ namespace GeminiLab.Modules.WorldMap
         private float _scrollTargetX;
         private float _scrollVelocity;
         private bool _hasScrollTarget;
+        private bool _blockLeftDragUntilMouseUp;
 
         private void Awake()
         {
@@ -50,23 +51,27 @@ namespace GeminiLab.Modules.WorldMap
             if (_camera is null) return;
 
             // 左键点击非桌宠区域 → 取消选中（必须在跟随/平移分支之前，否则选中状态下不会执行）
-            if (Input.GetMouseButtonDown(0) && !IsPointerOverUI())
+            if (Input.GetMouseButtonDown(0) && !ClickOcclusionUtility.IsPointerOverUI())
             {
-                Vector2 worldPoint = _camera.ScreenToWorldPoint(Input.mousePosition);
-                var hits = Physics2D.OverlapPointAll(worldPoint);
-                bool clickedOnPet = false;
-                foreach (var h in hits)
+                if (ClickOcclusionUtility.TryGetTopmostColliderUnderMouse(_camera, out Collider2D? topmostCollider))
                 {
-                    if (h.GetComponent<PetPlayerInputController>() != null)
+                    if (topmostCollider == null ||
+                        topmostCollider.GetComponentInParent<PetPlayerInputController>() == null)
                     {
-                        clickedOnPet = true;
-                        break;
+                        PetPlayerInputController.ReleaseAllControl();
+                        _blockLeftDragUntilMouseUp = true;
                     }
                 }
-                if (!clickedOnPet)
+                else
                 {
                     PetPlayerInputController.ReleaseAllControl();
+                    _blockLeftDragUntilMouseUp = true;
                 }
+            }
+
+            if (Input.GetMouseButtonUp(0))
+            {
+                _blockLeftDragUntilMouseUp = false;
             }
 
             Transform? followTarget = PetPlayerInputController.ActiveTransform;
@@ -90,9 +95,10 @@ namespace GeminiLab.Modules.WorldMap
             if (Input.GetKey(_leftKey)) delta -= _keyboardSpeed * Time.unscaledDeltaTime;
             if (Input.GetKey(_rightKey)) delta += _keyboardSpeed * Time.unscaledDeltaTime;
 
-            // 左键或右键拖拽平移（不穿透 UI）
-            if ((Input.GetMouseButton(0) || Input.GetMouseButton(1))
-                && !IsPointerOverUI())
+            // 左键拖拽平移（不穿透 UI）
+            bool allowLeftDrag = Input.GetMouseButton(0) && !_blockLeftDragUntilMouseUp;
+            if (allowLeftDrag
+                && !ClickOcclusionUtility.IsPointerOverUI())
             {
                 Vector3 cur = _camera.ScreenToWorldPoint(Input.mousePosition);
                 if (_lastDragMouseWorld.HasValue)
@@ -152,11 +158,6 @@ namespace GeminiLab.Modules.WorldMap
             _scrollTargetX = Mathf.Clamp(transform.position.x + _arrowScrollSpeed, _minX, _maxX);
             _hasScrollTarget = true;
             _scrollVelocity = 0f;
-        }
-
-        private static bool IsPointerOverUI()
-        {
-            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         }
     }
 }

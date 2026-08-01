@@ -1,116 +1,425 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using GeminiLab.Core;
+using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.EmotionGarden;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace GeminiLab.Modules.HubUI.Panels
 {
     /// <summary>
-    /// 情绪花图鉴面板。按"情绪+培育者"展示累计数量和解锁进度。
-    /// 当前阶段：方块 UI 占位，列表式展示。
+    /// WorldMap flower codex panel. The visual hierarchy is authored in the scene;
+    /// runtime only fills data and switches between list/detail views.
     /// </summary>
     public sealed class FlowerCollectionPanelStub : StubPanelBase
     {
         public override PanelId Id => PanelId.EmotionCollection;
 
-        [Header("列表容器")]
-        [SerializeField] private Transform? _listRoot;
+        private const int FirstFlowerNumber = 27;
 
-        [Header("条目模板")]
-        [SerializeField] private GameObject? _entryPrefab;
+        [Header("Views")]
+        [SerializeField] private GameObject? _codexView;
+        [SerializeField] private GameObject? _detailView;
+
+        [Header("Codex")]
+        [SerializeField] private FlowerCodexCardSlot[] _cardSlots = Array.Empty<FlowerCodexCardSlot>();
+        [SerializeField] private TMP_Text? _progressText;
+        [SerializeField] private TMP_Text? _pageText;
+        [SerializeField] private Button? _previousPageButton;
+        [SerializeField] private Button? _nextPageButton;
+
+        [Header("Detail")]
+        [SerializeField] private Image? _detailFlowerImage;
+        [SerializeField] private TMP_Text? _detailNumberText;
+        [SerializeField] private TMP_Text? _detailNameText;
+        [SerializeField] private TMP_Text? _detailCreatedText;
+        [SerializeField] private TMP_Text? _detailEmotionText;
+        [SerializeField] private TMP_Text? _detailOwnerText;
+        [SerializeField] private TMP_Text? _detailPhraseTitleText;
+        [SerializeField] private TMP_Text? _detailPhraseBodyText;
+        [SerializeField] private TMP_Text? _detailStockText;
+        [SerializeField] private Button? _detailBackButton;
+        [SerializeField] private Button? _detailPreviousButton;
+        [SerializeField] private Button? _detailNextButton;
+        [SerializeField] private Button? _detailCloseButton;
 
         private IEmotionGardenService? _service;
-        private readonly List<GameObject> _entries = new();
+        private EventBus? _eventBus;
+        private IDisposable? _submittedSub;
+        private IDisposable? _bloomedSub;
+        private IDisposable? _clearedSub;
+        private readonly List<ClusterProgress> _clusters = new();
+        private int _currentPage;
+        private int _selectedClusterIndex = -1;
+
+        protected override void Awake()
+        {
+            base.Awake();
+
+            if (_previousPageButton != null) _previousPageButton.onClick.AddListener(ShowPreviousPage);
+            if (_nextPageButton != null) _nextPageButton.onClick.AddListener(ShowNextPage);
+            if (_detailBackButton != null) _detailBackButton.onClick.AddListener(ShowCodexView);
+            if (_detailPreviousButton != null) _detailPreviousButton.onClick.AddListener(ShowPreviousDetail);
+            if (_detailNextButton != null) _detailNextButton.onClick.AddListener(ShowNextDetail);
+            if (_detailCloseButton != null) _detailCloseButton.onClick.AddListener(CloseSelf);
+
+            for (int i = 0; i < _cardSlots.Length; i++)
+            {
+                int slotIndex = i;
+                _cardSlots[i].BindClick(() => OnCardClicked(slotIndex));
+            }
+        }
 
         public override void OnOpen(object? payload)
         {
             base.OnOpen(payload);
-            _service ??= ServiceLocator.TryResolve(out IEmotionGardenService? s) ? s : null;
-            if (_service == null) return;
-
-            Refresh();
+            _service ??= ServiceLocator.TryResolve(out IEmotionGardenService? service) ? service : null;
+            _eventBus ??= ServiceLocator.TryResolve(out EventBus? eventBus) ? eventBus : null;
+            _currentPage = 0;
+            _selectedClusterIndex = -1;
+            EnsureSubscriptions();
+            RefreshClusters();
+            ShowCodexView();
         }
 
-        private void Refresh()
+        public override void OnClose()
         {
-            if (_service == null || _listRoot == null) return;
-
-            ClearEntries();
-
-            var clusters = _service.GetAllClusters();
-            foreach (var c in clusters)
-            {
-                CreateEntry(c);
-            }
-
-            if (clusters.Count == 0)
-            {
-                var emptyGo = new GameObject("Empty");
-                emptyGo.transform.SetParent(_listRoot, false);
-                var tmp = emptyGo.AddComponent<TextMeshProUGUI>();
-                tmp.text = "还没有收集到情绪花";
-                tmp.fontSize = 20;
-                tmp.alignment = TextAlignmentOptions.Center;
-                tmp.color = new Color(0.6f, 0.6f, 0.6f, 1f);
-                _entries.Add(emptyGo);
-            }
+            _submittedSub?.Dispose();
+            _bloomedSub?.Dispose();
+            _clearedSub?.Dispose();
+            _submittedSub = null;
+            _bloomedSub = null;
+            _clearedSub = null;
+            base.OnClose();
         }
 
-        private void CreateEntry(ClusterProgress cluster)
+        protected override void OnDestroy()
         {
-            GameObject entry;
-            if (_entryPrefab != null)
+            _submittedSub?.Dispose();
+            _bloomedSub?.Dispose();
+            _clearedSub?.Dispose();
+            base.OnDestroy();
+        }
+
+        private void EnsureSubscriptions()
+        {
+            if (_eventBus == null) return;
+
+            _submittedSub ??= _eventBus.Subscribe<EmotionFlowerSubmittedEvent>(_ =>
             {
-                entry = Instantiate(_entryPrefab, _listRoot);
+                RefreshClusters();
+                RefreshVisibleView();
+            });
+            _bloomedSub ??= _eventBus.Subscribe<EmotionFlowerBloomedEvent>(_ =>
+            {
+                RefreshClusters();
+                RefreshVisibleView();
+            });
+            _clearedSub ??= _eventBus.Subscribe<EmotionGardenClearedEvent>(_ =>
+            {
+                RefreshClusters();
+                RefreshVisibleView();
+            });
+        }
+
+        private void RefreshClusters()
+        {
+            _clusters.Clear();
+
+            if (_service != null)
+            {
+                _clusters.AddRange(_service.GetAllClusters());
+                _clusters.Sort(CompareClusters);
             }
-            else
+
+            int maxPage = GetMaxPage();
+            _currentPage = Mathf.Clamp(_currentPage, 0, maxPage);
+        }
+
+        private void RefreshVisibleView()
+        {
+            if (_detailView != null && _detailView.activeSelf)
             {
-                entry = new GameObject($"Entry_{cluster.EmotionType}_{cluster.Owner}");
-                entry.transform.SetParent(_listRoot, false);
-                var rt = entry.AddComponent<RectTransform>();
-                rt.sizeDelta = new Vector2(400, 60);
+                RefreshDetail();
+                return;
+            }
 
-                var img = entry.AddComponent<UnityEngine.UI.Image>();
-                img.color = new Color(0.2f, 0.25f, 0.35f, 1f);
+            RefreshCodexCards();
+        }
 
-                var labelGo = new GameObject("Label");
-                labelGo.transform.SetParent(entry.transform, false);
-                var lrt = labelGo.AddComponent<RectTransform>();
-                lrt.anchorMin = Vector2.zero; lrt.anchorMax = Vector2.one;
-                lrt.offsetMin = new Vector2(8, 4); lrt.offsetMax = new Vector2(-8, -4);
-                var tmp = labelGo.AddComponent<TextMeshProUGUI>();
-                tmp.fontSize = 16;
-                tmp.alignment = TextAlignmentOptions.MidlineLeft;
-                tmp.color = Color.white;
+        private void ShowCodexView()
+        {
+            if (_codexView != null) _codexView.SetActive(true);
+            if (_detailView != null) _detailView.SetActive(false);
+            RefreshCodexCards();
+        }
 
-                var ownerStr = cluster.Owner == "angel" ? "天使" : "恶魔";
-                var stageStr = cluster.UnlockedStage switch
+        private void RefreshCodexCards()
+        {
+            int slotCount = Mathf.Max(1, _cardSlots.Length);
+            int startIndex = _currentPage * slotCount;
+            int displayTotal = Mathf.Max(slotCount, _clusters.Count);
+
+            for (int i = 0; i < _cardSlots.Length; i++)
+            {
+                int clusterIndex = startIndex + i;
+                bool hasDisplaySlot = clusterIndex >= 0 && clusterIndex < displayTotal;
+                bool hasCluster = clusterIndex >= 0 && clusterIndex < _clusters.Count;
+                ClusterProgress cluster = hasCluster ? _clusters[clusterIndex] : default;
+                bool unlocked = hasCluster && cluster.TotalCount > 0 && cluster.UnlockedStage > 0;
+                int displayNumber = FirstFlowerNumber + clusterIndex;
+
+                _cardSlots[i].Set(
+                    hasDisplaySlot,
+                    displayNumber,
+                    unlocked,
+                    unlocked ? BuildFlowerName(cluster) : "未知花卉",
+                    unlocked ? BuildCardMeta(cluster) : string.Empty);
+            }
+
+            int collected = 0;
+            for (int i = 0; i < _clusters.Count; i++)
+            {
+                if (_clusters[i].TotalCount > 0 && _clusters[i].UnlockedStage > 0)
                 {
-                    3 => "已解锁小花丛",
-                    1 => "已解锁单株花",
-                    _ => $"还差 {1 - cluster.TotalCount} 朵解锁单株花"
-                };
-                if (cluster.UnlockedStage == 1 && cluster.TotalCount < 3)
-                {
-                    stageStr += $"，还差 {3 - cluster.TotalCount} 朵解锁小花丛";
+                    collected++;
                 }
-
-                tmp.text = $"{ownerStr}培育 · {cluster.EmotionType}花 × {cluster.TotalCount}\n{stageStr}";
             }
 
-            _entries.Add(entry);
+            if (_progressText != null)
+            {
+                _progressText.text = $"收集进度：{collected} / {displayTotal}";
+            }
+
+            if (_pageText != null)
+            {
+                _pageText.text = $"{_currentPage + 1} / {GetMaxPage() + 1}";
+            }
+
+            if (_previousPageButton != null)
+            {
+                _previousPageButton.interactable = _currentPage > 0;
+            }
+
+            if (_nextPageButton != null)
+            {
+                _nextPageButton.interactable = _currentPage < GetMaxPage();
+            }
         }
 
-        private void ClearEntries()
+        private void OnCardClicked(int slotIndex)
         {
-            foreach (var e in _entries)
+            int clusterIndex = _currentPage * Mathf.Max(1, _cardSlots.Length) + slotIndex;
+            if (clusterIndex < 0 || clusterIndex >= _clusters.Count)
             {
-                if (e != null) Destroy(e);
+                return;
             }
-            _entries.Clear();
+
+            ClusterProgress cluster = _clusters[clusterIndex];
+            if (cluster.TotalCount <= 0 || cluster.UnlockedStage <= 0)
+            {
+                return;
+            }
+
+            ShowDetail(clusterIndex);
+        }
+
+        private void ShowDetail(int clusterIndex)
+        {
+            if (clusterIndex < 0 || clusterIndex >= _clusters.Count)
+            {
+                return;
+            }
+
+            _selectedClusterIndex = clusterIndex;
+            if (_codexView != null) _codexView.SetActive(false);
+            if (_detailView != null) _detailView.SetActive(true);
+            RefreshDetail();
+        }
+
+        private void RefreshDetail()
+        {
+            if (_selectedClusterIndex < 0 || _selectedClusterIndex >= _clusters.Count)
+            {
+                return;
+            }
+
+            ClusterProgress cluster = _clusters[_selectedClusterIndex];
+            int displayNumber = FirstFlowerNumber + _selectedClusterIndex;
+            string flowerName = BuildFlowerName(cluster);
+            string owner = ResolveOwnerName(cluster.Owner);
+            string emotion = ResolveEmotionName(cluster.EmotionType);
+
+            if (_detailNumberText != null) _detailNumberText.text = $"No. {displayNumber:000}";
+            if (_detailNameText != null) _detailNameText.text = flowerName;
+            if (_detailCreatedText != null) _detailCreatedText.text = $"累计收集 {cluster.TotalCount} 朵";
+            if (_detailEmotionText != null) _detailEmotionText.text = emotion;
+            if (_detailOwnerText != null) _detailOwnerText.text = owner;
+            if (_detailPhraseTitleText != null) _detailPhraseTitleText.text = BuildPhraseTitle(cluster);
+            if (_detailPhraseBodyText != null) _detailPhraseBodyText.text = BuildPhraseBody(cluster);
+            if (_detailStockText != null) _detailStockText.text = $"{cluster.TotalCount}";
+
+            if (_detailFlowerImage != null)
+            {
+                _detailFlowerImage.enabled = _detailFlowerImage.sprite != null;
+            }
+
+            if (_detailPreviousButton != null)
+            {
+                _detailPreviousButton.interactable = FindPreviousUnlockedIndex(_selectedClusterIndex) >= 0;
+            }
+
+            if (_detailNextButton != null)
+            {
+                _detailNextButton.interactable = FindNextUnlockedIndex(_selectedClusterIndex) >= 0;
+            }
+        }
+
+        private void ShowPreviousPage()
+        {
+            if (_currentPage <= 0) return;
+            _currentPage--;
+            RefreshCodexCards();
+        }
+
+        private void ShowNextPage()
+        {
+            if (_currentPage >= GetMaxPage()) return;
+            _currentPage++;
+            RefreshCodexCards();
+        }
+
+        private void ShowPreviousDetail()
+        {
+            int previous = FindPreviousUnlockedIndex(_selectedClusterIndex);
+            if (previous >= 0)
+            {
+                ShowDetail(previous);
+            }
+        }
+
+        private void ShowNextDetail()
+        {
+            int next = FindNextUnlockedIndex(_selectedClusterIndex);
+            if (next >= 0)
+            {
+                ShowDetail(next);
+            }
+        }
+
+        private int FindPreviousUnlockedIndex(int fromIndex)
+        {
+            for (int i = fromIndex - 1; i >= 0; i--)
+            {
+                if (_clusters[i].TotalCount > 0 && _clusters[i].UnlockedStage > 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int FindNextUnlockedIndex(int fromIndex)
+        {
+            for (int i = fromIndex + 1; i < _clusters.Count; i++)
+            {
+                if (_clusters[i].TotalCount > 0 && _clusters[i].UnlockedStage > 0)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private int GetMaxPage()
+        {
+            int slotCount = Mathf.Max(1, _cardSlots.Length);
+            int itemCount = Mathf.Max(slotCount, _clusters.Count);
+            return Mathf.Max(0, (itemCount - 1) / slotCount);
+        }
+
+        private static int CompareClusters(ClusterProgress a, ClusterProgress b)
+        {
+            int emotion = EmotionFlowerCatalog.GetEmotionSortIndex(a.EmotionType)
+                .CompareTo(EmotionFlowerCatalog.GetEmotionSortIndex(b.EmotionType));
+            if (emotion != 0) return emotion;
+
+            int owner = EmotionFlowerCatalog.GetOwnerSortIndex(a.Owner)
+                .CompareTo(EmotionFlowerCatalog.GetOwnerSortIndex(b.Owner));
+            if (owner != 0) return owner;
+
+            return string.Compare(a.Owner, b.Owner, StringComparison.Ordinal);
+        }
+
+        private static string BuildFlowerName(ClusterProgress cluster)
+        {
+            return EmotionFlowerCatalog.ResolveFlowerName(cluster.EmotionType, cluster.Owner);
+        }
+
+        private static string BuildCardMeta(ClusterProgress cluster)
+        {
+            return $"{ResolveOwnerName(cluster.Owner)} · {cluster.TotalCount}";
+        }
+
+        private static string BuildPhraseTitle(ClusterProgress cluster)
+        {
+            return cluster.UnlockedStage >= 3 ? "花丛已盛放" : "花蕾已记录";
+        }
+
+        private static string BuildPhraseBody(ClusterProgress cluster)
+        {
+            string emotion = ResolveEmotionName(cluster.EmotionType);
+            string owner = ResolveOwnerName(cluster.Owner);
+            return $"{owner}培育出的{emotion}之花，记录着一次被看见的心情。继续培育后，可在这里替换为更完整的花语与插画。";
+        }
+
+        private static string ResolveOwnerName(string owner)
+        {
+            return EmotionFlowerCatalog.ResolveOwnerDisplayName(owner);
+        }
+
+        private static string ResolveEmotionName(string emotionType)
+        {
+            return EmotionFlowerCatalog.ResolveEmotionDisplayName(emotionType);
+        }
+
+        [Serializable]
+        private sealed class FlowerCodexCardSlot
+        {
+            [SerializeField] private Button? _button;
+            [SerializeField] private Image? _cardImage;
+            [SerializeField] private Image? _lockedImage;
+            [SerializeField] private Image? _flowerImage;
+            [SerializeField] private GameObject? _unlockedContent;
+            [SerializeField] private TMP_Text? _numberText;
+            [SerializeField] private TMP_Text? _nameText;
+            [SerializeField] private TMP_Text? _metaText;
+
+            public void BindClick(UnityEngine.Events.UnityAction action)
+            {
+                if (_button != null)
+                {
+                    _button.onClick.AddListener(action);
+                }
+            }
+
+            public void Set(bool visible, int number, bool unlocked, string name, string meta)
+            {
+                if (_button != null) _button.interactable = visible;
+                if (_cardImage != null) _cardImage.enabled = visible && unlocked;
+                if (_lockedImage != null) _lockedImage.gameObject.SetActive(visible && !unlocked);
+                if (_flowerImage != null) _flowerImage.gameObject.SetActive(visible && unlocked && _flowerImage.sprite != null);
+                if (_unlockedContent != null) _unlockedContent.SetActive(visible && unlocked);
+                if (_numberText != null) _numberText.text = $"No. {number:000}";
+                if (_nameText != null) _nameText.text = name;
+                if (_metaText != null) _metaText.text = meta;
+            }
         }
     }
 }

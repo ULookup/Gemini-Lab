@@ -1,7 +1,7 @@
 #nullable enable
 using System;
+using GeminiLab.Core;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 namespace GeminiLab.Modules.Pet
 {
@@ -81,7 +81,7 @@ namespace GeminiLab.Modules.Pet
                 HideBubbleImmediate();
             }
 
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
+            if (ClickOcclusionUtility.IsPointerOverUI())
             {
                 return;
             }
@@ -141,7 +141,9 @@ namespace GeminiLab.Modules.Pet
                 EnsureClickCollider();
             }
 
-            if (_clickCollider == null || !_clickCollider.OverlapPoint(worldPoint))
+            if (_clickCollider == null ||
+                !ClickOcclusionUtility.IsTopmostColliderAtWorldPoint(worldPoint, _clickCollider) ||
+                !_clickCollider.OverlapPoint(worldPoint))
             {
                 return false;
             }
