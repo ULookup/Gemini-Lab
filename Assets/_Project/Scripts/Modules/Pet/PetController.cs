@@ -87,6 +87,7 @@ namespace GeminiLab.Modules.Pet
         private Vector2 _lastMoveDirection = Vector2.down;
         private Vector2 _playerAnimationDirection = Vector2.down;
         private bool _hasPlayerAnimationDirection;
+        private PetAnimatorDirectionDebouncer _animationDirectionDebouncer;
         private string _lastForcedAnimatorStateName = string.Empty;
 
         // 方向更新的最小 delta 阈值：过滤物理振荡（~0.002），低于此值使用目标方向
@@ -98,6 +99,26 @@ namespace GeminiLab.Modules.Pet
         private float _wanderStuckTimer;
         private const float WanderStuckTimeout = 2f;
         private const float WanderStuckMoveThreshold = 0.005f;
+
+        // 漫游受阻 → 家具交互：宠物撞上家具后无法接近漫游目标（物理卡住或沿表面滑动），
+        // 短暂等待后转入最近的家具交互动画，而不是一直原地走。
+        private bool _wanderInteractionActive;
+        private float _wanderInteractionRemaining;
+        private string _wanderInteractionAnimatorStateName = string.Empty;
+        private float _wanderLastTargetDistance;
+        private bool _hasWanderLastTargetDistance;
+        private const float WanderInteractionRadius = 2.5f;
+        // 本帧目标距离未减少该值即视为未接近目标（与 WanderStuckMoveThreshold 同量级，
+        // 小于单帧正常位移 ~0.02，避免把正常移动误判为受阻）。
+        private const float WanderProgressThreshold = 0.005f;
+        // 未受阻帧的衰减系数：受阻帧 +deltaTime，未受阻帧 -deltaTime*系数。
+        // 宠物撞上家具后会「受阻/未受阻」交替抖动，若未受阻直接清零则计时器永远到不了 2s 放弃阈值。
+        private const float WanderUnblockedDecayFactor = 0.25f;
+        // 自动家具交互冷却：撞上家具时触发失败后 1s 重试，一次交互结束后 5s 限频，
+        // 期间若再次卡在家具上会走 2s 放弃逻辑换目标，避免宠物被困在角落反复交互。
+        private const float WanderInteractionRetryCooldownSeconds = 1f;
+        private const float WanderInteractionPostSuccessCooldown = 5f;
+        private float _wanderInteractionRetryCooldown;
         private PetRuntimeSnapshotChangedEvent? _lastPublishedSnapshot;
         private readonly List<SpriteRenderer> _hiddenInteractionRenderers = new();
         private readonly List<bool> _hiddenInteractionRendererStates = new();
@@ -658,6 +679,19 @@ namespace GeminiLab.Modules.Pet
 
         private void TickPlayerControlled(PetContext context, float deltaTime)
         {
+            // 玩家接管后终止漫游触发中的家具交互，避免取消选中后残留交互动画。
+            // 同时还原自动交互期间应用的覆盖（pose/可视/排序），否则宠物会被钉在交互点。
+            if (_wanderInteractionActive)
+            {
+                _wanderInteractionActive = false;
+                _wanderInteractionAnimatorStateName = string.Empty;
+                _wanderInteractionRemaining = 0f;
+                RestoreHiddenInteractionVisuals();
+                RestoreSleepInteractionVisual();
+                RestoreInteractionSorting();
+                RestoreInteractionPose();
+            }
+
             if (TickPlayerInteraction(context, deltaTime))
             {
                 return;
@@ -696,6 +730,14 @@ namespace GeminiLab.Modules.Pet
             CancelPlayerInteraction(context);
             _hasPlayerAnimationDirection = false;
 
+            if (_wanderInteractionActive)
+            {
+                TickWanderInteraction(context, deltaTime);
+                return;
+            }
+
+            _wanderInteractionRetryCooldown = Mathf.Max(0f, _wanderInteractionRetryCooldown - deltaTime);
+
             RandomWander? wander = GetComponent<RandomWander>();
             bool isWandering = false;
 
@@ -717,6 +759,7 @@ namespace GeminiLab.Modules.Pet
                     isWandering = false;
                     _wanderStuckTimer = 0f;
                     _hasWanderPrevActualPosition = false;
+                    _hasWanderLastTargetDistance = false;
                 }
                 else
                 {
@@ -730,22 +773,57 @@ namespace GeminiLab.Modules.Pet
                         stuckThisFrame = step > WanderStuckMoveThreshold && actualMove < WanderStuckMoveThreshold;
                     }
 
-                    if (stuckThisFrame)
+                    // 受阻 = 撞上家具：要么物理上卡住不动，要么沿表面滑动但无法接近漫游目标。
+                    // 物理卡住帧用于立即触发家具交互；距离未缩短（含滑行）仅用于累计 2s 放弃计时。
+                    bool blockedThisFrame = stuckThisFrame;
+                    if (!blockedThisFrame && _hasWanderLastTargetDistance)
+                    {
+                        float targetDistance = toTarget.magnitude;
+                        blockedThisFrame = step > WanderStuckMoveThreshold &&
+                                           targetDistance > _wanderLastTargetDistance - WanderProgressThreshold;
+                    }
+                    _wanderLastTargetDistance = toTarget.magnitude;
+                    _hasWanderLastTargetDistance = true;
+
+                    if (blockedThisFrame)
                     {
                         _wanderStuckTimer += deltaTime;
-                        if (_wanderStuckTimer >= WanderStuckTimeout)
+                        // 物理真正卡住（本帧实际无位移）时立即尝试家具交互，不依赖累计计时。
+                        // 计时方案在「受阻/未受阻」交替抖动下不可靠：实测卡住帧与滑动帧交替，
+                        // 计时器反复被清零，从未稳定到触发阈值。改为用 stuckThisFrame（真实卡住）
+                        // 而非 blockedThisFrame（含沿表面滑行），避免正常绕行时误触发。
+                        if (stuckThisFrame && _wanderInteractionRetryCooldown <= 0f)
                         {
+                            if (TryStartWanderInteraction(context))
+                            {
+                                // 交互已启动：本帧立即进入 Interacting 状态，后续由 TickWanderInteraction 处理。
+                                isWandering = false;
+                            }
+                            else
+                            {
+                                // 半径内没有可交互家具：短暂冷却避免每帧重试，之后靠 2s 放弃逻辑换目标。
+                                _wanderInteractionRetryCooldown = WanderInteractionRetryCooldownSeconds;
+                            }
+                        }
+
+                        if (!_wanderInteractionActive && _wanderStuckTimer >= WanderStuckTimeout)
+                        {
+                            // 卡住 2s 且未触发家具交互（没有可用家具 / 交互冷却中）：
+                            // 放弃当前目标，避免一直原地走。
                             SetWanderVelocity(Vector2.zero);
                             wander.AbandonTarget();
                             isWandering = false;
                             _wanderStuckTimer = 0f;
                             _hasWanderPrevActualPosition = false;
+                            _hasWanderLastTargetDistance = false;
                         }
-                        // 卡住但未超时：保持 velocity，继续朝向目标播放移动动画
+                        // 受阻但未放弃：保持 velocity，继续朝向目标播放移动动画
                     }
                     else
                     {
-                        _wanderStuckTimer = 0f;
+                        // 未受阻：衰减而非清零。撞上家具后受阻/未受阻帧交替抖动，
+                        // 清零会让计时器永远到不了阈值；真正自由移动时衰减回 0 不会误触发。
+                        _wanderStuckTimer = Mathf.Max(0f, _wanderStuckTimer - deltaTime * WanderUnblockedDecayFactor);
                         SetWanderVelocity(toTarget.normalized * wander.MoveSpeed);
                     }
 
@@ -760,18 +838,280 @@ namespace GeminiLab.Modules.Pet
                 SetWanderVelocity(Vector2.zero);
                 _wanderStuckTimer = 0f;
                 _hasWanderPrevActualPosition = false;
+                _hasWanderLastTargetDistance = false;
             }
 
-            SetPlayerControlledState(context, isWandering ? MovingState.StateName : IdleState.StateName);
+            SetPlayerControlledState(
+                context,
+                _wanderInteractionActive
+                    ? InteractingState.StateName
+                    : isWandering ? MovingState.StateName : IdleState.StateName);
             context.Advance(deltaTime);
             _tickService?.Tick(context, deltaTime);
             ResetPlayerControlledRuntime(context);
 
-            if (!isWandering)
+            if (_wanderInteractionActive)
+            {
+                // 交互启动帧：扣减剩余时长，结束后恢复正常漫游等待。
+                _wanderInteractionRemaining -= deltaTime;
+                if (_wanderInteractionRemaining <= 0f)
+                {
+                    EndWanderInteraction();
+                    // 同帧切回 Idle，避免 UpdateMovementAnimation 仍以 Interacting 状态
+                    // 播放一次 Move_Front 兜底动画。
+                    SetPlayerControlledState(context, IdleState.StateName);
+                }
+            }
+            else if (!isWandering)
             {
                 context.RuntimeData.TargetPosition = context.RuntimeData.Position;
                 context.RuntimeData.TargetReached = true;
             }
+        }
+
+        private void TickWanderInteraction(PetContext context, float deltaTime)
+        {
+            SetWanderVelocity(Vector2.zero);
+            SetPlayerControlledState(context, InteractingState.StateName);
+            context.Advance(deltaTime);
+            _tickService?.Tick(context, deltaTime);
+            ResetPlayerControlledRuntime(context);
+            context.RuntimeData.TargetReached = true;
+
+            _wanderInteractionRemaining -= deltaTime;
+            if (_wanderInteractionRemaining > 0f)
+            {
+                return;
+            }
+
+            EndWanderInteraction();
+            // 同帧切回 Idle，避免 UpdateMovementAnimation 仍以 Interacting 状态
+            // 播放一次 Move_Front 兜底动画。
+            SetPlayerControlledState(context, IdleState.StateName);
+        }
+
+        private void EndWanderInteraction()
+        {
+            _wanderInteractionActive = false;
+            _wanderInteractionAnimatorStateName = string.Empty;
+            SetWanderVelocity(Vector2.zero);
+            _wanderStuckTimer = 0f;
+            // 交互结束后限频：期间若再次撞上家具，走 2s 放弃逻辑换目标，
+            // 避免宠物被困在角落「交互→等待→再交互」死循环，也避免交互过于频繁。
+            _wanderInteractionRetryCooldown = WanderInteractionPostSuccessCooldown;
+            _hasWanderPrevActualPosition = false;
+            _hasWanderLastTargetDistance = false;
+            // 还原自动交互期间应用的可视/排序/pose 覆盖（与手动路径一致），
+            // 并把宠物恢复回交互前的游荡位置。
+            RestoreHiddenInteractionVisuals();
+            RestoreSleepInteractionVisual();
+            RestoreInteractionSorting();
+            RestoreInteractionPose();
+            RandomWander? wander = GetComponent<RandomWander>();
+            if (wander != null)
+            {
+                wander.NotifyArrived();
+            }
+        }
+
+        private bool TryStartWanderInteraction(PetContext context)
+        {
+            if (_wanderInteractionActive)
+            {
+                return false;
+            }
+
+            // 优先用宠物自身的交互绑定（与手动 F 键/点击同一套：硬编码交互点 + 显式动画状态名 + pose 数据）。
+            // 公寓场景里 FurnitureService._placedFurniture 为空（ApartmentSceneFurnitureBindings 的
+            // ResolveTarget 全部解析失败，Editor.log 有 30 条 "Skip binding" 警告），自动交互不能拿它当主依赖；
+            // 但仍有场景会注册家具，所以命中失败后兜底再试 _placedFurniture（request 为 default，
+            // 状态用 ResolveFurnitureInteractionStateName 按宠物映射）。
+            PetPlayerInteractionRequest request = default;
+            bool hasRequestData = TryFindNearbyAutoBinding(out FurnitureInteractionTarget target, out request);
+            bool found = hasRequestData || TryFindNearbyFurniture(context, out target);
+
+            if (!found)
+            {
+                return false;
+            }
+
+            _wanderInteractionActive = true;
+            _wanderInteractionRemaining = Mathf.Max(0.1f, target.InteractionDurationSeconds);
+            if (hasRequestData)
+            {
+                // 绑定命中：显式动画状态名优先（如 Interact_PlayGame）；缺省时用变体映射兜底（如 "devil sleep" → Interact_DevilSleep）。
+                _wanderInteractionAnimatorStateName = !string.IsNullOrWhiteSpace(request.AnimatorStateNameOverride)
+                    ? request.AnimatorStateNameOverride
+                    : !string.IsNullOrWhiteSpace(request.AnimationVariant)
+                        ? ResolvePlayerInteractionStateName(request.AnimationVariant)
+                        : ResolveFurnitureInteractionStateName(target.InteractionType);
+            }
+            else
+            {
+                // _placedFurniture 命中：request 是 default，按家具类型映射（已按宠物区分天使/恶魔状态）。
+                _wanderInteractionAnimatorStateName = ResolveFurnitureInteractionStateName(target.InteractionType);
+            }
+
+            SetWanderVelocity(Vector2.zero);
+
+            // 与手动路径一致：应用可视/排序/特殊可视覆盖，并把宠物摆到固定交互点，
+            // 而不是在卡住的原地播动画。_placedFurniture 路径 request 为 default，
+            // 覆盖/pose 均以 default 请求应用（缩放已在 ApplyAutoInteractionPose 内兜底为当前缩放）。
+            ApplyInteractionVisualOverride(request);
+            ApplyInteractionSortingOverride(request);
+            ApplySpecialInteractionVisualOverride(request);
+
+            // 绑定路径尊重绑定的 pose 意图：门边/书柜等 UsePetPoseOverride=false 的绑定，
+            // 手动 F 键/点击不会移动或缩放宠物（保持当前缩放 0.5，只在原地播动画），自动路径
+            // 也必须一致；否则自动触发会把宠物强制缩到绑定缩放（门边/书柜为 1.0），出现
+            // "自动播放动画的大小 != 手动触发的大小"。_placedFurniture 兜底路径 request 为
+            // default（UsePetPoseOverride=false），但它是唯一命中，仍需 pose 到家具交互点
+            // （缩放兜底为当前缩放），所以用 !hasRequestData 放行。
+            if (!hasRequestData || request.UsePetPoseOverride)
+            {
+                ApplyAutoInteractionPose(request, target.InteractionPoint);
+            }
+
+            Debug.Log(
+                $"[PetInteraction] Auto wander interaction started target='{target.FurnitureId}' " +
+                $"state='{_wanderInteractionAnimatorStateName}' duration={_wanderInteractionRemaining:F2}");
+
+            // 与 InteractingState.Enter 一致：应用环境加成并广播事件（仅当通过 _placedFurniture 命中时）。
+            if (context.FurnitureService is not null &&
+                context.FurnitureService.TryConsumeInteractionBuff(target.FurnitureId, out EnvironmentalBuff buff))
+            {
+                StatTickService.ApplyEnvironmentalBuff(context.RuntimeData, buff.MoodDelta, buff.EnergyDelta);
+                context.RuntimeData.LastInteractionFurnitureId = target.FurnitureId;
+                context.RuntimeData.LastInteractionSummary =
+                    $"{target.InteractionType.ToDisplayLabel()} / {target.Category} (Mood {FormatSigned(buff.MoodDelta)}, Energy {FormatSigned(buff.EnergyDelta)})";
+                context.EventBus?.Publish(new PetInteractionCompletedEvent(
+                    context.RuntimeData.PetId,
+                    target.FurnitureId,
+                    target.Category,
+                    target.InteractionType));
+            }
+
+            return true;
+        }
+
+        private bool TryFindNearbyFurniture(PetContext context, out FurnitureInteractionTarget target)
+        {
+            target = default;
+            if (context.FurnitureService is null)
+            {
+                return false;
+            }
+
+            IReadOnlyList<GeminiLab.Modules.Furniture.Furniture> placed = context.FurnitureService.GetPlacedFurniture();
+            if (placed is null || placed.Count == 0)
+            {
+                return false;
+            }
+
+            Vector2 origin = GetCurrentWorldPosition();
+            GeminiLab.Modules.Furniture.Furniture? best = null;
+            float bestDistance = WanderInteractionRadius;
+            for (int i = 0; i < placed.Count; i++)
+            {
+                GeminiLab.Modules.Furniture.Furniture furniture = placed[i];
+                if (furniture is null || !furniture.Anchor.IsAvailable)
+                {
+                    continue;
+                }
+
+                float distance = Vector2.Distance(origin, furniture.Anchor.WorldPosition);
+                if (distance <= bestDistance)
+                {
+                    bestDistance = distance;
+                    best = furniture;
+                }
+            }
+
+            if (best is null)
+            {
+                return false;
+            }
+
+            FurnitureDefinitionSO definition = best.Definition;
+            target = new FurnitureInteractionTarget(
+                best.InstanceId,
+                definition.Id,
+                definition.Category,
+                definition.InteractionType,
+                definition.InteractionDurationSeconds,
+                best.Anchor.WorldPosition,
+                -bestDistance);
+            return true;
+        }
+
+        /// <summary>
+        /// 从宠物自身的 PetPlayerFurnitureInteractionController 绑定中寻找最近的可交互家具。
+        /// 手动 F 键/点击路径用同一套绑定（硬编码交互点 + 显式动画状态名），不依赖 _placedFurniture；
+        /// 公寓场景 _placedFurniture 为空，只有这条路径能命中。
+        /// </summary>
+        private bool TryFindNearbyAutoBinding(out FurnitureInteractionTarget target, out PetPlayerInteractionRequest request)
+        {
+            target = default;
+            request = default;
+
+            if (!TryGetComponent(out PetPlayerFurnitureInteractionController interactionController) ||
+                !interactionController.TryGetAutoInteractionCandidate(out AutoInteractionCandidate candidate))
+            {
+                return false;
+            }
+
+            request = candidate.Request;
+            target = new FurnitureInteractionTarget(
+                request.TargetName,
+                request.TargetName,
+                request.Category,
+                request.InteractionType,
+                request.InteractionDurationSeconds,
+                candidate.InteractionPoint,
+                0f);
+            return true;
+        }
+
+        /// <summary>
+        /// 自动交互的 pose：复用 <see cref="ApplyInteractionPoseOverride"/>，把宠物摆到
+        /// 绑定解析出的固定交互点（target.InteractionPoint，即绑定硬编码的 fallbackWorldPoint）。
+        /// 手动路径靠玩家把宠物走到点位；自动路径宠物可能卡在家具边缘，必须主动摆到固定点。
+        /// 仅当调用方确认该交互需要 pose 时才调用（UsePetPoseOverride=false 的门边/书柜不走这里，
+        /// 与手动行为一致，保持当前缩放）。
+        /// </summary>
+        private void ApplyAutoInteractionPose(PetPlayerInteractionRequest request, Vector2 interactionPoint)
+        {
+            // 绑定路径的 request 携带绑定缩放（0.39~0.5）；_placedFurniture 兜底路径的 request 是 default，
+            // PetInteractionScale 为 (0,0,0)，直接套用会让宠物缩到看不见，这里用当前缩放兜底。
+            Vector3 scale = request.PetInteractionScale.sqrMagnitude > 0.0001f
+                ? request.PetInteractionScale
+                : transform.localScale;
+
+            PetPlayerInteractionRequest poseRequest = new PetPlayerInteractionRequest(
+                request.TargetName,
+                request.Category,
+                request.InteractionType,
+                request.AnimationVariant,
+                request.AnimatorStateNameOverride,
+                request.HideTargetWhileInteracting,
+                request.VisualHideTarget,
+                visualPoseTarget: null,
+                request.AdditionalVisualHideTargets,
+                request.UseTargetSortingWhileInteracting,
+                request.VisualSortingTarget,
+                request.SortingOrderOffsetWhileInteracting,
+                usePetPoseOverride: true,
+                useTargetPositionForPetPose: false,
+                petInteractionLocalOffset: Vector2.zero,
+                petInteractionWorldPoint: interactionPoint,
+                petInteractionScale: scale,
+                request.InteractionDurationSeconds);
+            ApplyInteractionPoseOverride(poseRequest);
+        }
+
+        private static string FormatSigned(float value)
+        {
+            return value >= 0f ? $"+{value:0.#}" : value.ToString("0.#");
         }
 
         private void SetWanderVelocity(Vector2 velocity)
@@ -1257,7 +1597,8 @@ namespace GeminiLab.Modules.Pet
 
             if (currentState == InteractingState.StateName || currentState == WorkingState.StateName)
             {
-                PlayForcedAnimatorState(ResolveInteractionStateName());
+                string resolvedInteractionState = ResolveInteractionStateName();
+                PlayForcedAnimatorState(resolvedInteractionState);
                 _animator.SetBool(IsMovingHash, false);
                 _animator.speed = 1f;
                 return;
@@ -1272,6 +1613,7 @@ namespace GeminiLab.Modules.Pet
 
             if (!isMoving)
             {
+                _animationDirectionDebouncer.Reset();
                 PlayForcedAnimatorState(ResolveIdleStateName(_lastMoveDirection));
             }
             else
@@ -1281,21 +1623,28 @@ namespace GeminiLab.Modules.Pet
 
             if (IsPlayerControlled() && _hasPlayerAnimationDirection)
             {
+                // 玩家输入的方向即时生效，不参与去抖。
                 _lastMoveDirection = _playerAnimationDirection;
-            }
-            else if (hasDelta && delta.sqrMagnitude > MinDirectionDeltaSqr)
-            {
-                _lastMoveDirection = delta.normalized;
+                _animationDirectionDebouncer.Reset();
             }
             else if (isMoving && _context is not null)
             {
-                // When frame-to-frame delta is tiny, keep direction aligned with
-                // current movement target so transitions still choose correct clip.
+                // 移动中优先使用目标方向：目标是稳定点，而逐帧实际位移在撞上家具后
+                // 会沿表面滑动/抖动。两种来源都经过去抖，避免 MoveDir 高频翻转
+                // 让动画在 Move_Front / Move_Back / Move_Side 之间乱切换。
                 Vector2 targetDelta = _context.RuntimeData.TargetPosition - currentPosition;
                 if (targetDelta.sqrMagnitude > DirectionEpsilonSqr)
                 {
-                    _lastMoveDirection = targetDelta.normalized;
+                    _lastMoveDirection = _animationDirectionDebouncer.Step(targetDelta.normalized, _lastMoveDirection);
                 }
+                else if (hasDelta && delta.sqrMagnitude > MinDirectionDeltaSqr)
+                {
+                    _lastMoveDirection = _animationDirectionDebouncer.Step(delta.normalized, _lastMoveDirection);
+                }
+            }
+            else if (hasDelta && delta.sqrMagnitude > MinDirectionDeltaSqr)
+            {
+                _lastMoveDirection = _animationDirectionDebouncer.Step(delta.normalized, _lastMoveDirection);
             }
 
             _animator.SetBool(IsMovingHash, isMoving);
@@ -1371,6 +1720,11 @@ namespace GeminiLab.Modules.Pet
 
         private string ResolveInteractionStateName()
         {
+            if (_wanderInteractionActive && !string.IsNullOrEmpty(_wanderInteractionAnimatorStateName))
+            {
+                return _wanderInteractionAnimatorStateName;
+            }
+
             if (_context?.RuntimeData.IsPlayerInteractionActive == true)
             {
                 if (!string.IsNullOrWhiteSpace(_context.RuntimeData.PlayerInteractionAnimatorStateName))
@@ -1388,7 +1742,40 @@ namespace GeminiLab.Modules.Pet
                 return InteractReadStateName;
             }
 
-            return _context?.RuntimeData.TargetFurnitureInteractionType switch
+            return ResolveFurnitureInteractionStateName(
+                _context?.RuntimeData.TargetFurnitureInteractionType ?? FurnitureInteractionType.Unknown);
+        }
+
+        private string ResolveFurnitureInteractionStateName(FurnitureInteractionType interactionType)
+        {
+            if (_petId == PetId.Devil)
+            {
+                // 恶魔控制器只有 Interact_DevilSleep/Draw/LookAround/PlayGame，
+                // 没有天使的 Interact_BesideDoor/Read/PlayingMusic。按宠物映射到恶魔实际拥有的状态，
+                // 避免 PlayForcedAnimatorState 因状态缺失报警告并播不出动画。
+                return interactionType switch
+                {
+                    FurnitureInteractionType.PlayHarp => InteractPlayGameStateName,
+                    FurnitureInteractionType.PlayGuitar => InteractDrawStateName,
+                    FurnitureInteractionType.PaintAtEasel => InteractDrawStateName,
+                    FurnitureInteractionType.ViewPhotoBoard => InteractDrawStateName,
+                    FurnitureInteractionType.LeisureEngage => InteractDrawStateName,
+                    FurnitureInteractionType.InspectBookshelf => InteractLookAroundStateName,
+                    FurnitureInteractionType.InspectMirror => InteractLookAroundStateName,
+                    FurnitureInteractionType.InspectNightstand => InteractLookAroundStateName,
+                    FurnitureInteractionType.ObservePlant => InteractLookAroundStateName,
+                    FurnitureInteractionType.ObserveWindow => InteractLookAroundStateName,
+                    FurnitureInteractionType.InspectToy => InteractLookAroundStateName,
+                    FurnitureInteractionType.ArrangePillow => InteractLookAroundStateName,
+                    FurnitureInteractionType.InspectPapers => InteractLookAroundStateName,
+                    FurnitureInteractionType.ListenToAudio => InteractLookAroundStateName,
+                    FurnitureInteractionType.OrganizeStorage => InteractLookAroundStateName,
+                    FurnitureInteractionType.DecorInspect => InteractLookAroundStateName,
+                    _ => MoveFrontStateName
+                };
+            }
+
+            return interactionType switch
             {
                 FurnitureInteractionType.PlayHarp => InteractPlayingMusicStateName,
                 FurnitureInteractionType.PlayGuitar => InteractReadStateName,
