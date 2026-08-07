@@ -58,6 +58,14 @@ namespace GeminiLab.Modules.Pet.Personality
             MatrixChanged?.Invoke(petId, _matrices[petId]);
         }
 
+        public bool SeedInitialMatrixIfAbsent(PetId petId, PersonalityMatrixSO? matrix)
+        {
+            // 存档恢复若已写入则不覆盖（与 OnPetControllerInitialized 的守卫一致）
+            if (_matrices.ContainsKey(petId)) return false;
+            SetInitialMatrix(petId, PersonalityVector.FromSO(matrix));
+            return true;
+        }
+
         public void Dispose()
         {
             _tarotSub?.Dispose();
@@ -163,7 +171,7 @@ namespace GeminiLab.Modules.Pet.Personality
             {
                 entries[i++] = new Entry { petId = (int)kv.Key, vector = kv.Value };
             }
-            return JsonUtility.ToJson(new SavePayload { version = 1, entries = entries });
+            return JsonUtility.ToJson(new SavePayload { version = 2, entries = entries });
         }
 
         public bool RestoreJson(string json)
@@ -172,6 +180,18 @@ namespace GeminiLab.Modules.Pet.Personality
             try
             {
                 var payload = JsonUtility.FromJson<SavePayload>(json);
+
+                // v1 存档（初始矩阵接入修复前）是基于全 0 初始矩阵累计的：当时编辑器
+                // Play 时序让 PetControllerInitializedEvent 被错过，初始矩阵从未写入，
+                // 演化增量全部叠在 0 基数上，恢复它会覆盖启动补种写入的真实初始矩阵
+                // （雷达又变全 0 正多边形）。v1 一律忽略，由启动补种/宠物初始化事件
+                // 以真实 PersonalityMatrixSO 为基数重新建立。
+                if (payload.version < 2)
+                {
+                    Debug.Log("[PersonalityEvolutionService] 忽略旧版性格存档(v1，0 基数累计，已由真实初始矩阵取代)");
+                    return true;
+                }
+
                 _matrices.Clear();
                 if (payload.entries != null)
                 {

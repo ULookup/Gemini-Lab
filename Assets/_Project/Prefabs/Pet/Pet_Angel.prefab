@@ -432,7 +432,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _config: {fileID: 0}
-  _personality: {fileID: 0}
+  _personality: {fileID: 11400000, guid: 1ecede15733b42244a1305f7645463bd, type: 2}
   _movementController: {fileID: 9100000, guid: ba46f117e79c2504888c585f53d1ecf8, type: 2}
   _sideFramesFaceLeft: 1
   _movementBounds: {fileID: 0}
