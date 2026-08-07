@@ -14,6 +14,13 @@ namespace GeminiLab.Modules.Pet
     {
         private const string DevilFTracePrefix = "[DEVIL_F_TRACE]";
 
+        /// <summary>
+        /// 漫游自动交互的搜索半径增量。手动 F 键/点击用绑定自身的激活距离即可；
+        /// 自动路径在宠物“卡住”时触发，宠物可能撞在大型家具边缘而硬编码交互点在家具中心，
+        /// 因此额外放宽该距离，确保边缘碰撞也能命中对应绑定。
+        /// </summary>
+        private const float AutoInteractionRadiusPadding = 1.25f;
+
         [Serializable]
         public sealed class InteractionAnimationOption
         {
@@ -210,6 +217,93 @@ namespace GeminiLab.Modules.Pet
             }
 
             return bestBinding != null && !string.IsNullOrWhiteSpace(bestTargetName);
+        }
+
+        /// <summary>
+        /// 自动交互专用：与 <see cref="TryGetClosestBinding(Vector2, out InteractionBinding?, out string, out GameObject?)"/>
+        /// 相同，但搜索半径在绑定激活距离上增加 <paramref name="radiusPadding"/>。
+        /// 手动路径在玩家已走近家具时才判定；自动路径在宠物撞上家具“卡住”时触发，
+        /// 宠物可能在大型家具边缘而交互点在家具中心，放宽半径才能命中。
+        /// </summary>
+        private bool TryGetClosestAutoBinding(
+            Vector2 petPosition,
+            float radiusPadding,
+            out InteractionBinding? bestBinding,
+            out string bestTargetName,
+            out GameObject? bestTargetObject,
+            out float bestBindingDistance)
+        {
+            bestBinding = null;
+            bestTargetName = string.Empty;
+            bestTargetObject = null;
+            bestBindingDistance = float.MaxValue;
+
+            for (int i = 0; i < _bindings.Length; i++)
+            {
+                InteractionBinding binding = _bindings[i];
+                if (!TryResolveInteractionPoint(binding, out Vector2 interactionPoint, out string targetName, out GameObject? targetObject))
+                {
+                    continue;
+                }
+
+                float distance = Vector2.Distance(petPosition, interactionPoint);
+                float activationDistance = binding.ActivationDistance + radiusPadding;
+                if (distance > activationDistance || distance >= bestBindingDistance)
+                {
+                    continue;
+                }
+
+                bestBindingDistance = distance;
+                bestBinding = binding;
+                bestTargetName = targetName;
+                bestTargetObject = targetObject;
+            }
+
+            return bestBinding != null && !string.IsNullOrWhiteSpace(bestTargetName);
+        }
+
+        /// <summary>
+        /// 漫游自动交互候选：返回离宠物最近、且在激活距离（含放宽）内的家具绑定。
+        /// 与手动 F 键/点击共用同一套绑定（硬编码交互点 + 显式动画状态名），
+        /// 因此不依赖 FurnitureService 是否注册了家具——公寓场景里
+        /// ApartmentSceneFurnitureBindings 全部解析失败、_placedFurniture 为空，
+        /// 只有这套绑定可解析，自动交互必须复用它才能命中并播放正确动画。
+        /// </summary>
+        public bool TryGetAutoInteractionCandidate(out AutoInteractionCandidate candidate)
+        {
+            candidate = default;
+            if (!_enableInteraction || !isActiveAndEnabled)
+            {
+                return false;
+            }
+
+            if (_petController == null)
+            {
+                _petController = GetComponent<PetController>();
+            }
+
+            if (_petController == null ||
+                !TryGetClosestAutoBinding(
+                    transform.position,
+                    AutoInteractionRadiusPadding,
+                    out InteractionBinding? binding,
+                    out string targetName,
+                    out GameObject? targetObject,
+                    out _))
+            {
+                return false;
+            }
+
+            if (binding is null ||
+                !TryResolveInteractionPoint(binding, out Vector2 interactionPoint, out _, out _))
+            {
+                return false;
+            }
+
+            candidate = new AutoInteractionCandidate(
+                BuildInteractionRequest(binding, targetName, targetObject),
+                interactionPoint);
+            return true;
         }
 
         private bool TryEnsurePetController(out PetController? petController)
@@ -644,6 +738,26 @@ namespace GeminiLab.Modules.Pet
             score = Vector2.Distance(worldPoint, interactionPoint);
             return score <= hitRadius;
         }
+    }
+
+    /// <summary>
+    /// 漫游自动交互的家具候选。由 <see cref="PetPlayerFurnitureInteractionController.TryGetAutoInteractionCandidate"/>
+    /// 产生，携带与该宠物手动交互绑定完全一致的完整请求（显式动画状态、变体、时长、pose 数据）
+    /// 以及绑定解析出的固定交互点。
+    /// </summary>
+    public readonly struct AutoInteractionCandidate
+    {
+        public AutoInteractionCandidate(PetPlayerInteractionRequest request, Vector2 interactionPoint)
+        {
+            Request = request;
+            InteractionPoint = interactionPoint;
+        }
+
+        /// <summary>与手动路径一致、由绑定构建的完整交互请求（含显式动画状态与 pose 数据）。</summary>
+        public PetPlayerInteractionRequest Request { get; }
+
+        /// <summary>绑定解析出的固定交互点（硬编码 fallbackWorldPoint 或目标物体位置）。</summary>
+        public Vector2 InteractionPoint { get; }
     }
 
     public readonly struct PetPlayerInteractionRequest
