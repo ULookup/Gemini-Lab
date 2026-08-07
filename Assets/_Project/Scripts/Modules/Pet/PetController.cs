@@ -71,6 +71,9 @@ namespace GeminiLab.Modules.Pet
 
         public PetId PetId => _petId;
 
+        /// <summary>初始性格矩阵（Inspector 绑定；可为空）。启动时由 PersonalityEvolutionBootstrap 补种读取。</summary>
+        public PersonalityMatrixSO? InitialPersonalityMatrix => _personality;
+
         private PetContext? _context;
         private StateMachine<PetContext>? _stateMachine;
         private StatTickService? _tickService;
