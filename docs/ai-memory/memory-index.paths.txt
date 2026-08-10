@@ -1,5 +1,5 @@
 # Gemini-Lab AI memory index
-# Updated: 2026-07-30
+# Updated: 2026-08-09
 
 AGENTS.md
 docs/current-task-card.md
@@ -39,6 +39,7 @@ Assets/_Project/Scenes/README.md
 Assets/_Project/Scenes/Boot.unity
 Assets/_Project/Scenes/Apartment/Apartment_Main.unity
 Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity
+Assets/_Project/Scenes/WorldMap/WorldMap_PetAnimationPreview.unity
 Assets/_Project/Scenes/Desktop/Desktop_Overlay.unity
 Assets/_Project/Prefabs/README.md
 Assets/_Project/Prefabs/Furniture
@@ -63,14 +64,23 @@ Assets/_Project/Scripts/Modules/HubUI/Panels/ProfilePanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/TarotPanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/InventoryPanelStub.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/FlowerCollectionPanelStub.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/SceneAuthoredImageVariantView.cs
 Assets/_Project/Scripts/Modules/HubUI/Panels/WeeklyGardenPanelStub.cs
+Assets/_Project/Scripts/Modules/HubUI/Panels/WeeklyGardenBottleInteraction.cs
 Assets/_Project/Scripts/Modules/EmotionGarden/EmotionFlowerModels.cs
 Assets/_Project/Scripts/Modules/EmotionGarden/EmotionGardenService.cs
 Assets/_Project/Scripts/Modules/EmotionGarden/EmotionGardenRuntimeBootstrap.cs
+Assets/_Project/Scripts/Modules/EmotionGarden/EmotionFlowerArtCatalog.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapEmotionGardenUIPatch.cs
+Assets/_Project/Art/WorldMap/flower/EmotionFlowerArtCatalog.asset
 Assets/_Project/Art/Sprites/Environment/ApartmentScene_Extracted/README.md
-Assets/_Project/Art/WorldMap/flowerCodex
-Assets/_Project/Art/WorldMap/flower_info
-Assets/_Project/Art/WorldMap/growth
+Assets/_Project/Art/WorldMap/UI/flowerCodex
+Assets/_Project/Art/WorldMap/UI/flower_info
+Assets/_Project/Art/WorldMap/UI/garden_week/bottle.png
+Assets/_Project/Art/WorldMap/flower
+Assets/_Project/Art/WorldMap/UI/garden_week
+Assets/_Project/Art/WorldMap/UI/growth
+Assets/_Project/Art/WorldMap/花朵图鉴/花朵
 Assets/_Project/Audio/README.md
 Assets/_Project/Settings/README.md
 Assets/_Project/Scripts/README.md
@@ -89,6 +99,7 @@ Assets/_Project/Scripts/Modules/WorldMap/CabinReturnPortal.cs
 Assets/_Project/Scripts/Modules/WorldMap/WorldMapGardenZone.cs
 Assets/_Project/Scripts/Modules/WorldMap/WorldMapCameraController.cs
 Assets/_Project/Scripts/Modules/WorldMap/ClickableSceneObject.cs
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapInteractiveObjectFeedback.cs
 Assets/_Project/Scripts/Modules/WorldMap/BaselineItem.cs
 Assets/_Project/Scripts/Modules/Furniture/README.md
 Assets/_Project/Scripts/Modules/Navigation/README.md
@@ -103,6 +114,26 @@ Assets/_Project/Scripts/Editor/SceneBootstrap/AutoSetup.cs
 Assets/_Project/Scripts/Editor/SceneBootstrap/EditorBootSceneLoader.cs
 Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapSceneObjectsPatch.cs
 Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapEmotionGardenUIPatch.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapFlowerPlacementAuthoring.cs
+Assets/_Project/Scripts/Editor/Tools/WorldMapFlowerSoilLayoutWindow.cs
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapFlowerPlacementController.cs
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapDayNightController.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapDayNightAuthoring.cs
+Assets/_Project/Art/WorldMap/garden/天气（最上层）/夜幕.png
+Assets/_Project/Scripts/Modules/WorldMap/WorldMapPetAnimationTriggerController.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapPetAnimationTriggerAuthoring.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapInteractiveObjectAuthoring.cs
+Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapPetAnimationPreviewAuthoring.cs
+Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity#_SceneRoot
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Angel_Outdoor_Happy.anim
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Angel_Outdoor_Water.anim
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Angel_Outdoor_Sit.anim
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Angel_Outdoor_Pray.anim
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Devil_Outdoor_Proud.anim
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Devil_Outdoor_Cast.anim
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Devil_Outdoor_Sleep.anim
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Angel.controller
+Assets/_Project/Animations/WorldMap/Pet/WorldMap_Devil.controller
 Assets/_Project/Scripts/Editor/Build/McpNuGetPlayerImportGuard.cs
 Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs
 Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs
@@ -131,4 +162,6 @@ PackageBackups/NuGet-disabled-2026-06-02/NuGet.meta
 ProjectSettings/ProjectVersion.txt
 .cursor/mcp.json
 tools/check-task-gate.ps1
+tools/check-scene-visual-contract.ps1
+tools/check-runtime-visual-contract.ps1
 tools/run-unity-editor-method.ps1

@@ -40,7 +40,10 @@ namespace GeminiLab.Core
 
         private void Awake()
         {
-            if (_initialized)
+            // 域重载关闭或 Editor 反复进入 Play 时，静态标记可能残留；
+            // 只有在服务仍然存在时才跳过本次注册，避免 WorldMap 入口拿不到 SceneFlow。
+            if (_initialized && ServiceLocator.TryResolve(out ISceneFlowService? existingSceneFlow)
+                && existingSceneFlow is not null)
             {
                 return;
             }

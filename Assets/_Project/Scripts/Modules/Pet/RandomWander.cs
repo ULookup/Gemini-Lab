@@ -75,6 +75,12 @@ namespace GeminiLab.Modules.Pet
             var data = _controller.RuntimeData;
             if (data == null) return;
 
+            if (_controller.IsMovementLocked)
+            {
+                if (_isMoving) NotifyArrived();
+                return;
+            }
+
             if (_controller.IsPlayerControlEnabled)
             {
                 if (_isMoving) NotifyArrived();

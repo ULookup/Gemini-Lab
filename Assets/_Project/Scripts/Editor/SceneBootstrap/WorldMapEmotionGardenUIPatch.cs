@@ -1,9 +1,11 @@
-﻿#nullable enable
+#nullable enable
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using GeminiLab.Core;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Collection;
 using GeminiLab.Modules.DevTools;
+using GeminiLab.Modules.EmotionGarden;
 using GeminiLab.Modules.HubUI;
 using GeminiLab.Modules.HubUI.Panels;
 using GeminiLab.Modules.WorldMap;
@@ -22,8 +24,42 @@ namespace GeminiLab.Editor.SceneBootstrap
     public static class WorldMapEmotionGardenUIPatch
     {
         private const string ScenePath = "Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity";
-        private const string FlowerCodexArtDir = "Assets/_Project/Art/WorldMap/flowerCodex";
-        private const string FlowerInfoArtDir = "Assets/_Project/Art/WorldMap/flower_info";
+        private const string FlowerCodexArtDir = "Assets/_Project/Art/WorldMap/UI/flowerCodex";
+        private const string FlowerInfoArtDir = "Assets/_Project/Art/WorldMap/UI/flower_info";
+        private const string FlowerArtDir = "Assets/_Project/Art/WorldMap/flower";
+        private const string FlowerHeadArtDir = "Assets/_Project/Art/WorldMap/花朵图鉴/花朵";
+        private const string FlowerArtCatalogPath = "Assets/_Project/Art/WorldMap/flower/EmotionFlowerArtCatalog.asset";
+        private const string WeeklyOutlineShaderName = "GeminiLab/UI/SpriteAlphaOutline";
+        private const string WeeklyOutlineMaterialPath = "Assets/_Project/Art/WorldMap/UI/garden_week/SelectedBottleOutline.mat";
+        private const int FirstCodexFlowerNumber = 27;
+
+        private static readonly string[] FlowerArtEmotionTypes =
+        {
+            "喜悦", "悲伤", "愤怒", "平静", "爱", "恐惧", "惊讶", "期待", "孤独"
+        };
+
+        // 以完整花图的透明边界为基准的初始土壤位置。
+        // 这些值只负责首次作者化，之后仍可在 Scene/Inspector 中逐花调整。
+        private static readonly Dictionary<string, float> DetailSoilYByFlower = new(System.StringComparer.Ordinal)
+        {
+            ["angel|喜悦"] = -173.4f,
+            ["demon|喜悦"] = -173.4f,
+            ["angel|悲伤"] = -158.3f,
+            ["demon|悲伤"] = -161.6f,
+            ["angel|愤怒"] = -164.9f,
+            ["demon|愤怒"] = -164.9f,
+            ["angel|平静"] = -164.2f,
+            ["demon|平静"] = -165.5f,
+            ["angel|爱"] = -164.2f,
+            ["demon|爱"] = -165.5f,
+            ["angel|恐惧"] = -164.9f,
+            ["demon|恐惧"] = -162.9f,
+            ["angel|惊讶"] = -163.5f,
+            ["demon|惊讶"] = -164.2f,
+            ["angel|期待"] = -163.5f,
+            ["demon|期待"] = -163.5f,
+            ["angel|孤独"] = -164.2f
+        };
 
         public static void Patch()
         {
@@ -61,8 +97,13 @@ namespace GeminiLab.Editor.SceneBootstrap
             // 7/20 修改清单
             EnsureArrowButtons(canvasGo, uiLayer);
             EnsureCabinReturnPortal();
+            WorldMapInteractiveObjectAuthoring.Patch();
             HideGardenPlots();
             DisableCameraFollow();
+            WorldMapFlowerPlacementAuthoring.Patch(canvasGo, uiLayer);
+            WorldMapOutdoorPetAnimationAuthoring.Patch();
+            WorldMapDayNightAuthoring.Patch();
+            WorldMapPetAnimationTriggerAuthoring.Patch();
 
             EditorSceneManager.MarkSceneDirty(scene);
             EditorSceneManager.SaveScene(scene);
@@ -301,17 +342,16 @@ namespace GeminiLab.Editor.SceneBootstrap
 
         // ── 每周培育面板内容 ──────────────────────────────────
 
-        private const string GardenWeekArtDir = "Assets/_Project/Art/WorldMap/garden_week";
-        private const string GrowthArtDir = "Assets/_Project/Art/WorldMap/growth";
+        private const string GardenWeekArtDir = "Assets/_Project/Art/WorldMap/UI/garden_week";
 
         private static Sprite? LoadGardenWeekSprite(string fileName)
         {
             return AssetDatabase.LoadAssetAtPath<Sprite>($"{GardenWeekArtDir}/{fileName}.png");
         }
 
-        private static Sprite? LoadGrowthSprite(string fileName)
+        private static Sprite? LoadFlowerSprite(string fileName)
         {
-            return AssetDatabase.LoadAssetAtPath<Sprite>($"{GrowthArtDir}/{fileName}.png");
+            return AssetDatabase.LoadAssetAtPath<Sprite>($"{FlowerArtDir}/{fileName}.PNG");
         }
 
         private static void SetupWeeklyGardenContent(GameObject panel, int uiLayer)
@@ -323,13 +363,21 @@ namespace GeminiLab.Editor.SceneBootstrap
             var content = so.FindProperty("_content").objectReferenceValue as GameObject;
             if (content == null) return;
 
+            var panelRt = panel.GetComponent<RectTransform>();
+            if (panelRt != null)
+            {
+                panelRt.localScale = new Vector3(0.85f, 0.85f, 1f);
+            }
+
             var contentT = content.transform;
             var uiSprite = LoadGardenWeekSprite("UI");
             var closeSprite = LoadGardenWeekSprite("close");
             var barSprite = LoadGardenWeekSprite("UIbar");
             var bottleSprite = LoadGardenWeekSprite("bottle");
-            var seedSprite = LoadGrowthSprite("seed");
-            var budSprite = LoadGrowthSprite("bud");
+            var soilSprite = LoadFlowerSprite("土壤");
+            var flowerHeadIconBindings = BuildFlowerHeadIconBindings();
+            var flowerArtCatalog = EnsureFlowerArtCatalog();
+            var outlineMaterial = EnsureWeeklyBottleOutlineMaterial();
 
             // ── 替换 Content 背景为 UI.png ──
             var bgImg = content.GetComponent<Image>();
@@ -376,27 +424,8 @@ namespace GeminiLab.Editor.SceneBootstrap
                 if (xT != null) Object.DestroyImmediate(xT.gameObject);
             }
 
-            // ── UIbar 顶栏装饰 ──
-            var existingBar = contentT.Find("UIbar");
-            if (existingBar != null) Object.DestroyImmediate(existingBar.gameObject);
-            if (barSprite != null)
-            {
-                var barGo = new GameObject("UIbar");
-                barGo.transform.SetParent(contentT, false);
-                barGo.transform.SetAsFirstSibling();
-                barGo.layer = uiLayer;
-                var brt = barGo.AddComponent<RectTransform>();
-                brt.anchorMin = new Vector2(0.5f, 1f);
-                brt.anchorMax = new Vector2(0.5f, 1f);
-                brt.pivot = new Vector2(0.5f, 1f);
-                brt.anchoredPosition = new Vector2(0, -5);
-                var rect = barSprite.rect;
-                brt.sizeDelta = new Vector2(rect.width * 0.5f, rect.height * 0.5f);
-                var bimg = barGo.AddComponent<Image>();
-                bimg.sprite = barSprite;
-                bimg.preserveAspect = true;
-                bimg.raycastTarget = false;
-            }
+            // ── 集中信息栏：一个 UIbar 由 Scene 直接作者化和调整 ──
+            EnsureWeeklyDetailBar(contentT, uiLayer, barSprite, flowerHeadIconBindings, so);
 
             // ── 翻周按钮 ──
             var prevBtn = EnsureWeekNavButton(contentT, uiLayer, "PrevWeekBtn", "◀ 上一周", new Vector2(-260, -50));
@@ -416,18 +445,24 @@ namespace GeminiLab.Editor.SceneBootstrap
             grt.anchoredPosition = new Vector2(0, -180);
             grt.sizeDelta = new Vector2(1600, 400);
             // ── 创建瓶子单元格模板 ──
-            SetupBottleCellTemplate(gridGo, uiLayer, bottleSprite, seedSprite, budSprite, so);
+            SetupBottleCellTemplate(gridGo, uiLayer, bottleSprite, soilSprite, flowerHeadIconBindings, outlineMaterial, so);
+            EnsureWeeklyBlankClickArea(contentT, uiLayer, stub);
 
             // ── 数据绑定 ──
+            so.FindProperty("_uiBarSprite").objectReferenceValue = barSprite;
+            so.FindProperty("_flowerArtCatalog").objectReferenceValue = flowerArtCatalog;
             so.FindProperty("_gridRoot").objectReferenceValue = gridGo.transform;
             so.FindProperty("_nextWeekButton").objectReferenceValue = nextBtn;
             so.ApplyModifiedProperties();
         }
 
         private static void SetupBottleCellTemplate(GameObject gridGo, int uiLayer,
-            Sprite? bottleSprite, Sprite? seedSprite, Sprite? budSprite, SerializedObject stubSo)
+            Sprite? bottleSprite, Sprite? soilSprite,
+            IReadOnlyList<KeyValuePair<string, Sprite>> flowerHeadIconBindings,
+            Material? outlineMaterial,
+            SerializedObject stubSo)
         {
-            // 强制重建 CellTemplate（确保结构完整：Bottle + DayLabel/DaySprite + DayLabel/DayText + Label）
+            // 强制重建 CellTemplate（Bottle + 花卉/土壤 + 天数标签）。集中 UIbar 不属于单日格子。
             var template = gridGo.transform.Find("CellTemplate")?.gameObject;
             if (template != null) Object.DestroyImmediate(template);
 
@@ -437,34 +472,28 @@ namespace GeminiLab.Editor.SceneBootstrap
             template.layer = uiLayer;
 
             var trt = template.AddComponent<RectTransform>();
-            trt.sizeDelta = new Vector2(160, 320);
+            trt.sizeDelta = new Vector2(250, 440);
 
             // 瓶子背景
             var bottleGo = new GameObject("Bottle");
             bottleGo.transform.SetParent(template.transform, false);
             bottleGo.layer = uiLayer;
             var brt = bottleGo.AddComponent<RectTransform>();
-            brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one;
-            brt.offsetMin = Vector2.zero; brt.offsetMax = Vector2.zero;
+            brt.anchorMin = new Vector2(0.5f, 0.5f);
+            brt.anchorMax = new Vector2(0.5f, 0.5f);
+            brt.pivot = new Vector2(0.5f, 0.5f);
+            brt.anchoredPosition = new Vector2(0f, 48f);
+            brt.sizeDelta = new Vector2(170f, 320f);
             var bimg = bottleGo.AddComponent<Image>();
             bimg.preserveAspect = true;
             if (bottleSprite != null)
                 bimg.sprite = bottleSprite;
             bimg.color = Color.white;
+            ConfigureWeeklyBottleView(bottleGo, bimg, uiLayer);
 
-            var growthGo = new GameObject("Growth");
-            growthGo.transform.SetParent(template.transform, false);
-            growthGo.layer = uiLayer;
-            var grt = growthGo.AddComponent<RectTransform>();
-            grt.anchorMin = new Vector2(0.5f, 0.5f);
-            grt.anchorMax = new Vector2(0.5f, 0.5f);
-            grt.pivot = new Vector2(0.5f, 0.5f);
-            grt.sizeDelta = new Vector2(96, 96);
-            grt.anchoredPosition = new Vector2(0f, -8f);
-            var gimg = growthGo.AddComponent<Image>();
-            gimg.preserveAspect = true;
-            gimg.color = Color.white;
-            gimg.raycastTarget = false;
+            var templateSoilImage = EnsureWeeklySoilImage(template.transform, uiLayer, soilSprite);
+            var templateFlowerImage = EnsureWeeklyFlowerImage(template.transform, uiLayer);
+            templateSoilImage.transform.SetSiblingIndex(templateFlowerImage.transform.GetSiblingIndex());
 
             // 天数标签
             var dayLabelGo = new GameObject("DayLabel");
@@ -498,23 +527,8 @@ namespace GeminiLab.Editor.SceneBootstrap
             dtmp.alignment = TextAlignmentOptions.Center;
             dtmp.color = Color.white;
             dtmp.raycastTarget = false;
-
-            // 情绪/培育者文字
-            var labelGo = new GameObject("Label");
-            labelGo.transform.SetParent(template.transform, false);
-            labelGo.layer = uiLayer;
-            var lrt = labelGo.AddComponent<RectTransform>();
-            lrt.anchorMin = new Vector2(0f, 0f);
-            lrt.anchorMax = new Vector2(1f, 0f);
-            lrt.pivot = new Vector2(0.5f, 0f);
-            lrt.anchoredPosition = Vector2.zero;
-            lrt.sizeDelta = new Vector2(-12, 80);
-            var ltmp = labelGo.AddComponent<TextMeshProUGUI>();
-            ltmp.fontSize = 14;
-            ltmp.alignment = TextAlignmentOptions.Center;
-            ltmp.color = new Color(0.9f, 0.9f, 0.9f, 1f);
-            ltmp.raycastTarget = false;
-            ltmp.enableWordWrapping = true;
+            dtmp.enabled = false;
+            dayTextGo.SetActive(false);
 
             // ── 加载 Mon-Sun 精灵，填充 _dayLabelSprites ──
             var daySpritesProp = stubSo.FindProperty("_dayLabelSprites");
@@ -524,7 +538,7 @@ namespace GeminiLab.Editor.SceneBootstrap
                 daySpritesProp.arraySize = 7;
                 string[] dayNames = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
                 var daySpriteAssets = AssetDatabase.LoadAllAssetsAtPath(
-                    "Assets/_Project/Art/WorldMap/garden_week/weekUI.psd");
+                    $"{GardenWeekArtDir}/weekUI.psd");
                 for (int i = 0; i < 7; i++)
                 {
                     Sprite? match = null;
@@ -540,41 +554,19 @@ namespace GeminiLab.Editor.SceneBootstrap
                     daySpritesProp.GetArrayElementAtIndex(i).objectReferenceValue = match;
                 }
             }
+            ConfigureDayLabelVariants(daySpriteGo, dimg, uiLayer, loadedDaySprites);
 
             // 绑定模板到 Stub 的 _cellPrefab
             stubSo.FindProperty("_cellPrefab").objectReferenceValue = template;
 
-            // ── 加载 bottle 变体精灵，填充 _bottleSprites ──
-            var bottleSpritesProp = stubSo.FindProperty("_bottleSprites");
-            if (bottleSpritesProp != null)
+            var flowerHeadSpritesProp = stubSo.FindProperty("_flowerHeadIconSprites");
+            if (flowerHeadSpritesProp != null)
             {
-                var bottleAssets = AssetDatabase.LoadAllAssetsAtPath(
-                    "Assets/_Project/Art/WorldMap/garden_week/weekUI.psd");
-                string[] bottleNames = { "bottle_angel_growing", "bottle_angel_bloomed", "bottle_demon_growing", "bottle_demon_bloomed" };
-                bottleSpritesProp.arraySize = bottleNames.Length;
-                for (int b = 0; b < bottleNames.Length; b++)
+                flowerHeadSpritesProp.arraySize = flowerHeadIconBindings.Count;
+                for (int i = 0; i < flowerHeadIconBindings.Count; i++)
                 {
-                    Sprite? match = null;
-                    foreach (var asset in bottleAssets)
-                    {
-                        if (asset is Sprite s && string.Equals(s.name, bottleNames[b], System.StringComparison.OrdinalIgnoreCase))
-                        {
-                            match = s;
-                            break;
-                        }
-                    }
-                    bottleSpritesProp.GetArrayElementAtIndex(b).objectReferenceValue = match;
-                    if (match == null)
-                        Debug.LogWarning($"[WorldMapEmotionGardenUI] 未在 weekUI.psd 中找到精灵: {bottleNames[b]}");
+                    flowerHeadSpritesProp.GetArrayElementAtIndex(i).objectReferenceValue = flowerHeadIconBindings[i].Value;
                 }
-            }
-
-            var growthSpritesProp = stubSo.FindProperty("_growthSprites");
-            if (growthSpritesProp != null)
-            {
-                growthSpritesProp.arraySize = 2;
-                growthSpritesProp.GetArrayElementAtIndex(0).objectReferenceValue = seedSprite;
-                growthSpritesProp.GetArrayElementAtIndex(1).objectReferenceValue = budSprite;
             }
 
             // ── 预置 7 个可见格子到场景中（方便 Scene 视图编辑）──
@@ -582,7 +574,11 @@ namespace GeminiLab.Editor.SceneBootstrap
             for (int i = 0; i < 7; i++)
             {
                 var existingDay = gridGo.transform.Find($"Day{i}");
-                if (existingDay != null) continue;
+                if (existingDay != null)
+                {
+                    EnsureWeeklyGardenCell(existingDay.gameObject, i, stubSo, uiLayer, bottleSprite, soilSprite, outlineMaterial, flowerHeadIconBindings);
+                    continue;
+                }
 
                 var dayCell = Object.Instantiate(template, gridGo.transform);
                 dayCell.name = $"Day{i}";
@@ -594,10 +590,13 @@ namespace GeminiLab.Editor.SceneBootstrap
                 if (dayTmp != null)
                 {
                     dayTmp.text = dayLabels[i];
-                    dayTmp.enabled = true;
+                    dayTmp.enabled = false;
+                    dayTmp.gameObject.SetActive(false);
                 }
                 var dayCellSprite = dayCell.transform.Find("DayLabel/DaySprite");
-                if (dayCellSprite != null) dayCellSprite.gameObject.SetActive(false);
+                if (dayCellSprite != null) dayCellSprite.gameObject.SetActive(true);
+                var dayCellText = dayCell.transform.Find("DayLabel/DayText")?.GetComponent<TextMeshProUGUI>();
+                if (dayCellText != null) dayCellText.enabled = false;
 
                 // 示例文字
                 var label = dayCell.transform.Find("Label")?.GetComponent<TextMeshProUGUI>();
@@ -605,7 +604,560 @@ namespace GeminiLab.Editor.SceneBootstrap
                 {
                     label.text = dayLabels[i];
                 }
+
+                EnsureWeeklyGardenCell(dayCell, i, stubSo, uiLayer, bottleSprite, soilSprite, outlineMaterial, flowerHeadIconBindings);
             }
+        }
+
+        private static void EnsureWeeklyGardenCell(GameObject cell, int dayIndex, SerializedObject stubSo, int uiLayer,
+            Sprite? bottleSprite, Sprite? soilSprite, Material? outlineMaterial,
+            IReadOnlyList<KeyValuePair<string, Sprite>> flowerHeadIconBindings)
+        {
+            var cellRt = GetOrAdd<RectTransform>(cell);
+            cellRt.sizeDelta = new Vector2(250f, 440f);
+
+            var bottle = EnsureChild(cell.transform, "Bottle", uiLayer);
+            var bottleRt = GetOrAdd<RectTransform>(bottle);
+            bottleRt.anchorMin = new Vector2(0.5f, 0.5f);
+            bottleRt.anchorMax = new Vector2(0.5f, 0.5f);
+            bottleRt.pivot = new Vector2(0.5f, 0.5f);
+            bottleRt.anchoredPosition = new Vector2(0f, 48f);
+            bottleRt.sizeDelta = new Vector2(170f, 320f);
+            var bottleImg = GetOrAdd<Image>(bottle);
+            bottleImg.preserveAspect = true;
+            if (bottleSprite != null) bottleImg.sprite = bottleSprite;
+            bottleImg.color = Color.white;
+            ConfigureWeeklyBottleView(bottle, bottleImg, uiLayer);
+            EnsureWeeklyBottleInteraction(bottle, dayIndex, stubSo, uiLayer, bottleSprite, outlineMaterial);
+
+            var cellSoilImage = EnsureWeeklySoilImage(cell.transform, uiLayer, soilSprite);
+            var cellFlowerImage = EnsureWeeklyFlowerImage(cell.transform, uiLayer);
+            cellSoilImage.transform.SetSiblingIndex(cellFlowerImage.transform.GetSiblingIndex());
+
+            var legacyGrowth = cell.transform.Find("Growth");
+            if (legacyGrowth != null)
+            {
+                Object.DestroyImmediate(legacyGrowth.gameObject);
+            }
+
+            var legacyBar = cell.transform.Find("UIbar");
+            if (legacyBar != null)
+            {
+                Object.DestroyImmediate(legacyBar.gameObject);
+            }
+
+            var daySprite = cell.transform.Find("DayLabel/DaySprite");
+            var dayImage = daySprite?.GetComponent<Image>();
+            if (daySprite != null && dayImage != null)
+            {
+                ConfigureDayLabelVariants(daySprite.gameObject, dayImage, uiLayer, LoadDayLabelSprites());
+            }
+
+            var dayText = cell.transform.Find("DayLabel/DayText");
+            if (dayText != null)
+            {
+                var dayTextComponent = dayText.GetComponent<TextMeshProUGUI>();
+                if (dayTextComponent != null) dayTextComponent.enabled = false;
+                dayText.gameObject.SetActive(false);
+            }
+
+            var legacyLabel = cell.transform.Find("Label");
+            if (legacyLabel != null) legacyLabel.gameObject.SetActive(false);
+
+        }
+
+        private static Material? EnsureWeeklyBottleOutlineMaterial()
+        {
+            var shader = Shader.Find(WeeklyOutlineShaderName);
+            if (shader == null)
+            {
+                Debug.LogError($"[WorldMapEmotionGardenUI] 未找到瓶子边缘高亮 Shader: {WeeklyOutlineShaderName}");
+                return null;
+            }
+
+            var material = AssetDatabase.LoadAssetAtPath<Material>(WeeklyOutlineMaterialPath);
+            if (material == null)
+            {
+                material = new Material(shader)
+                {
+                    name = "SelectedBottleOutline"
+                };
+                AssetDatabase.CreateAsset(material, WeeklyOutlineMaterialPath);
+            }
+            else if (material.shader != shader)
+            {
+                material.shader = shader;
+            }
+
+            material.SetColor("_OutlineColor", new Color(1f, 0.82f, 0.22f, 0.95f));
+            material.SetFloat("_OutlineThickness", 1.5f);
+            EditorUtility.SetDirty(material);
+            AssetDatabase.SaveAssets();
+            return material;
+        }
+
+        private static void EnsureWeeklyDetailBar(
+            Transform content,
+            int uiLayer,
+            Sprite? barSprite,
+            IReadOnlyList<KeyValuePair<string, Sprite>> flowerHeadIconBindings,
+            SerializedObject stubSo)
+        {
+            var bar = EnsureChild(content, "UIbar", uiLayer);
+            var barRt = GetOrAdd<RectTransform>(bar);
+            barRt.anchorMin = new Vector2(0.5f, 0f);
+            barRt.anchorMax = new Vector2(0.5f, 0f);
+            barRt.pivot = new Vector2(0.5f, 0.5f);
+            barRt.localScale = new Vector3(1.5f, 1.5f, 1f);
+            barRt.anchoredPosition = new Vector2(0f, 92f);
+            barRt.sizeDelta = new Vector2(240f, 68f);
+
+            var barImg = GetOrAdd<Image>(bar);
+            barImg.sprite = barSprite;
+            barImg.preserveAspect = true;
+            barImg.color = Color.white;
+            barImg.raycastTarget = false;
+
+            var growth = EnsureChild(bar.transform, "Growth", uiLayer);
+            var growthRt = GetOrAdd<RectTransform>(growth);
+            growthRt.anchorMin = new Vector2(0.5f, 0.5f);
+            growthRt.anchorMax = new Vector2(0.5f, 0.5f);
+            growthRt.pivot = new Vector2(0.5f, 0.5f);
+            growthRt.sizeDelta = new Vector2(36f, 36f);
+            growthRt.anchoredPosition = new Vector2(-96f, 18f);
+            var growthImg = GetOrAdd<Image>(growth);
+            growthImg.sprite = flowerHeadIconBindings.Count > 0 ? flowerHeadIconBindings[0].Value : null;
+            growthImg.preserveAspect = true;
+            growthImg.color = Color.white;
+            growthImg.raycastTarget = false;
+            ConfigureFlowerHeadIconVariants(growth, growthImg, uiLayer, flowerHeadIconBindings);
+
+            var dateText = CreateWeeklyInfoText(bar.transform, uiLayer, "DateText", "---",
+                new Vector2(-78f, -4f), new Vector2(56f, 50f), 18f);
+            var emotionText = CreateWeeklyInfoText(bar.transform, uiLayer, "EmotionText", "---",
+                new Vector2(0f, 0f), new Vector2(82f, 54f), 16f);
+            var flowerLanguageText = CreateWeeklyInfoText(bar.transform, uiLayer, "FlowerLanguageText", "---",
+                new Vector2(78f, 0f), new Vector2(82f, 64f), 18f);
+
+            stubSo.FindProperty("_detailBarRoot").objectReferenceValue = bar.transform;
+            stubSo.FindProperty("_detailGrowthView").objectReferenceValue = growth.GetComponent<SceneAuthoredImageVariantView>();
+            stubSo.FindProperty("_detailDateText").objectReferenceValue = dateText;
+            stubSo.FindProperty("_detailEmotionText").objectReferenceValue = emotionText;
+            stubSo.FindProperty("_detailFlowerLanguageText").objectReferenceValue = flowerLanguageText;
+        }
+
+        private static void EnsureWeeklyBlankClickArea(Transform content, int uiLayer, WeeklyGardenPanelStub stub)
+        {
+            var blank = EnsureChild(content, "BlankClickArea", uiLayer);
+            var rt = GetOrAdd<RectTransform>(blank);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+            rt.SetSiblingIndex(0);
+
+            var image = GetOrAdd<Image>(blank);
+            image.color = new Color(1f, 1f, 1f, 0f);
+            image.raycastTarget = true;
+            var button = GetOrAdd<Button>(blank);
+            button.transition = Selectable.Transition.None;
+            button.targetGraphic = image;
+            if (button.onClick.GetPersistentEventCount() == 0)
+            {
+                UnityEditor.Events.UnityEventTools.AddPersistentListener(button.onClick, stub.ClearDaySelection);
+            }
+        }
+
+        private static void EnsureWeeklyBottleInteraction(
+            GameObject bottle,
+            int dayIndex,
+            SerializedObject stubSo,
+            int uiLayer,
+            Sprite? bottleSprite,
+            Material? outlineMaterial)
+        {
+            var highlight = EnsureChild(bottle.transform, "SelectedHighlight", uiLayer);
+            var highlightRt = GetOrAdd<RectTransform>(highlight);
+            highlightRt.anchorMin = Vector2.zero;
+            highlightRt.anchorMax = Vector2.one;
+            highlightRt.offsetMin = Vector2.zero;
+            highlightRt.offsetMax = Vector2.zero;
+            highlightRt.SetAsLastSibling();
+
+            var highlightImage = GetOrAdd<Image>(highlight);
+            highlightImage.sprite = bottleSprite;
+            highlightImage.preserveAspect = true;
+            // Alpha 边缘材质只输出轮廓；Image 本身保持不透明白色，避免整张 Sprite 被 Outline 填充。
+            highlightImage.color = Color.white;
+            highlightImage.material = outlineMaterial;
+            highlightImage.enabled = outlineMaterial != null;
+            highlightImage.raycastTarget = false;
+            var legacyOutline = highlight.GetComponent<Outline>();
+            if (legacyOutline != null)
+            {
+                Object.DestroyImmediate(legacyOutline);
+            }
+            highlight.SetActive(false);
+
+            var interaction = GetOrAdd<WeeklyGardenBottleInteraction>(bottle);
+            var interactionSo = new SerializedObject(interaction);
+            interactionSo.FindProperty("_panel").objectReferenceValue = stubSo.targetObject;
+            interactionSo.FindProperty("_dayIndex").intValue = dayIndex;
+            interactionSo.FindProperty("_scaleTarget").objectReferenceValue = bottle.GetComponent<RectTransform>();
+            interactionSo.FindProperty("_selectedHighlight").objectReferenceValue = highlight;
+            interactionSo.FindProperty("_normalScale").vector3Value = Vector3.one;
+            interactionSo.FindProperty("_hoverScale").vector3Value = new Vector3(1.06f, 1.06f, 1f);
+            interactionSo.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        private static Image EnsureWeeklyFlowerImage(Transform parent, int uiLayer)
+        {
+            var go = EnsureChild(parent, "FlowerImage", uiLayer);
+            var rt = GetOrAdd<RectTransform>(go);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2(0f, 28f);
+            rt.sizeDelta = new Vector2(132f, 156f);
+
+            var image = GetOrAdd<Image>(go);
+            var previewBinding = BuildBloomedFlowerBindings();
+            if (previewBinding.Count > 0)
+            {
+                image.sprite = previewBinding[0].Value;
+            }
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.color = Color.white;
+            image.enabled = false;
+            string previewKey = previewBinding.Count > 0 ? previewBinding[0].Key : string.Empty;
+            ConfigureImageVariantView(go, image, uiLayer, previewBinding, previewKey);
+            return image;
+        }
+
+        private static Image EnsureWeeklySoilImage(Transform parent, int uiLayer, Sprite? soilSprite)
+        {
+            var go = EnsureChild(parent, "SoilImage", uiLayer);
+            var rt = GetOrAdd<RectTransform>(go);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = new Vector2(0f, -10f);
+            rt.sizeDelta = new Vector2(132f, 72f);
+
+            var image = GetOrAdd<Image>(go);
+            image.sprite = soilSprite;
+            image.preserveAspect = true;
+            image.raycastTarget = false;
+            image.color = Color.white;
+            image.enabled = false;
+            go.SetActive(false);
+            return image;
+        }
+
+        private static List<KeyValuePair<string, Sprite>> BuildBloomedFlowerBindings()
+        {
+            var bindings = new List<KeyValuePair<string, Sprite>>();
+            foreach (string emotionType in FlowerArtEmotionTypes)
+            {
+                foreach (string owner in new[] { EmotionFlowerCatalog.OwnerAngel, EmotionFlowerCatalog.OwnerDemon })
+                {
+                    string ownerDisplayName = owner == EmotionFlowerCatalog.OwnerDemon ? "恶魔" : "天使";
+                    Sprite? sprite = AssetDatabase.LoadAssetAtPath<Sprite>(
+                        $"{FlowerArtDir}/{ownerDisplayName}-{emotionType}（完整）.PNG");
+                    if (sprite == null)
+                    {
+                        continue;
+                    }
+
+                    string key = SceneAuthoredImageVariantView.BuildFlowerKey(
+                        emotionType,
+                        owner,
+                        GrowthState.Bloomed);
+                    bindings.Add(new KeyValuePair<string, Sprite>(key, sprite));
+                }
+            }
+
+            return bindings;
+        }
+
+        private static List<KeyValuePair<string, Sprite>> BuildFlowerHeadIconBindings()
+        {
+            var bindings = new List<KeyValuePair<string, Sprite>>();
+            foreach (string emotionType in FlowerArtEmotionTypes)
+            {
+                foreach (string owner in new[] { EmotionFlowerCatalog.OwnerAngel, EmotionFlowerCatalog.OwnerDemon })
+                {
+                    string ownerDisplayName = owner == EmotionFlowerCatalog.OwnerDemon ? "恶魔" : "天使";
+                    Sprite? sprite = AssetDatabase.LoadAssetAtPath<Sprite>(
+                        $"{FlowerHeadArtDir}/{ownerDisplayName}-{emotionType}.PNG");
+                    if (sprite == null)
+                    {
+                        Debug.LogWarning($"[WorldMapEmotionGardenUI] 缺少每周信息条花头资源: {ownerDisplayName}-{emotionType}.PNG");
+                        continue;
+                    }
+
+                    string key = SceneAuthoredImageVariantView.BuildKey(
+                        "flower-head",
+                        EmotionFlowerCatalog.NormalizeOwner(owner),
+                        EmotionFlowerCatalog.NormalizeEmotionType(emotionType));
+                    bindings.Add(new KeyValuePair<string, Sprite>(key, sprite));
+                }
+            }
+
+            return bindings;
+        }
+
+        private static void ConfigureImageVariantView(GameObject owner, Image preview,
+            int uiLayer, IReadOnlyList<KeyValuePair<string, Sprite>> bindings, string previewKey,
+            bool showPreviewInScene = false)
+        {
+            for (int i = owner.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = owner.transform.GetChild(i);
+                if (child.name.StartsWith("Variant_", System.StringComparison.Ordinal))
+                {
+                    Object.DestroyImmediate(child.gameObject);
+                }
+            }
+
+            var variantKeys = new List<string>();
+            var variantTargets = new List<GameObject>();
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                var binding = bindings[i];
+                if (string.Equals(binding.Key, previewKey, System.StringComparison.Ordinal))
+                {
+                    preview.sprite = binding.Value;
+                    continue;
+                }
+
+                var variant = new GameObject($"Variant_{i:00}");
+                variant.transform.SetParent(owner.transform, false);
+                variant.layer = uiLayer;
+                var rt = variant.AddComponent<RectTransform>();
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                var image = variant.AddComponent<Image>();
+                image.sprite = binding.Value;
+                image.preserveAspect = true;
+                image.color = Color.white;
+                image.raycastTarget = false;
+                variant.SetActive(false);
+                variantKeys.Add(binding.Key);
+                variantTargets.Add(variant);
+            }
+
+            var existingViews = owner.GetComponents<SceneAuthoredImageVariantView>();
+            for (int i = 0; i < existingViews.Length; i++)
+            {
+                Object.DestroyImmediate(existingViews[i]);
+            }
+
+            var view = owner.AddComponent<SceneAuthoredImageVariantView>();
+            var viewSo = new SerializedObject(view);
+            viewSo.FindProperty("_previewImage").objectReferenceValue = preview;
+            var previewTarget = viewSo.FindProperty("_previewTarget");
+            if (previewTarget != null) previewTarget.objectReferenceValue = null;
+            viewSo.FindProperty("_previewKey").stringValue = previewKey;
+            var variantsProp = viewSo.FindProperty("_variants");
+            variantsProp.arraySize = variantTargets.Count;
+            for (int i = 0; i < variantTargets.Count; i++)
+            {
+                var element = variantsProp.GetArrayElementAtIndex(i);
+                element.FindPropertyRelative("Key").stringValue = variantKeys[i];
+                element.FindPropertyRelative("Target").objectReferenceValue = variantTargets[i];
+            }
+            viewSo.ApplyModifiedPropertiesWithoutUndo();
+            preview.enabled = showPreviewInScene;
+            owner.SetActive(showPreviewInScene);
+        }
+
+        private static SceneAuthoredImageVariantView EnsureDetailFlowerVariantView(
+            Transform detailView,
+            int uiLayer,
+            Sprite? soilSprite,
+            IReadOnlyList<KeyValuePair<string, Sprite>> bindings)
+        {
+            var owner = EnsureChild(detailView, "FlowerImage", uiLayer);
+            ApplyRect(owner, new Vector2(-392f, 20f), new Vector2(330f, 330f));
+
+            var oldImage = owner.GetComponent<Image>();
+            if (oldImage != null)
+            {
+                Object.DestroyImmediate(oldImage);
+            }
+
+            for (int i = owner.transform.childCount - 1; i >= 0; i--)
+            {
+                Transform child = owner.transform.GetChild(i);
+                if (child.name.StartsWith("Variant_", System.StringComparison.Ordinal))
+                {
+                    Object.DestroyImmediate(child.gameObject);
+                }
+            }
+
+            string previewKey = bindings.Count > 0 ? bindings[0].Key : string.Empty;
+            GameObject? previewTarget = null;
+            var variantKeys = new List<string>();
+            var variantTargets = new List<GameObject>();
+
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                var binding = bindings[i];
+                var pair = new GameObject($"Variant_{i:00}");
+                pair.transform.SetParent(owner.transform, false);
+                pair.layer = uiLayer;
+                var pairRt = pair.AddComponent<RectTransform>();
+                pairRt.anchorMin = Vector2.zero;
+                pairRt.anchorMax = Vector2.one;
+                pairRt.offsetMin = Vector2.zero;
+                pairRt.offsetMax = Vector2.zero;
+                pairRt.pivot = new Vector2(0.5f, 0.5f);
+
+                var flower = EnsureImageChild(pair.transform, "FlowerArt", uiLayer, binding.Value,
+                    Vector2.zero, new Vector2(330f, 330f));
+                ApplyRect(flower.gameObject, Vector2.zero, new Vector2(330f, 330f));
+                flower.color = Color.white;
+                flower.raycastTarget = false;
+
+                float soilY = ResolveDetailSoilY(binding.Key);
+                var soil = EnsureImageChild(pair.transform, "SoilImage", uiLayer, soilSprite,
+                    new Vector2(0f, soilY), new Vector2(330f, 100f));
+                ApplyRect(soil.gameObject, new Vector2(0f, soilY), new Vector2(330f, 100f));
+                soil.color = Color.white;
+                soil.raycastTarget = false;
+
+                pair.SetActive(false);
+                if (string.Equals(binding.Key, previewKey, System.StringComparison.Ordinal))
+                {
+                    previewTarget = pair;
+                }
+                else
+                {
+                    variantKeys.Add(binding.Key);
+                    variantTargets.Add(pair);
+                }
+            }
+
+            var existingViews = owner.GetComponents<SceneAuthoredImageVariantView>();
+            for (int i = 0; i < existingViews.Length; i++)
+            {
+                Object.DestroyImmediate(existingViews[i]);
+            }
+
+            var view = owner.AddComponent<SceneAuthoredImageVariantView>();
+            var viewSo = new SerializedObject(view);
+            viewSo.FindProperty("_previewImage").objectReferenceValue = null;
+            viewSo.FindProperty("_previewTarget").objectReferenceValue = previewTarget;
+            viewSo.FindProperty("_previewKey").stringValue = previewKey;
+            var variantsProp = viewSo.FindProperty("_variants");
+            variantsProp.arraySize = variantTargets.Count;
+            for (int i = 0; i < variantTargets.Count; i++)
+            {
+                var element = variantsProp.GetArrayElementAtIndex(i);
+                element.FindPropertyRelative("Key").stringValue = variantKeys[i];
+                element.FindPropertyRelative("Target").objectReferenceValue = variantTargets[i];
+            }
+            viewSo.ApplyModifiedPropertiesWithoutUndo();
+            owner.SetActive(false);
+            return view;
+        }
+
+        private static float ResolveDetailSoilY(string flowerKey)
+        {
+            string[] parts = flowerKey.Split('|');
+            if (parts.Length >= 2 && DetailSoilYByFlower.TryGetValue($"{parts[1]}|{parts[0]}", out float y))
+            {
+                return y;
+            }
+
+            return -164f;
+        }
+
+        private static void ConfigureWeeklyBottleView(GameObject bottle, Image preview, int uiLayer)
+        {
+            // PSD 中的 bottle/复制层只是七天排版副本，不是状态变体。
+            // 所有日期始终显示同一个作者化 bottle.png。
+            ConfigureImageVariantView(
+                bottle,
+                preview,
+                uiLayer,
+                new List<KeyValuePair<string, Sprite>>(),
+                SceneAuthoredImageVariantView.BuildKey("bottle", string.Empty, "default"),
+                true);
+        }
+
+        private static void ConfigureFlowerHeadIconVariants(GameObject growth, Image preview, int uiLayer,
+            IReadOnlyList<KeyValuePair<string, Sprite>> bindings)
+        {
+            string previewKey = bindings.Count > 0 ? bindings[0].Key : string.Empty;
+            ConfigureImageVariantView(growth, preview, uiLayer, bindings, previewKey);
+        }
+
+        private static void ConfigureDayLabelVariants(GameObject daySprite, Image preview, int uiLayer,
+            IReadOnlyList<Sprite?> daySprites)
+        {
+            var bindings = new List<KeyValuePair<string, Sprite>>();
+            for (int i = 0; i < daySprites.Count; i++)
+            {
+                Sprite? sprite = daySprites[i];
+                if (sprite == null)
+                {
+                    continue;
+                }
+
+                bindings.Add(new KeyValuePair<string, Sprite>(
+                    SceneAuthoredImageVariantView.BuildKey("day", string.Empty, i.ToString()), sprite));
+            }
+
+            string previewKey = bindings.Count > 0 ? bindings[0].Key : string.Empty;
+            ConfigureImageVariantView(daySprite, preview, uiLayer, bindings, previewKey, true);
+        }
+
+        private static List<Sprite?> LoadDayLabelSprites()
+        {
+            var result = new List<Sprite?>();
+            string[] names = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+            var assets = AssetDatabase.LoadAllAssetsAtPath($"{GardenWeekArtDir}/weekUI.psd");
+            foreach (string name in names)
+            {
+                Sprite? match = null;
+                foreach (var asset in assets)
+                {
+                    if (asset is Sprite sprite && string.Equals(sprite.name, name, System.StringComparison.OrdinalIgnoreCase))
+                    {
+                        match = sprite;
+                        break;
+                    }
+                }
+                result.Add(match);
+            }
+
+            return result;
+        }
+
+        private static TextMeshProUGUI CreateWeeklyInfoText(Transform parent, int uiLayer, string name,
+            string text, Vector2 position, Vector2 size, float fontSize)
+        {
+            var go = EnsureChild(parent, name, uiLayer);
+            var rt = GetOrAdd<RectTransform>(go);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = position;
+            rt.sizeDelta = size;
+            var tmp = GetOrAdd<TextMeshProUGUI>(go);
+            tmp.text = text;
+            tmp.fontSize = fontSize;
+            tmp.alignment = TextAlignmentOptions.Center;
+            tmp.color = new Color(0.35f, 0.2f, 0.08f, 1f);
+            tmp.raycastTarget = false;
+            tmp.enableWordWrapping = true;
+            return tmp;
         }
 
         /// <summary>顶部锚定的翻周导航按钮（EnsureButtonWithLabel 是中心锚定，不适用标题栏）。</summary>
@@ -678,6 +1230,8 @@ namespace GeminiLab.Editor.SceneBootstrap
             var detailCloseSprite = LoadFlowerInfoSprite("close");
             var detailLeftSprite = LoadFlowerInfoSprite("left");
             var detailRightSprite = LoadFlowerInfoSprite("right");
+            var soilSprite = LoadFlowerSprite("土壤");
+            var flowerArtCatalog = EnsureFlowerArtCatalog();
 
             var codexView = EnsureFullRect(contentT, "CodexView", uiLayer);
             var detailView = EnsureFullRect(contentT, "DetailView", uiLayer);
@@ -729,7 +1283,7 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             for (int i = 0; i < cardPositions.Length; i++)
             {
-                var slot = EnsureCodexCardSlot(cardsRoot.transform, uiLayer, i, cardPositions[i], cardSprite, unknownSprite);
+                var slot = EnsureCodexCardSlot(cardsRoot.transform, uiLayer, i, cardPositions[i], cardSprite, unknownSprite, soilSprite);
                 ApplyRect(slot, cardPositions[i], new Vector2(154, 216));
                 if (cardSlotsProp != null)
                 {
@@ -747,10 +1301,15 @@ namespace GeminiLab.Editor.SceneBootstrap
             var detailNext = EnsureImageButton(detailView.transform, "NextButton", uiLayer, detailRightSprite,
                 new Vector2(768, -8), new Vector2(68, 96));
 
-            var detailFlower = EnsureImageChild(detailView.transform, "FlowerImage", uiLayer, null,
-                new Vector2(-392, 20), new Vector2(330, 330));
-            detailFlower.color = new Color(1f, 1f, 1f, 0.35f);
-            detailFlower.raycastTarget = false;
+            var oldDetailSoil = detailView.transform.Find("SoilImage");
+            if (oldDetailSoil != null)
+            {
+                Object.DestroyImmediate(oldDetailSoil.gameObject);
+            }
+
+            var detailFlowerBindings = BuildBloomedFlowerBindings();
+            var detailFlowerView = EnsureDetailFlowerVariantView(
+                detailView.transform, uiLayer, soilSprite, detailFlowerBindings);
             var detailNumber = EnsureTextChild(detailView.transform, uiLayer, "NumberText", "No. 027", 28,
                 new Vector2(-392, -282), new Vector2(260, 46), new Color(0.35f, 0.2f, 0.12f, 1f), TextAlignmentOptions.Center);
 
@@ -775,11 +1334,13 @@ namespace GeminiLab.Editor.SceneBootstrap
 
             so.FindProperty("_codexView").objectReferenceValue = codexView;
             so.FindProperty("_detailView").objectReferenceValue = detailView;
+            so.FindProperty("_flowerArtCatalog").objectReferenceValue = flowerArtCatalog;
             so.FindProperty("_progressText").objectReferenceValue = progressText;
             so.FindProperty("_pageText").objectReferenceValue = pageText;
             so.FindProperty("_previousPageButton").objectReferenceValue = codexPrevious;
             so.FindProperty("_nextPageButton").objectReferenceValue = codexNext;
-            so.FindProperty("_detailFlowerImage").objectReferenceValue = detailFlower;
+            so.FindProperty("_detailFlowerView").objectReferenceValue = detailFlowerView;
+            so.FindProperty("_detailSoilImage").objectReferenceValue = null;
             so.FindProperty("_detailNumberText").objectReferenceValue = detailNumber;
             so.FindProperty("_detailNameText").objectReferenceValue = detailName;
             so.FindProperty("_detailCreatedText").objectReferenceValue = detailCreated;
@@ -807,6 +1368,55 @@ namespace GeminiLab.Editor.SceneBootstrap
         private static Sprite? LoadFlowerInfoSprite(string fileName)
         {
             return AssetDatabase.LoadAssetAtPath<Sprite>($"{FlowerInfoArtDir}/{fileName}.png");
+        }
+
+        private static EmotionFlowerArtCatalog EnsureFlowerArtCatalog()
+        {
+            var catalog = AssetDatabase.LoadAssetAtPath<EmotionFlowerArtCatalog>(FlowerArtCatalogPath);
+            if (catalog == null)
+            {
+                catalog = ScriptableObject.CreateInstance<EmotionFlowerArtCatalog>();
+                AssetDatabase.CreateAsset(catalog, FlowerArtCatalogPath);
+            }
+
+            var catalogSo = new SerializedObject(catalog);
+            var entries = catalogSo.FindProperty("_entries");
+            int entryCount = FlowerArtEmotionTypes.Length * 2;
+            entries.arraySize = entryCount;
+
+            int entryIndex = 0;
+            foreach (string emotionType in FlowerArtEmotionTypes)
+            {
+                foreach (string owner in new[] { EmotionFlowerCatalog.OwnerAngel, EmotionFlowerCatalog.OwnerDemon })
+                {
+                    string ownerDisplayName = owner == EmotionFlowerCatalog.OwnerDemon ? "恶魔" : "天使";
+                    var entry = entries.GetArrayElementAtIndex(entryIndex++);
+                    entry.FindPropertyRelative("EmotionType").stringValue = emotionType;
+                    entry.FindPropertyRelative("Owner").stringValue = owner;
+
+                    var growingSprite = AssetDatabase.LoadAssetAtPath<Sprite>(
+                        $"{FlowerArtDir}/{ownerDisplayName}-{emotionType}.PNG");
+                    var bloomedSprite = AssetDatabase.LoadAssetAtPath<Sprite>(
+                        $"{FlowerArtDir}/{ownerDisplayName}-{emotionType}（完整）.PNG");
+
+                    entry.FindPropertyRelative("GrowingSprite").objectReferenceValue = growingSprite;
+                    entry.FindPropertyRelative("BloomedSprite").objectReferenceValue = bloomedSprite;
+
+                    if (growingSprite == null)
+                    {
+                        Debug.LogWarning($"[WorldMapEmotionGardenUI] 未找到花卉资源: {ownerDisplayName}-{emotionType}.PNG");
+                    }
+                    else if (bloomedSprite == null)
+                    {
+                        Debug.LogWarning($"[WorldMapEmotionGardenUI] 未找到完整花卉资源: {ownerDisplayName}-{emotionType}（完整）.PNG，已保持为空");
+                    }
+                }
+            }
+
+            catalogSo.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(catalog);
+            AssetDatabase.SaveAssets();
+            return catalog;
         }
 
         private static GameObject EnsureFullRect(Transform parent, string name, int uiLayer)
@@ -926,7 +1536,7 @@ namespace GeminiLab.Editor.SceneBootstrap
         }
 
         private static GameObject EnsureCodexCardSlot(Transform parent, int uiLayer, int index, Vector2 anchoredPosition,
-            Sprite? cardSprite, Sprite? unknownSprite)
+            Sprite? cardSprite, Sprite? unknownSprite, Sprite? soilSprite)
         {
             string name = $"CodexCardSlot_{index:00}";
             var slot = EnsureChild(parent, name, uiLayer);
@@ -948,9 +1558,24 @@ namespace GeminiLab.Editor.SceneBootstrap
             EnsureStretch(lockedImage.gameObject);
             lockedImage.raycastTarget = false;
 
-            var flowerImage = EnsureImageChild(slot.transform, "FlowerImage", uiLayer, null, new Vector2(0, 18), new Vector2(98, 98));
+            var soilImage = EnsureImageChild(slot.transform, "SoilImage", uiLayer, soilSprite,
+                new Vector2(0, -10), new Vector2(98, 48));
+            ApplyRect(soilImage.gameObject, new Vector2(0, -10), new Vector2(98, 48));
+            soilImage.raycastTarget = false;
+            soilImage.enabled = false;
+            soilImage.gameObject.SetActive(false);
+
+            var flowerBindings = BuildBloomedFlowerBindings();
+            var flowerPreview = flowerBindings.Count > 0 ? flowerBindings[0].Value : null;
+            var flowerImage = EnsureImageChild(slot.transform, "FlowerImage", uiLayer, flowerPreview, new Vector2(0, 18), new Vector2(98, 98));
             ApplyRect(flowerImage.gameObject, new Vector2(0, 18), new Vector2(98, 98));
+            flowerImage.color = Color.white;
             flowerImage.raycastTarget = false;
+            string flowerPreviewKey = ResolveCodexScenePreviewKey(index, flowerBindings);
+            bool showSceneUnlockedPreview = !string.IsNullOrEmpty(flowerPreviewKey);
+            ConfigureImageVariantView(flowerImage.gameObject, flowerImage, uiLayer, flowerBindings,
+                flowerPreviewKey, showSceneUnlockedPreview);
+            soilImage.transform.SetSiblingIndex(flowerImage.transform.GetSiblingIndex());
 
             var unlockedContent = EnsureFullRect(slot.transform, "UnlockedContent", uiLayer);
             var numberText = EnsureTextChild(unlockedContent.transform, uiLayer, "NumberText", "No. 027", 16,
@@ -962,7 +1587,59 @@ namespace GeminiLab.Editor.SceneBootstrap
             EnsureTextChild(unlockedContent.transform, uiLayer, "MetaText", "培育者 · 0", 14,
                 new Vector2(0, -88), new Vector2(132, 26), new Color(0.45f, 0.28f, 0.17f, 1f), TextAlignmentOptions.Center);
 
+            // Scene 默认保存前三朵已收集花，便于直接校对图鉴列表与详情页的真实花枝。
+            // 其余卡片保持锁定态；运行时只在这些预置节点之间切换，不生成视觉对象。
+            bool showSceneUnlockedCard = showSceneUnlockedPreview;
+            lockedImage.gameObject.SetActive(!showSceneUnlockedCard);
+            flowerImage.enabled = showSceneUnlockedCard;
+            flowerImage.gameObject.SetActive(showSceneUnlockedCard);
+            soilImage.enabled = showSceneUnlockedCard;
+            soilImage.gameObject.SetActive(showSceneUnlockedCard);
+            unlockedContent.SetActive(showSceneUnlockedCard);
+            if (showSceneUnlockedCard)
+            {
+                numberText.text = $"No. {FirstCodexFlowerNumber + index:000}";
+                string sceneEmotion = ResolveCodexSceneEmotion(index);
+                nameText.text = EmotionFlowerCatalog.ResolveFlowerName(sceneEmotion, EmotionFlowerCatalog.OwnerAngel);
+                var sceneOwner = EmotionFlowerCatalog.ResolveOwnerDisplayName(EmotionFlowerCatalog.OwnerAngel);
+                unlockedContent.transform.Find("MetaText")?.GetComponent<TextMeshProUGUI>()?.SetText(
+                    $"{sceneOwner} · 1");
+            }
+
             return slot;
+        }
+
+        private static string ResolveCodexSceneEmotion(int index)
+        {
+            return index switch
+            {
+                0 => "喜悦",
+                1 => "悲伤",
+                2 => "平静",
+                _ => string.Empty
+            };
+        }
+
+        private static string ResolveCodexScenePreviewKey(int index,
+            IReadOnlyList<KeyValuePair<string, Sprite>> bindings)
+        {
+            string emotion = ResolveCodexSceneEmotion(index);
+            if (string.IsNullOrEmpty(emotion))
+            {
+                return string.Empty;
+            }
+
+            string key = SceneAuthoredImageVariantView.BuildFlowerKey(
+                emotion, EmotionFlowerCatalog.OwnerAngel, GrowthState.Bloomed);
+            for (int i = 0; i < bindings.Count; i++)
+            {
+                if (string.Equals(bindings[i].Key, key, System.StringComparison.Ordinal))
+                {
+                    return key;
+                }
+            }
+
+            return string.Empty;
         }
 
         private static void EnsureStretch(GameObject go)
@@ -980,7 +1657,8 @@ namespace GeminiLab.Editor.SceneBootstrap
             slotProp.FindPropertyRelative("_button").objectReferenceValue = slot.GetComponent<Button>();
             slotProp.FindPropertyRelative("_cardImage").objectReferenceValue = slot.GetComponent<Image>();
             slotProp.FindPropertyRelative("_lockedImage").objectReferenceValue = slot.transform.Find("LockedImage")?.GetComponent<Image>();
-            slotProp.FindPropertyRelative("_flowerImage").objectReferenceValue = slot.transform.Find("FlowerImage")?.GetComponent<Image>();
+            slotProp.FindPropertyRelative("_flowerView").objectReferenceValue = slot.transform.Find("FlowerImage")?.GetComponent<SceneAuthoredImageVariantView>();
+            slotProp.FindPropertyRelative("_soilImage").objectReferenceValue = slot.transform.Find("SoilImage")?.GetComponent<Image>();
             slotProp.FindPropertyRelative("_unlockedContent").objectReferenceValue = slot.transform.Find("UnlockedContent")?.gameObject;
             slotProp.FindPropertyRelative("_numberText").objectReferenceValue = slot.transform.Find("UnlockedContent/NumberText")?.GetComponent<TextMeshProUGUI>();
             slotProp.FindPropertyRelative("_nameText").objectReferenceValue = slot.transform.Find("UnlockedContent/NameText")?.GetComponent<TextMeshProUGUI>();

@@ -1,0 +1,142 @@
+#nullable enable
+using System;
+using GeminiLab.Modules.EmotionGarden;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace GeminiLab.Modules.HubUI
+{
+    /// <summary>
+    /// Scene 中预先保存 Image 资源的变体视图。
+    /// 运行时只切换已有对象，不写入 Sprite，也不创建视觉节点。
+    /// </summary>
+    public sealed class SceneAuthoredImageVariantView : MonoBehaviour
+    {
+        [Serializable]
+        private struct Variant
+        {
+            public string Key;
+            public GameObject? Target;
+        }
+
+        [SerializeField] private Image? _previewImage;
+        [SerializeField] private GameObject? _previewTarget;
+        [SerializeField] private string _previewKey = string.Empty;
+        [SerializeField] private Variant[] _variants = Array.Empty<Variant>();
+
+        public static string BuildFlowerKey(string emotionType, string owner, GrowthState state)
+        {
+            return BuildKey(
+                EmotionFlowerCatalog.NormalizeEmotionType(emotionType),
+                EmotionFlowerCatalog.NormalizeOwner(owner),
+                ((int)state).ToString());
+        }
+
+        public static string BuildKey(string category, string owner, string state)
+        {
+            return $"{category}|{owner}|{state}";
+        }
+
+        public void Show(string key)
+        {
+            if (string.IsNullOrWhiteSpace(key))
+            {
+                Hide();
+                return;
+            }
+
+            bool previewShown = string.Equals(key, _previewKey, StringComparison.Ordinal);
+            bool variantShown = false;
+            SetAllVariantsActive(false);
+
+            if (_previewTarget != null)
+            {
+                _previewTarget.SetActive(previewShown);
+            }
+
+            if (_previewImage != null)
+            {
+                _previewImage.enabled = previewShown;
+            }
+
+            for (int i = 0; i < _variants.Length; i++)
+            {
+                Variant variant = _variants[i];
+                bool shouldShow = !previewShown && !variantShown &&
+                    string.Equals(variant.Key, key, StringComparison.Ordinal);
+                if (variant.Target != null)
+                {
+                    variant.Target.SetActive(shouldShow);
+                }
+
+                if (shouldShow)
+                {
+                    variantShown = true;
+                }
+            }
+
+            if (!previewShown && !variantShown)
+            {
+                Hide();
+                return;
+            }
+
+            gameObject.SetActive(true);
+        }
+
+        public void ShowPreview()
+        {
+            if (!string.IsNullOrWhiteSpace(_previewKey))
+            {
+                Show(_previewKey);
+                return;
+            }
+
+            SetAllVariantsActive(false);
+            if (_previewTarget != null)
+            {
+                _previewTarget.SetActive(true);
+            }
+
+            if (_previewImage != null)
+            {
+                _previewImage.enabled = true;
+            }
+
+            gameObject.SetActive(true);
+        }
+
+        public void Hide()
+        {
+            if (_previewImage != null)
+            {
+                _previewImage.enabled = false;
+            }
+
+            if (_previewTarget != null)
+            {
+                _previewTarget.SetActive(false);
+            }
+
+            SetAllVariantsActive(false);
+            gameObject.SetActive(false);
+        }
+
+        private void SetAllVariantsActive(bool active)
+        {
+            if (_previewTarget != null)
+            {
+                _previewTarget.SetActive(active);
+            }
+
+            for (int i = 0; i < _variants.Length; i++)
+            {
+                GameObject? target = _variants[i].Target;
+                if (target != null)
+                {
+                    target.SetActive(active);
+                }
+            }
+        }
+    }
+}

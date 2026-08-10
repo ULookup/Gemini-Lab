@@ -121,6 +121,7 @@ namespace GeminiLab.Modules.Pet
         private bool _hasStoredPetSpriteVisible;
         private bool _storedPetSpriteVisible;
         private bool _hasAppliedWorldMapPetCollisionPolicy;
+        private bool _externalMovementLocked;
 
         // 可步行表面检测
         private WalkableSurface[] _walkableSurfaces = System.Array.Empty<WalkableSurface>();
@@ -132,6 +133,21 @@ namespace GeminiLab.Modules.Pet
         public PetRuntimeData? RuntimeData => _context?.RuntimeData;
 
         public bool IsPlayerControlEnabled => IsPlayerControlled();
+
+        /// <summary>
+        /// 供 WorldMap 当前动画联调入口使用的逐宠物移动锁。
+        /// 不改变 Apartment 的移动配置，也不影响另一只桌宠。
+        /// </summary>
+        public bool IsMovementLocked => _externalMovementLocked;
+
+        public void SetExternalMovementLock(bool locked)
+        {
+            _externalMovementLocked = locked;
+            if (locked)
+            {
+                StopExternalMovement();
+            }
+        }
 
         private void Awake()
         {
@@ -209,6 +225,13 @@ namespace GeminiLab.Modules.Pet
                 return;
             }
 
+            if (_externalMovementLocked)
+            {
+                TickExternalMovementLock(_context);
+                PublishSnapshotIfChanged(_context);
+                return;
+            }
+
             if (_hasInteractionPoseRuntimeOverride)
             {
                 _context.RuntimeData.Position = ClampToMovementBounds(_context.RuntimeData.Position);
@@ -247,6 +270,12 @@ namespace GeminiLab.Modules.Pet
 
         private void FixedUpdate()
         {
+            if (_externalMovementLocked)
+            {
+                StopExternalMovement();
+                return;
+            }
+
             bool isInactivePlayerPet = IsInactivePlayerPet();
 
             // 所有桌宠统一适配 WalkableSurface 的 Y 高度
@@ -780,6 +809,38 @@ namespace GeminiLab.Modules.Pet
             {
                 _rigidbody2D.velocity = velocity;
             }
+        }
+
+        private void TickExternalMovementLock(PetContext context)
+        {
+            StopExternalMovement();
+            _hasPlayerAnimationDirection = false;
+            SetPlayerControlledState(context, IdleState.StateName);
+        }
+
+        private void StopExternalMovement()
+        {
+            SetWanderVelocity(Vector2.zero);
+            if (_rigidbody2D != null)
+            {
+                _rigidbody2D.angularVelocity = 0f;
+            }
+
+            RandomWander? wander = GetComponent<RandomWander>();
+            if (wander != null && wander.IsMoving)
+            {
+                wander.NotifyArrived();
+            }
+
+            if (_context?.RuntimeData is not PetRuntimeData runtimeData)
+            {
+                return;
+            }
+
+            Vector2 currentPosition = GetCurrentWorldPosition();
+            runtimeData.Position = currentPosition;
+            runtimeData.TargetPosition = currentPosition;
+            runtimeData.TargetReached = true;
         }
 
         private Vector2 ResolveWanderArrivedPosition(RandomWander wander)
