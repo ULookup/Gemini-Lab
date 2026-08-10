@@ -11,7 +11,7 @@ namespace GeminiLab.Editor.SceneBootstrap
     public static class AutoSetup
     {
         private const string SetupDoneKey = "GeminiLab.AutoSetupDone";
-        private const int ExpectedVersion = 23;
+        private const int ExpectedVersion = 46;
 
         static AutoSetup()
         {
@@ -19,6 +19,12 @@ namespace GeminiLab.Editor.SceneBootstrap
             {
                 int currentVersion = EditorPrefs.GetInt(SetupDoneKey, 0);
                 if (currentVersion >= ExpectedVersion) return;
+
+                if (EditorApplication.isPlayingOrWillChangePlaymode || Application.isPlaying)
+                {
+                    Debug.LogWarning("[AutoSetup] 当前处于 PlayMode，暂不执行场景作者化；停止运行后请重新触发 AutoSetup。 ");
+                    return;
+                }
 
                 try
                 {
@@ -145,6 +151,112 @@ namespace GeminiLab.Editor.SceneBootstrap
 
                     if (currentVersion < 23)
                     {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 24)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 25)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 26)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 27)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 28)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 29)
+                    {
+                        WorldMapDayNightAuthoring.Patch();
+                    }
+
+                    if (currentVersion < 30)
+                    {
+                        WorldMapPetAnimationTriggerAuthoring.Patch();
+                    }
+
+                    if (currentVersion < 31)
+                    {
+                        WorldMapInteractiveObjectAuthoring.Patch();
+                    }
+
+                    if (currentVersion < 32)
+                    {
+                        WorldMapPetAnimationTriggerAuthoring.Patch();
+                    }
+
+                    if (currentVersion < 36)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 37)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 38)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 39)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 40)
+                    {
+                        // 修复每周培育瓶子/星期标签与图鉴锁定态的 Scene 作者化。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 41)
+                    {
+                        // 瓶子使用固定作者化资源，不再绑定不存在的状态变体。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 42)
+                    {
+                        // 修复每周空状态、UIbar真实数据、图鉴变体和详情页逐花土壤布局。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 43)
+                    {
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 44)
+                    {
+                        // 每周培育面板改为单一集中 UIbar，并作者化瓶子选择交互。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 45)
+                    {
+                        // 修正瓶子选中外圈节点的作者化默认状态。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 46)
+                    {
+                        // 将瓶子选中效果改为只输出 Sprite Alpha 边缘，避免整瓶染色。
                         WorldMapEmotionGardenUIPatch.Patch();
                     }
 

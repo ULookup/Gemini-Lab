@@ -74,6 +74,14 @@
   4. 只有校验通过，才进入写操作
 - 如果任务边界变化，必须先重写任务卡，再继续执行。
 
+### 视觉任务硬闸门
+- 每张任务卡都必须声明 `scene_play_parity_required`、`scene_visual_contracts` 和 `runtime_visual_files`；非视觉任务分别使用 `false`、`[]`、`[]`，不能省略字段。
+- 闸门会根据 `direct_files` 自动识别场景、艺术资源、运行时模块、UI、SceneBootstrap 和编辑器工具等视觉相关任务。识别为视觉任务时，`scene_play_parity_required` 必须为 `true`。
+- `scene_play_parity_required=true` 时，必须为关键 Scene 节点提供 `scene_visual_contracts`，并由 `tools/check-scene-visual-contract.ps1` 验证节点真实存在及关键 Sprite 已保存为非空序列化引用。
+- 视觉任务涉及运行时代码时，必须列出 `runtime_visual_files`，并由 `tools/check-runtime-visual-contract.ps1` 扫描。运行时不得直接写入最终 `Sprite` / `runtimeAnimatorController`，不得通过 `new GameObject`、`AddComponent` 或运行时 `Instantiate` 生成最终 UI 视觉。
+- 运行时可以读取数据、切换 Scene 中已经作者化的对象或状态、填充文本和控制显示/隐藏；最终资源引用、布局、尺寸、层级和视觉节点必须已经存在于 Scene / Prefab / Inspector 中。
+- 两个子检查器必须和主任务闸门一起通过；只在 Play 视图正确、但 Scene 视图没有对应资源引用的实现，视为未完成。
+
 ## Project-Specific Rules
 
 ### Source Of Truth

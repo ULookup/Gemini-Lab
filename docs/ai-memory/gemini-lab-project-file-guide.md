@@ -1,6 +1,6 @@
-﻿# Gemini-Lab Project File Guide
+# Gemini-Lab Project File Guide
 
-Updated: 2026-07-30
+Updated: 2026-08-07
 
 ## 入口文件
 - `AGENTS.md`
@@ -19,6 +19,10 @@ Updated: 2026-07-30
   - 当前人工版“做梦整理”执行清单。
 - `tools/check-task-gate.ps1`
   - 当前最小闭环执行闸门脚本。
+- `tools/check-scene-visual-contract.ps1`
+  - 按当前任务卡中的 `scene_visual_contracts` 检查 Scene 节点及关键 Sprite 序列化引用。
+- `tools/check-runtime-visual-contract.ps1`
+  - 按当前任务卡中的 `runtime_visual_files` 扫描运行时代码的禁止视觉作者化模式。
 - `tools/run-unity-editor-method.ps1`
   - 项目本地 Unity batchmode runner，可定位 Unity Editor 并执行 editor static method；当前用于在没有完整 MCP 的情况下落地场景 authoring，并带 `-nographics`、启动日志超时、总执行超时和子进程 watchdog，避免 Unity 启动卡住时无期限阻塞。
 - `Assets/_Project/Scripts/Core/UI/UIRouter.cs`
@@ -31,6 +35,12 @@ Updated: 2026-07-30
   - 阶段里程碑、Sprint 拆解、DoD 与风险表。
 
 ## 先看哪里
+
+### 视觉任务的强制字段
+- 每次任务卡都必须填写 `scene_play_parity_required`、`scene_visual_contracts` 和 `runtime_visual_files`；不涉及视觉时使用 `false`、`[]`、`[]`。
+- `direct_files` 命中 `.unity`、`Assets/_Project/Art/`、运行时 `Scripts/Modules` / `Scripts/UI`、WorldMap SceneBootstrap 或编辑器视觉工具时，会被任务闸门视为视觉任务，必须把 Scene 作为事实源。
+- 视觉任务的最终 Sprite、AnimatorController、RectTransform、排序层级和 UI 节点必须在 Scene / Prefab / Inspector 中可见并可调。运行时只允许读取数据、切换已有对象状态和填充动态文本，不允许把最终视觉藏在运行时资源赋值或动态 UI 生成里。
+- 修改或评审视觉任务时必须同时运行 `tools/check-task-gate.ps1`、`tools/check-scene-visual-contract.ps1` 和 `tools/check-runtime-visual-contract.ps1`；子检查失败即视为任务未完成。
 
 ### 想知道项目现在处于什么状态
 - `AGENTS.md`
@@ -84,6 +94,7 @@ Updated: 2026-07-30
 - `Assets/_Project/Scripts/Modules/EmotionGarden/EmotionGardenService.cs`
 - `Assets/_Project/Scripts/Modules/HubUI/Panels/EmotionInputPanelStub.cs`
 - `Assets/_Project/Scripts/Modules/HubUI/Panels/FlowerCollectionPanelStub.cs`
+- `Assets/_Project/Scripts/Modules/HubUI/Panels/SceneAuthoredImageVariantView.cs`
 - `Assets/_Project/Scripts/Modules/HubUI/Panels/WeeklyGardenPanelStub.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/FurnitureService.cs`
 - `Assets/_Project/Scripts/Modules/Furniture/ApartmentSceneFurnitureBindings.cs`
@@ -97,9 +108,11 @@ Updated: 2026-07-30
 - `docs/art-replacement-workflow.md`
 - `docs/apartment-scene-sprite-naming-guide.md`
 - `Assets/_Project/Art/README.md`
-- `Assets/_Project/Art/WorldMap/flowerCodex`
-- `Assets/_Project/Art/WorldMap/flower_info`
-- `Assets/_Project/Art/WorldMap/growth`
+- `Assets/_Project/Art/WorldMap/UI/flowerCodex`
+- `Assets/_Project/Art/WorldMap/UI/flower_info`
+- `Assets/_Project/Art/WorldMap/flower`
+- `Assets/_Project/Art/WorldMap/UI/garden_week`
+- `Assets/_Project/Art/WorldMap/UI/growth`
 - `Assets/_Project/Art/Sprites/Furniture/README.md`
 - `Assets/_Project/Art/Sprites/Pet/README.md`
 - `Assets/_Project/Prefabs/README.md`
@@ -208,7 +221,7 @@ Updated: 2026-07-30
 9. `Assets/_Project/Animations/Pet/` 当前除 3 个 move clip 外，已新增 `Pet_Angel_Interact_Read.anim` 与 `Pet_Angel_Interact_BesideDoor.anim`，并新增 `Pet_Devil_Move_* / Pet_Devil_Idle_* / Pet_Devil_Sleep.anim`、`Pet_Devil_Interact_BesideDoor.anim`、`Pet_Devil_Interact_Write.anim` 与 `Pet_Devil_Interact_PlayingMusic.anim`；但恶魔其余完整交互动画仍未补齐。
 10. `2026-05-25` 起，Apartment 场景已开始搭第一版 `viewport` 结构：当前 `ApartmentViewportHost` 与 `ApartmentViewportImage` 已归属 `Panel_SpaceSys/Content`，并新增 `ArtGenerated/ApartmentViewportCamera`；当前 `RenderTexture` 资产路径为 `Assets/_Project/Settings/RenderTextures/ApartmentViewport_RT.renderTexture`。同日已补 `ApartmentViewportInputBridge`，当前可把 viewport 内点击先桥接到桌宠点击，再桥接到当前宠物的家具交互链路；当 `BuildModeController` 开启时，也会优先桥接到建造模式的放置/删除家具入口。
 11. `2026-07-28` 起，`WorldMap_Main.unity` 中桥对象 `桥` 的过桥移动轮廓由同物体 `PolygonCollider2D` 上侧轮廓直接提供。`WalkableSurface` 是运行时读取入口，`WorldMapSceneObjectsPatch` 只确保桥对象有 `WalkableSurface` 并保留现有 collider 点位，不再维护 `_profileLocalPoints` 独立折线轨道。`PetController.ResolveGroundY` 会把桥面 surface Y 当作脚底/行走锚点高度，再换算成 transform Y。相关 PlayMode 表现仍需按 `docs/manual-validation-checklist.md` 的 B9 章节人工补验。
-12. `2026-07-29` 起，WorldMap 情绪花图鉴列表页与详情页的美术资源入口为 `Assets/_Project/Art/WorldMap/flowerCodex` 与 `Assets/_Project/Art/WorldMap/flower_info`。运行时入口是 `FlowerCollectionPanelStub`，编辑器作者化入口是 `WorldMapEmotionGardenUIPatch.SetupFlowerCollectionBookContent`。设计要求是 Scene/Inspector 可调：`Panel_EmotionCollection/Content` 下应由 `CodexView`、`DetailView`、书本背景、卡槽、按钮和文本字段这些真实 UI 子节点组成；运行时只填数据和切换视图。本轮已通过 `tools/run-unity-editor-method.ps1` 在 Unity batchmode 中执行 `WorldMapEmotionGardenUIPatch.Patch()` 并落盘 `WorldMap_Main.unity`，场景 YAML 已能命中 `CodexView`、`DetailView`、`CodexCardSlot_00`、`StockPlate` 等节点；PlayMode 点击和最终视觉微调仍需在 Unity 中补验。
+12. `2026-07-29` 起，WorldMap 情绪花图鉴列表页与详情页的美术资源入口为 `Assets/_Project/Art/WorldMap/UI/flowerCodex` 与 `Assets/_Project/Art/WorldMap/UI/flower_info`。运行时入口是 `FlowerCollectionPanelStub`，编辑器作者化入口是 `WorldMapEmotionGardenUIPatch.SetupFlowerCollectionBookContent`。设计要求是 Scene/Inspector 可调：`Panel_EmotionCollection/Content` 下应由 `CodexView`、`DetailView`、书本背景、卡槽、按钮和文本字段这些真实 UI 子节点组成；运行时只填数据和切换视图。本轮已通过 Unity 编辑器一次性作者化脚本执行 `WorldMapEmotionGardenUIPatch.Patch()` 并落盘 `WorldMap_Main.unity`，场景 YAML 已恢复当前 UI 资源 GUID；PlayMode 点击和最终视觉微调仍需在 Unity 中补验。
 13. `2026-07-30` 起，WorldMap 的点击与碰撞路由也已收口：
    - `ClickOcclusionUtility` 当前收在 `Assets/_Project/Scripts/Core/DevMode.cs`
    - `CabinReturnPortal`、`WorldMapGardenZone`、`ClickableSceneObject`、`BaselineItem`、`PetPlayerInputController`、`PetClickReactionController`、`WorldMapCameraController` 都先判断最上层 2D 点击目标，再决定是否响应
@@ -269,4 +282,50 @@ Updated: 2026-07-30
 - `WorldMap_Main.unity` 中 `Panel_WeeklyGarden/Grid/CellTemplate` 仍保留为 Scene/Inspector 可调模板，但默认必须隐藏。
 - `WeeklyGardenPanelStub` 运行时会兜底隐藏 `CellTemplate`，实际只应显示 7 个 Day cell。
 - `Panel_WeeklyGarden/Grid` 现在不再挂 `HorizontalLayoutGroup`，`Day0`~`Day6` 是可独立拖动的普通场景节点；`WorldMapEmotionGardenUIPatch` 也不再清理既有格子位置，避免作者化重跑后把手工摆位抹掉。
-- `Panel_WeeklyGarden/Grid/CellTemplate` 当前还应包含 `Growth` 子节点，用来承载 `Assets/_Project/Art/WorldMap/growth` 下的 `seed / bud` 成长层资源；`WeeklyGardenPanelStub` 会在运行时按情绪花状态切换它的可见性。
+- `Panel_WeeklyGarden/Grid/CellTemplate` 与 `Day0`~`Day6` 的瓶内保留 `FlowerImage`；`FlowerImage` 仅在已开花时由 `WeeklyGardenPanelStub` 按情绪花类型显示带枝叶完整花图。
+- `Panel_WeeklyGarden/Content/UIbar` 是场景中唯一的集中信息栏，子节点为 `Growth`、`DateText`、`EmotionText`、`FlowerLanguageText`；使用 `Assets/_Project/Art/WorldMap/UI/garden_week/UIbar.png`，根节点 `localScale` 为 `1.5, 1.5, 1`。`Growth` 是成长阶段花型 icon，预置 `Assets/_Project/Art/WorldMap/花朵图鉴/花朵/` 下天使/恶魔与九种情绪的18张花头资源，不再使用通用 `bud.png`。`Panel_WeeklyGarden` 根节点的 Scene `localScale` 为 `0.85, 0.85, 1`，UIbar 内部字号为 `18/16/18`。
+- `Day0`~`Day6/Bottle` 挂 `WeeklyGardenBottleInteraction`，并保留作者化的 `SelectedHighlight`；高亮 Image 使用 `Assets/_Project/Art/WorldMap/UI/garden_week/SelectedBottleOutline.mat` 的 Alpha 边缘材质，只输出瓶子外轮廓，不输出整张瓶子填充。`Content/BlankClickArea` 负责空白点击取消选择。悬浮只改瓶子 `RectTransform` 缩放，选中只激活外圈。
+- `EmotionFlowerArtCatalog` 位于 `Assets/_Project/Art/WorldMap/flower/EmotionFlowerArtCatalog.asset`，由 `WorldMapEmotionGardenUIPatch` 作者化并同时绑定到 `FlowerCollectionPanelStub` 与 `WeeklyGardenPanelStub`。
+- 花卉图鉴的已解锁条目只代表已开花并收入图鉴的花朵，`FlowerCollectionPanelStub` 固定使用 `GrowthState.Bloomed`；缺少对应 `（完整）.PNG` 时不回退到仅花朵资源。
+- `2026-08-07` 起，`Panel_WeeklyGarden/Grid/Day0`~`Day6` 的有花格子、`Panel_EmotionCollection/CodexView` 的已解锁卡片和 `DetailView` 的已收集花卉均包含 `SoilImage`。它们统一引用 `Assets/_Project/Art/WorldMap/flower/土壤.PNG`，土壤位于带枝叶完整花图的下方；空白、锁定或无对应完整花图的状态隐藏土壤。三处大小和位置仍分别由 Scene/Inspector 调整。
+- `2026-08-07` 修正：图鉴卡片 `FlowerImage` 的空 Sprite 占位透明度不再影响运行时完整花图；已收集卡片和详情花图绑定时强制恢复不透明。`SoilImage` 已重新收紧到花图可见枝叶底部，详情页会跟随当前 `FlowerImage` 的手工 X 位置对齐。
+- `2026-08-09` 修正：每周培育瓶子固定使用 `Assets/_Project/Art/WorldMap/UI/garden_week/bottle.png`，不再按培育者或成长阶段切换不存在的瓶子变体；`DayLabel/DayText` 旧文字节点保持关闭，只显示 Mon～Sun 图片。
+- `2026-08-09` 修正：`CodexCardSlot_00...11` 的 Scene 默认状态由作者化数据明确保存：前三张已收集卡显示真实花枝与土壤，其余锁定卡的 `FlowerImage`、`SoilImage` 与 `UnlockedContent` 整体关闭；`FlowerCollectionPanelStub` 运行时只切换这些预置节点。
+- `2026-08-09` 修正：详情页 `FlowerImage/Variant_00...` 每个变体都包含成对的 `FlowerArt` 与 `SoilImage`，土壤位置按花型单独保存；No.028 月晕使用 `悲伤|angel|1` 的完整花图和土壤。
+- `2026-08-09` 修正：每周空日的花朵、成长阶段 icon 和土壤全部隐藏，UIbar 无花时显示 `---`；`SceneAuthoredImageVariantView` 负责 Scene 预置变体的显隐，不在运行时创建最终视觉节点。
+- `2026-08-10` 修正：每周面板改为单一集中 UIbar；未选择时显示当天，点击瓶子显示对应日期，点击空白恢复当天；悬浮缩放、选中外圈高亮均基于场景预置节点。
+- `2026-08-10` 追加修正：选中高亮从填充式 UI `Outline` 改为 `SpriteAlphaOutline` 边缘材质，避免整只瓶子变色。
+- `2026-08-07` 新增 `WorldMapFlowerSoilLayoutWindow`：从 `Tools/Gemini-Lab/WorldMap 花卉布局复用` 打开，分别指定三个面板的参考对象后，可将 `FlowerImage` 与 `SoilImage` 的锚点、位置、尺寸、Pivot 和 localScale 批量复制到同类节点；复制支持 Undo，执行后需手动保存场景。
+
+### 2026-08-04 WorldMap 花朵自由摆放
+- 运行时脚本：`Assets/_Project/Scripts/Modules/WorldMap/WorldMapFlowerPlacementController.cs`。
+- 场景作者化脚本：`Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapFlowerPlacementAuthoring.cs`。
+- 网格配置：由 `WorldMapFlowerPlacementController` 读取 `garden/中景/花丛.png` 的 Sprite 完整尺寸得到二维 `Vector2` 单元（当前为 `4.01 x 2.24` Unity 单位），再结合网格原点和摆放区域生成完整 X/Y 网格线；不绑定或读取图鉴花朵资源作为显示。
+- 作者化结果预期位于 `WorldMap_Main.unity` 的 `Canvas/Btn_FlowerPlacement`、`Canvas/FlowerPlacementPanel`、`WorldMapPlacedFlowers` 与 `FlowerPlacementBounds`；后者默认是 `36 x 8.96` 的禁用 BoxCollider2D，仅存放草地摆放区域数据，可在 Inspector 调整。
+
+### 2026-08-05 WorldMap 昼夜切换
+- `Assets/_Project/Scripts/Modules/WorldMap/WorldMapDayNightController.cs`：WorldMap 按 `IGameClock.Now` 切换夜幕。
+- `Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapDayNightAuthoring.cs`：将现有夜幕 Sprite 作者化为 `WorldMapNightOverlay`，设置覆盖范围、排序和当前本地时间初始状态。
+- `WorldMap_Main.unity` 已保存 `WorldMapNightOverlay`，引用 `天气（最上层）/夜幕.png`，默认 06:00–18:00 为白天。
+
+### 2026-08-06 WorldMap 桌宠数字键动画调试
+- 运行时：`Assets/_Project/Scripts/Modules/WorldMap/WorldMapPetAnimationTriggerController.cs`，挂在 `WorldMap_Main.unity/_SceneRoot`，只做当前联调用的数字键触发。
+- 作者化：`Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapPetAnimationTriggerAuthoring.cs`；会删除旧的 `WorldMapAnimationTriggers` 及五个临时点位，并把数字映射保存到 Scene。
+- 数字映射：`1` Angel `Outdoor_Sit`、`2` Angel `Outdoor_Pray`、`3` Angel `Outdoor_Happy`、`4` Angel `Outdoor_Water`、`5` Devil `Outdoor_Sleep`、`6` Devil `Outdoor_Cast`、`7` Devil `Outdoor_Proud`。
+- 天使 `Outdoor_Sit`、`Outdoor_Pray` 使用 `Assets/_Project/Art/WorldMap/pets/天使室外/坐地` 和 `祈祷` 序列帧，并绑定到 `Assets/_Project/Animations/WorldMap/Pet/WorldMap_Angel.controller`；这套资源只供 WorldMap 使用。
+- 数字触发结束后恢复普通 Idle / Move；自动巡航、标牌/区域/苹果树触发条件仍待后续策划确认。
+- 数字触发时由 `PetController.SetExternalMovementLock` 暂停当前桌宠的输入、随机漫游和刚体速度，另一只桌宠不受影响。
+
+### 2026-08-05 WorldMap 可交互场景物体
+- 运行时反馈组件：`Assets/_Project/Scripts/Modules/WorldMap/WorldMapInteractiveObjectFeedback.cs`。
+- 点击入口：`Assets/_Project/Scripts/Modules/WorldMap/ClickableSceneObject.cs`；具体业务通过序列化 `UnityEvent` 后续接入。
+- 返回公寓入口：`Assets/_Project/Scripts/Modules/WorldMap/CabinReturnPortal.cs`，仍通过 `ISceneFlowService` 加载 `SceneId.Apartment`。
+- 场景作者化：`Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapInteractiveObjectAuthoring.cs`，由 `AutoSetup` 版本 31 调用。
+- 当前目标对象：`WorldMap_Main.unity` 中的 `室内`、`邮箱`、`大树 1`～`大树 5`；缩放参数和组件均应直接保存在 Scene 中。
+
+### 2026-08-06 WorldMap 双宠动画调整场景
+- 专用场景：`Assets/_Project/Scenes/WorldMap/WorldMap_PetAnimationPreview.unity`。
+- 场景内容：仅有一个 `_SceneRoot` 根对象，其下为 `Main Camera`、`Pet_Angel`、`Pet_Devil`；两只桌宠使用 `SpriteRenderer + Animator`，不挂公寓桌宠的视觉资源。
+- 共享动画资源：`Assets/_Project/Animations/WorldMap/Pet/WorldMap_Angel.controller`、`WorldMap_Devil.controller` 及其引用的 `.anim`；预览场景和 `WorldMap_Main.unity` 直接引用同一份资源，不复制控制器或 Clip。
+- 作者化入口：`Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapPetAnimationPreviewAuthoring.cs`，菜单为 `Tools/Gemini-Lab/WorldMap/Create Pet Animation Preview Scene`。
+- 使用约束：应在共享 `.anim` / `.controller` 上调整动画以同步室外主场景；只调整预览场景的 Transform 或 SpriteRenderer 不会自动同步到 `WorldMap_Main`。

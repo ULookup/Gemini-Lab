@@ -1,0 +1,87 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e3562ca35988af94ab03915cf208c60b, type: 3}
+  m_Name: EmotionFlowerArtCatalog
+  m_EditorClassIdentifier: 
+  _entries:
+  - EmotionType: "\u559C\u60A6"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: 63c05f45cb4b1e244aa2dc70f754f415, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: e89eda9821348d2499d7993d9bdad7a8, type: 3}
+  - EmotionType: "\u559C\u60A6"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: 9ee97e2e8ea96ae44a09475028062dfd, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 8e2774a0258a8b94fa560f34ee62797a, type: 3}
+  - EmotionType: "\u60B2\u4F24"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: 1be30bc655fa8ba4a92106361b451156, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 63badcb5994ae8442a841a576619cb53, type: 3}
+  - EmotionType: "\u60B2\u4F24"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: 95986b91e6cd5d24184b530e94be12de, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 0fff1c8e3fc1d414cbc37b0b4eea219a, type: 3}
+  - EmotionType: "\u6124\u6012"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: dc18a62132d855341ad239bb72a7fbc3, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: f8baad62c57574d4c9f8e76fec15553f, type: 3}
+  - EmotionType: "\u6124\u6012"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: d96b4fc8cfd363b48895e3e4ba9a6fea, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: a1b5f422ef8011041b01d1a238835963, type: 3}
+  - EmotionType: "\u5E73\u9759"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: ba2763323ca26a34590d256b00c9f67d, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 81a3b7b713e15904499e97b0ad95b1ef, type: 3}
+  - EmotionType: "\u5E73\u9759"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: d55889d603a345549a96f4b3a2304ff3, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: e2f337025b92672469224bb8c7a7de21, type: 3}
+  - EmotionType: "\u7231"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: 57805af6241cb81459aa2cc1e878d189, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 3b350eadbe09e824282c7047ba4d6323, type: 3}
+  - EmotionType: "\u7231"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: 73be17d070d0d1f49b0fb62fe0c687c6, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 94d53d5b9db286a4ba86c815886a621c, type: 3}
+  - EmotionType: "\u6050\u60E7"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: bc5667c688b62464fbc3182e0161ac9f, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 18b3211f380b2274cb9f9d9c3f696f17, type: 3}
+  - EmotionType: "\u6050\u60E7"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: 064ec367f0037dd4297e873b12033fe4, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: 9b65849f0a0726d48ad86a807c8e7539, type: 3}
+  - EmotionType: "\u60CA\u8BB6"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: 7949a3b5f84ddcd499a02ab8e9055dbd, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: fbac4be58f697de488653f363eeb5475, type: 3}
+  - EmotionType: "\u60CA\u8BB6"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: 627d60bd71875cf40868ffe0c829a999, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: f12f37c7bb6533540aefc8a7ac80cb38, type: 3}
+  - EmotionType: "\u671F\u5F85"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: 0e68bb5ed05e5b54da57739c4deb211c, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: bb4c450a983ccd54998bbbe2553f5f2e, type: 3}
+  - EmotionType: "\u671F\u5F85"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: 83d395d2fcdc46f49b8a2a953672d696, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: b6b2e4baa8bd7a94ca46238c8ac7ff08, type: 3}
+  - EmotionType: "\u5B64\u72EC"
+    Owner: angel
+    GrowingSprite: {fileID: 21300000, guid: 08fce031e3db5164a870e3f546997b9b, type: 3}
+    BloomedSprite: {fileID: 21300000, guid: d8fe2762b3b17184f9841dc29b73073a, type: 3}
+  - EmotionType: "\u5B64\u72EC"
+    Owner: demon
+    GrowingSprite: {fileID: 21300000, guid: 29f259ad858abc04da90715e6e2785e2, type: 3}
+    BloomedSprite: {fileID: 0}

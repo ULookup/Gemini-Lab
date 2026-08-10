@@ -1,6 +1,6 @@
-﻿# Gemini-Lab 人工验证清单
+# Gemini-Lab 人工验证清单
 
-Updated: 2026-07-29
+Updated: 2026-08-07
 
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
@@ -19,6 +19,16 @@ Updated: 2026-07-29
 | `README.md`、`Assets/README.md`、`Assets/plan.md` 可正常阅读 |  |  |
 | 当前项目版本确认为 `Unity 2022.3.62f3c1` |  |  |
 | `.cursor/mcp.json` 与技能目录可正常访问 |  |  |
+
+## A2. Scene/Play 视觉一致性硬闸门
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 视觉任务卡已声明 `scene_play_parity_required: true`、`scene_visual_contracts` 和 `runtime_visual_files` |  |  |
+| 关键 Sprite、AnimatorController、RectTransform、排序层级和 UI 节点在 Scene 视图中已有真实序列化引用 |  |  |
+| 未进入 Play 时，Scene 视图已经能看到与目标最终效果一致的视觉资源 |  |  |
+| 进入 Play 后没有被运行时脚本替换成另一套最终视觉；Scene 与 Play 取景和资源一致 |  |  |
+| `tools/check-task-gate.ps1`、`tools/check-scene-visual-contract.ps1`、`tools/check-runtime-visual-contract.ps1` 均通过 |  |  |
+| 运行时只切换已作者化对象/状态或填充数据，不通过 Sprite 赋值、AnimatorController 赋值或动态 UI 节点生成作者化最终视觉 |  |  |
 
 ## B. Phase 1 基础工程与 FSM
 | 检查项 | 结果 | 备注 |
@@ -68,14 +78,15 @@ Updated: 2026-07-29
 适用范围：
 - 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
 - 目标面板：`Panel_EmotionCollection`
-- 列表页资源：`Assets/_Project/Art/WorldMap/flowerCodex`
-- 详情页资源：`Assets/_Project/Art/WorldMap/flower_info`
+- 列表页资源：`Assets/_Project/Art/WorldMap/UI/flowerCodex`
+- 详情页资源：`Assets/_Project/Art/WorldMap/UI/flower_info`
 - 当前实现原则：书本、卡槽、未知卡、左右箭头、关闭按钮、库存条和文本区域均由 Scene 中真实 UI 子节点承载；`FlowerCollectionPanelStub` 只负责运行时填数据与切换 `CodexView` / `DetailView`，不在 `Awake` / `Start` 临时拼最终视觉。
 
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
 | `FlowerCollectionPanelStub` 使用 `_codexView`、`_detailView`、`_cardSlots` 与详情字段的序列化引用，不再运行时生成旧列表条目 | 通过 | `dotnet build GeminiLab.Modules.HubUI.csproj` 通过 |
-| `WorldMapEmotionGardenUIPatch` 的 `SetupFlowerCollectionBookContent` 会从 `flowerCodex` / `flower_info` 加载拆分美术资源，而不是直接使用整张 mock 合成图 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
+| `WorldMapEmotionGardenUIPatch` 的 `SetupFlowerCollectionBookContent` 会从 `UI/flowerCodex` / `UI/flower_info` 加载拆分美术资源，而不是直接使用整张 mock 合成图 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过；场景已恢复当前 Sprite GUID 引用 |
+| 图鉴卡片和详情通过 `EmotionFlowerArtCatalog` 按情绪类型 + 培育者显示 `Assets/_Project/Art/WorldMap/flower` 中的真实花图 | 通过 | Catalog 资产已包含 18 个组合映射；缺失的恶魔孤独完整图回退基础花图 |
 | `AutoSetup` 升级到版本 22 后，会调用 `WorldMapEmotionGardenUIPatch.Patch()` 自动落地图鉴 UI authoring | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
 | 本地 Unity batchmode runner 可执行 editor static method，且不会无期限卡住 | 通过 | `tools/run-unity-editor-method.ps1` 已加入 `-nographics`、启动日志超时、总执行超时和子进程 watchdog；`WorldMapEmotionGardenUIPatch.watchdog-test.log.runner.log` 验证 5 秒未生成日志时会停止本次 Unity PID |
 | 执行 WorldMap UI authoring 后，`Panel_EmotionCollection/Content/CodexView` 下存在 `Book`、`TitlePlate`、`CategoryTabs`、`Cards/CodexCardSlot_00...11`、`PreviousPageButton`、`NextPageButton`、`CloseButton`、`ProgressText`、`PageText`、`ClickHintText` | 通过 | Unity batchmode patch 成功，日志在 `Logs/UnityBatchmode/WorldMapEmotionGardenUIPatch.codex-list.log`；`rg` 已在 `WorldMap_Main.unity` 命中列表页关键节点；需在 Scene 视图继续做视觉微调 |
@@ -97,6 +108,21 @@ Updated: 2026-07-29
 | `PetController` 的 WorldMap 场景级双宠碰撞忽略逻辑已编译进运行时 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj` 通过 |
 | 被 `Pet_Angel` / `Pet_Devil` 或 UI 遮挡时，`室内` 不再误触发跳转到公寓 | 未验证 | 需要 Unity PlayMode 人工验证 |
 | `Pet_Angel` 与 `Pet_Devil` 在 `WorldMap_Main` 中不会互相挡路 | 未验证 | 需要 Unity PlayMode 人工验证 |
+
+## B17. WorldMap 可交互场景物体悬停反馈（2026-08-05）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 目标对象：`室内`、`邮箱`、`大树 1`～`大树 5`
+- 当前规则：对象以自身 Scene 中保存的 localScale 为缩放基准；鼠标悬停在自身 Collider2D 范围内且未被 UI 覆盖时，平滑放大，移出后恢复。悬停反馈不受其他场景碰撞体排序阻断，实际点击仍执行最上层裁决。
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 7 个对象都挂载 `WorldMapInteractiveObjectFeedback`，且参数直接保存在 Scene | 已作者化 | 默认放大倍数 `1.06`，过渡时间 `0.08s` |
+| 悬停 `室内` 时出现缩放反馈，同时保留原有高亮变色 | 未验证 | 需要 Unity PlayMode 人工移动鼠标确认 |
+| 悬停邮箱和 5 棵大树时出现缩放反馈，移出后恢复原始大小 | 未验证 | 需要 Unity PlayMode 人工移动鼠标确认 |
+| UI 覆盖对象时不触发错误缩放，其他场景碰撞体不会阻断目标悬停 | 未验证 | 需要 Unity PlayMode 与 Canvas / 花丛重叠区域人工确认 |
+| 点击 `室内` 可以加载 `Apartment_Main` | 未验证 | 需要从 WorldMap PlayMode 点击室内确认 |
+| 点击邮箱和 5 棵大树能看到 `[ClickableSceneObject]` 占位日志 | 未验证 | 具体业务交互尚未由策划确定 |
 
 ## B3. 塔罗垂直切片（B1 2026-05-10 新增）
 | 检查项 | 结果 | 备注 |
@@ -355,14 +381,25 @@ Updated: 2026-07-29
 | `Decoration` 目标当前使用 `Interact_BesideDoor` 作为已有资源下的临时交互表现 |  |  |
 | `Apartment_Main.unity` 继续使用现有环境贴图，未擅自把 `公寓场景.psd` 替换进场景 |  |  |
 
-## B12. WorldMap 每周培育面板模板可见性（2026-07-30）
+## B12. WorldMap 每周培育面板与 UIbar（2026-07-30、2026-08-06、2026-08-10）
 - 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
 - 目标面板：`Panel_WeeklyGarden`
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
-| `CellTemplate` 在 Scene 层级中保留，但默认不可见 | 未验证 | 已把场景根节点改为 `m_IsActive: 0`，仍需 Unity Scene 视图补验 |
-| `Panel_WeeklyGarden` 只显示 7 个可见瓶子 | 未验证 | 运行时脚本会兜底隐藏模板，最终仍需 Scene / PlayMode 目视确认 |
+| `CellTemplate` 在 Scene 层级中保留，但默认不可见 | 通过 | Scene YAML 已确认 `CellTemplate` inactive |
+| `Panel_WeeklyGarden` 只显示 7 个可见瓶子 | 通过 | Scene YAML 已确认 `Day0`~`Day6` active，模板 inactive |
 | `Panel_WeeklyGarden/Grid` 不再挂 `HorizontalLayoutGroup`，`Day0`~`Day6` 可单独拖动 | 通过 | `rg` 已确认相关文件无 `HorizontalLayoutGroup` / `LayoutElement` 残留 |
+| `Content` 下只有一个集中 `UIbar`，Day0~Day6 下没有每日 UIbar | 通过 | Scene YAML 已确认 `Content/UIbar` 1 个，`Day0`~`Day6` 与 `CellTemplate` 下无 UIbar，根 localScale 为 `1.5, 1.5, 1` |
+| `CellTemplate` 与 `Day0`~`Day6` 的 Bottle 固定显示 `bottle.png`，有花数据时不会因状态变体缺失而消失 | 脚本与场景通过，Play 待目视 | `WeeklyGardenPanelStub` 始终调用 `ShowPreview()`；Scene 中8个 Bottle 预览 Image 均保持启用 |
+| 星期只显示 Mon～Sun 图片，不出现重复“周一/周二/周三”等文字 | 通过 | Scene YAML 已确认模板及7个日格的 `DayLabel/DayText` 全部 inactive |
+| 集中 UIbar 有 `DateText`、`EmotionText`、`FlowerLanguageText` 信息区域 | 通过 | 作者化已写入 `Content/UIbar`；有花时填真实信息，无花时三个区域均为 `---` |
+| 集中 UIbar 的 `Growth` 花头 icon 按培育者和情绪显示对应资源 | 脚本与场景通过，Play 待目视 | Scene YAML 已确认集中 `UIbar/Growth` 覆盖18种花头；无花时运行时隐藏，需在 Play 中准备不同花型数据确认图标与文字不重叠 |
+| 每个 `Day0`~`Day6` 瓶内都有 `FlowerImage`，按当天情绪类型、培育者和状态显示对应花图 | 脚本与场景通过，Play 待目视 | 有花且已开花时显示带枝叶完整花图；空日期不显示花、成长 icon 或土壤 |
+| `Panel_WeeklyGarden` 根节点 localScale 为 `0.85, 0.85, 1`，UIbar 字号为 `18/16/18` | 通过 | Scene YAML 已确认；PlayMode 重新打开后需目视确认取景和文字间距 |
+| 当前周未选择瓶子时集中 UIbar 显示当天信息 | 未验证 | 需在 PlayMode 打开当前周，确认默认日期按 `IGameClock` 的当天索引显示 |
+| 点击过去某一天瓶子后集中 UIbar 显示该天信息，点击另一个瓶子可切换 | 未验证 | 需在 PlayMode 点击两个不同日期的瓶子并核对日期、情绪和花名/状态 |
+| 鼠标悬浮瓶子只缩放，不改变颜色 | 未验证 | 需在 PlayMode 观察瓶子本体颜色保持不变，离开后恢复原始缩放 |
+| 选中瓶子只显示 Alpha 边缘外圈高亮，点击面板空白后取消选择并恢复当天信息 | 未验证 | 需在 PlayMode 确认 `SelectedHighlight` 只显示瓶子外轮廓、不填充瓶子内部，点击 `BlankClickArea` 后高亮消失 |
 
 ## B13. WorldMap 情绪花种植逻辑恢复（2026-07-31）
 适用范围：
@@ -372,12 +409,93 @@ Updated: 2026-07-29
 
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
-| `EmotionFlowerModels.cs` 中的 `EmotionFlowerCatalog` / `EmotionGardenService` / 三个面板脚本可正常编译 | 通过 | `dotnet build GeminiLab.Modules.EmotionGarden.csproj --no-restore`、`dotnet build GeminiLab.Modules.HubUI.csproj --no-restore` 与 `dotnet build Assembly-CSharp-Editor.csproj --no-restore` 已通过 |
+| `EmotionFlowerModels.cs` 中的 `EmotionFlowerCatalog` / `EmotionGardenService` / 三个面板脚本可正常编译 | 通过 | Unity C# 与 Editor 程序集重新编译成功，AutoSetup 43 已执行 |
 | `EditorBootSceneLoader` 已把 `EmotionGardenRuntimeBootstrap` 纳入 Awake 顺序，编辑器直启时也会注册情绪花园服务 | 通过 | `dotnet build Assembly-CSharp-Editor.csproj --no-restore` 已通过 |
-| `WeeklyGardenPanelStub` 现在会把 `growth/seed.png` / `growth/bud.png` 显示在瓶子内部，并订阅提交 / 开花 / 清空事件自动刷新 | 通过 | `dotnet build GeminiLab.Modules.HubUI.csproj --no-restore` 已通过 |
-| `WorldMapEmotionGardenUIPatch` 现在会绑定 `_growthSprites` 并作者化 `Growth` 子节点；`AutoSetup` 已升到 23 作为兜底 | 通过 | 本轮 batchmode runner 在 Unity 启动阶段超时，待下次编辑器初始化自动重跑 |
+| `WeeklyGardenPanelStub` 在瓶内按开花状态显示带枝叶 `FlowerImage`，并在 UIbar 内按当天花型显示花头 `Growth` icon | 通过 | `dotnet build GeminiLab.Modules.HubUI.csproj --no-restore` 已通过 |
+| `WorldMapEmotionGardenUIPatch` 绑定 `_flowerHeadIconSprites` 并作者化 `UIbar/Growth` 的18种花头变体；AutoSetup 39 已执行 | 通过 | Unity 日志确认 AutoSetup 39 完成，Scene YAML 确认8个 Growth 节点均为 `(-96, 18)`、`36×36` 并覆盖18张花头 |
 | `EmotionInputPanelStub` 不再提交固定“悲伤”，而是读取心情文本后交给花园服务判定 | 未验证 | 需 Unity PlayMode 输入一段心情文本验证 |
 | 成功提交后会自动切到 `WeeklyGardenView`，不会继续停留在输入面板 | 未验证 | 需 Unity PlayMode 验证面板切换 |
-| `WeeklyGardenPanelStub` 会显示真实花名、情绪、培育者与开花状态，并在空格回退时恢复默认瓶子底图 | 未验证 | 需 Unity PlayMode 翻周 / 刷新验证 |
+| `WeeklyGardenPanelStub` 会通过 UIbar 显示真实日期、情绪关键词、花名/花语与开花状态，并在空格回退时恢复默认瓶子底图 | 未验证 | 需 Unity PlayMode 翻周 / 刷新验证 |
 | `FlowerCollectionPanelStub` 会按情绪顺序和培育者顺序显示图鉴，点击已解锁卡片可进入详情页 | 未验证 | 需已有花数据或调试数据验证 |
+| No.028 月晕在图鉴列表中显示悲伤·天使的真实花枝与土壤 | 脚本与场景通过，Play 待目视 | Scene YAML 已确认 `CodexCardSlot_01/FlowerImage` 使用 `悲伤|angel|1`，并与同卡 `SoilImage` 同时激活 |
+| 图鉴详情页每种花都有独立花枝/土壤配对，土壤紧贴花枝底部 | 脚本与场景通过，Play 待目视 | Scene YAML 已确认 `Variant_00...16` 各自包含 `FlowerArt` 与 `SoilImage`，土壤 Y 坐标按花型分别保存 |
+| 未解锁图鉴卡片不显示花朵、土壤或解锁文字 | 脚本与场景通过，Play 待目视 | Scene 中前三张为已收集预览，其余卡片为 `LockedImage` active，`FlowerImage`/`SoilImage`/`UnlockedContent` inactive；运行时锁定分支同时关闭 FlowerImage 根节点 |
 | `Panel_EmotionInput`、`Panel_WeeklyGarden`、`Panel_EmotionCollection` 不会同时叠在一起 | 未验证 | 路由已是互斥切换，仍需 Unity PlayMode 确认 |
+
+## B14. WorldMap 花朵自由摆放 P0-1（2026-08-04）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 网格基准：`Assets/_Project/Art/WorldMap/garden/中景/花丛.png` 的完整 Sprite 尺寸（当前 `4.01 x 2.24` Unity 单位），该资源只作标尺，不作为摆放显示
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| WorldMap 中存在“布置”按钮 | 未验证 | 由 `WorldMapFlowerPlacementAuthoring` 作者化 |
+| 点击“布置”后底部花朵库存栏展开 | 未验证 |  |
+| 库存栏可以选择花朵 | 未验证 | 当前保留中性占位选项，正式资源到位后由 Inspector 接入 |
+| 可以选择“单花”或“花丛” | 未验证 |  |
+| 选择摆放类型后库存栏自动收起 | 未验证 |  |
+| 鼠标移动时显示半透明花朵预览 | 未验证 |  |
+| 预览位置按二维网格在 X/Y 两轴吸附 | 未验证 | 单元尺寸和占格规则由 Inspector 配置 |
+| 点击有效草地后生成正式摆放物 | 未验证 | 当前有效区域由独立的 `FlowerPlacementBounds` BoxCollider2D 提供，不复用宠物移动边界 |
+| 点击无效区域不会落位或残留预览 | 未验证 |  |
+| 放置模式中显示覆盖摆放区域的完整二维网格线 | 未验证 | 网格线与 Inspector 中的 X/Y 单元尺寸一致 |
+| `FlowerPlacementBounds` 存在且覆盖草地，`PetMovementBounds` 未被修改 | 未验证 | 默认 `36 x 8.96`，禁用 Collider 仍作为摆放范围数据读取 |
+| 点击有效位置后保留放置模式，可连续放置多个占位物 | 未验证 |  |
+| 按 `Esc` 退出放置模式，状态栏、预览和网格线均隐藏 | 未验证 |  |
+| 库存按钮和摆放物不显示图鉴面板 Sprite | 未验证 | 当前统一使用程序生成的中性占位显示 |
+| 已摆放花朵的层级和场景位置可在 Inspector 调整 | 未验证 | 需检查 `WorldMapPlacedFlowers` 和 SpriteRenderer |
+
+## B15. WorldMap 昼夜切换（2026-08-05）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 时间规则：本地时间 06:00–18:00 为白天，18:00–次日 06:00 为夜晚
+- 夜幕资源：`Assets/_Project/Art/WorldMap/garden/天气（最上层）/夜幕.png`
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| Scene 中存在 `WorldMapNightOverlay`，并引用现有夜幕 Sprite | 未验证 | 场景 YAML 已写入，需 Unity Inspector 确认引用 |
+| 白天时夜幕隐藏 | 未验证 | 当前作者化时间为 14:42，场景保存为隐藏 |
+| 夜晚时夜幕显示并覆盖整个室外场景 | 未验证 | 需使用系统时间或调试时间跨过 18:00 验证 |
+| 夜幕位于室外场景和桌宠上方、UI 下方 | 未验证 | SpriteRenderer sorting order 为 2000，UI 使用独立 Canvas |
+| 夜幕不阻挡宠物、场景物和花朵交互 | 未验证 | 夜幕 BoxCollider2D 已禁用 |
+| 跨越昼夜边界后运行时自动切换 | 未验证 | `WorldMapDayNightController` 每 5 秒检查 `IGameClock.Now` |
+
+## B16. WorldMap 桌宠数字键动画调试（2026-08-06）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 调试入口：`_SceneRoot` 上的 `WorldMapPetAnimationTriggerController`
+- 当前规则：Game View 获得键盘焦点后，按数字键直接播放对应桌宠动画，不需要移动到任何位置
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| Scene 中不存在 `WorldMapAnimationTriggers` 和五个旧临时点位 | 未验证 | 这些对象已从场景落盘删除 |
+| 按 `1` 播放天使 `Outdoor_Sit` | 未验证 | 天使坐地序列帧和 Clip |
+| 按 `2` 播放天使 `Outdoor_Pray` | 未验证 | 天使祈祷序列帧和 Clip |
+| 按 `3` 播放天使 `Outdoor_Happy` | 未验证 | |
+| 按 `4` 播放天使 `Outdoor_Water` | 未验证 | |
+| 按 `5` 播放恶魔 `Outdoor_Sleep` | 未验证 | |
+| 按 `6` 播放恶魔 `Outdoor_Cast` | 未验证 | |
+| 按 `7` 播放恶魔 `Outdoor_Proud` | 未验证 | |
+| 特殊动画播放期间不被 Idle / Move 刷新覆盖，结束后恢复普通动画 | 未验证 | 数字调试组件执行顺序晚于 `PetController` |
+| 特殊动画播放期间对应桌宠不能被 WASD/方向键或随机漫游移动 | 未验证 | `PetController.SetExternalMovementLock` 按桌宠独立加锁 |
+| 天使播放特殊动画时恶魔仍可独立移动，反之亦然 | 未验证 | 移动锁不共享 |
+| 天使和恶魔移动时分别播放对应方向的 `Move_Front` / `Move_Back` / `Move_Side` 动画 | 未验证 | 需确认实际帧序列和左右朝向；天使 `_sideFramesFaceLeft=true` |
+| 不会影响 Apartment 场景的桌宠 Sprite、AnimatorController 和动画 | 未验证 | WorldMap 使用专用资源 |
+| 自动巡航、自动到点触发和最终策划交互条件未启动 | 未验证 | 当前仅为动画联调入口 |
+
+## B17. WorldMap 双宠动画调整预览场景（2026-08-06）
+适用范围：
+- 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_PetAnimationPreview.unity`
+- 对照场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
+- 作者化入口：`Tools/Gemini-Lab/WorldMap/Create Pet Animation Preview Scene`
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 预览场景只有一个 `_SceneRoot`，其下仅有 `Main Camera`、`Pet_Angel`、`Pet_Devil` | 通过 | 场景 YAML 已确认 1 个根对象和 3 个子对象 |
+| `Pet_Angel` 显示室外天使待机 Sprite，并有 Animator | 通过 | Scene YAML 已确认室外 Sprite GUID 与 `WorldMap_Angel.controller` |
+| `Pet_Devil` 显示室外恶魔待机 Sprite，并有 Animator | 通过 | Scene YAML 已确认室外 Sprite GUID 与 `WorldMap_Devil.controller` |
+| 预览场景与 `WorldMap_Main` 的天使 Animator Controller GUID 一致 | 通过 | 两边均引用 `df94c0ec7a0bf504696b47e0d89a7ea6` |
+| 预览场景与 `WorldMap_Main` 的恶魔 Animator Controller GUID 一致 | 通过 | 两边均引用 `3f42a9a7549c7cc49b2176612fbf4c3f` |
+| 在 Animation 窗口编辑共享 `.anim` / `.controller` 后，室外主场景显示相同动画资源 | 未验证 | 需在 Unity 中修改后切换 `WorldMap_Main` 检查 |
+| Apartment 场景的宠物 Sprite / AnimatorController 未被预览场景新增引用 | 通过 | 预览场景只引用 `Art/WorldMap/pets` 与 `Animations/WorldMap/Pet` |
+| 预览场景 Play 视图和 Scene 视图均显示相同室外桌宠资源 | 未验证 | 需打开预览场景并进入 PlayMode 目视确认 |

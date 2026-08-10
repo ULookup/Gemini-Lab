@@ -5,6 +5,7 @@ using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.EmotionGarden;
+using GeminiLab.Modules.HubUI;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -33,7 +34,8 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _nextPageButton;
 
         [Header("Detail")]
-        [SerializeField] private Image? _detailFlowerImage;
+        [SerializeField] private SceneAuthoredImageVariantView? _detailFlowerView;
+        [SerializeField] private Image? _detailSoilImage;
         [SerializeField] private TMP_Text? _detailNumberText;
         [SerializeField] private TMP_Text? _detailNameText;
         [SerializeField] private TMP_Text? _detailCreatedText;
@@ -46,6 +48,9 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Button? _detailPreviousButton;
         [SerializeField] private Button? _detailNextButton;
         [SerializeField] private Button? _detailCloseButton;
+
+        [Header("Art")]
+        [SerializeField] private EmotionFlowerArtCatalog? _flowerArtCatalog;
 
         private IEmotionGardenService? _service;
         private EventBus? _eventBus;
@@ -178,7 +183,8 @@ namespace GeminiLab.Modules.HubUI.Panels
                     displayNumber,
                     unlocked,
                     unlocked ? BuildFlowerName(cluster) : "未知花卉",
-                    unlocked ? BuildCardMeta(cluster) : string.Empty);
+                    unlocked ? BuildCardMeta(cluster) : string.Empty,
+                    unlocked ? ResolveBloomedFlowerVariantKey(cluster) : null);
             }
 
             int collected = 0;
@@ -263,9 +269,24 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_detailPhraseBodyText != null) _detailPhraseBodyText.text = BuildPhraseBody(cluster);
             if (_detailStockText != null) _detailStockText.text = $"{cluster.TotalCount}";
 
-            if (_detailFlowerImage != null)
+            string? detailFlowerVariantKey = ResolveBloomedFlowerVariantKey(cluster);
+            if (_detailFlowerView != null)
             {
-                _detailFlowerImage.enabled = _detailFlowerImage.sprite != null;
+                if (detailFlowerVariantKey != null)
+                {
+                    _detailFlowerView.Show(detailFlowerVariantKey);
+                }
+                else
+                {
+                    _detailFlowerView.Hide();
+                }
+            }
+
+            if (_detailSoilImage != null)
+            {
+                bool showSoil = detailFlowerVariantKey != null;
+                _detailSoilImage.enabled = showSoil;
+                _detailSoilImage.gameObject.SetActive(showSoil);
             }
 
             if (_detailPreviousButton != null)
@@ -367,16 +388,29 @@ namespace GeminiLab.Modules.HubUI.Panels
             return $"{ResolveOwnerName(cluster.Owner)} · {cluster.TotalCount}";
         }
 
+        private string? ResolveBloomedFlowerVariantKey(ClusterProgress cluster)
+        {
+            if (_flowerArtCatalog?.Resolve(cluster.EmotionType, cluster.Owner, GrowthState.Bloomed) == null)
+            {
+                return null;
+            }
+
+            return SceneAuthoredImageVariantView.BuildFlowerKey(
+                cluster.EmotionType,
+                cluster.Owner,
+                GrowthState.Bloomed);
+        }
+
         private static string BuildPhraseTitle(ClusterProgress cluster)
         {
-            return cluster.UnlockedStage >= 3 ? "花丛已盛放" : "花蕾已记录";
+            return cluster.UnlockedStage >= 3 ? "花丛已盛放" : "花朵已记录";
         }
 
         private static string BuildPhraseBody(ClusterProgress cluster)
         {
             string emotion = ResolveEmotionName(cluster.EmotionType);
             string owner = ResolveOwnerName(cluster.Owner);
-            return $"{owner}培育出的{emotion}之花，记录着一次被看见的心情。继续培育后，可在这里替换为更完整的花语与插画。";
+            return $"{owner}培育出的{emotion}之花，记录着一次被看见的心情。继续收集同类情绪花，可提升该花卉的收集进度。";
         }
 
         private static string ResolveOwnerName(string owner)
@@ -395,7 +429,8 @@ namespace GeminiLab.Modules.HubUI.Panels
             [SerializeField] private Button? _button;
             [SerializeField] private Image? _cardImage;
             [SerializeField] private Image? _lockedImage;
-            [SerializeField] private Image? _flowerImage;
+            [SerializeField] private SceneAuthoredImageVariantView? _flowerView;
+            [SerializeField] private Image? _soilImage;
             [SerializeField] private GameObject? _unlockedContent;
             [SerializeField] private TMP_Text? _numberText;
             [SerializeField] private TMP_Text? _nameText;
@@ -409,12 +444,31 @@ namespace GeminiLab.Modules.HubUI.Panels
                 }
             }
 
-            public void Set(bool visible, int number, bool unlocked, string name, string meta)
+            public void Set(bool visible, int number, bool unlocked, string name, string meta, string? flowerVariantKey)
             {
                 if (_button != null) _button.interactable = visible;
                 if (_cardImage != null) _cardImage.enabled = visible && unlocked;
                 if (_lockedImage != null) _lockedImage.gameObject.SetActive(visible && !unlocked);
-                if (_flowerImage != null) _flowerImage.gameObject.SetActive(visible && unlocked && _flowerImage.sprite != null);
+                if (_flowerView != null)
+                {
+                    bool showFlower = visible && unlocked && flowerVariantKey != null;
+                    if (showFlower)
+                    {
+                        _flowerView.gameObject.SetActive(true);
+                        _flowerView.Show(flowerVariantKey!);
+                    }
+                    else
+                    {
+                        _flowerView.Hide();
+                        _flowerView.gameObject.SetActive(false);
+                    }
+                }
+                if (_soilImage != null)
+                {
+                    bool showSoil = visible && unlocked && flowerVariantKey != null;
+                    _soilImage.enabled = showSoil;
+                    _soilImage.gameObject.SetActive(showSoil);
+                }
                 if (_unlockedContent != null) _unlockedContent.SetActive(visible && unlocked);
                 if (_numberText != null) _numberText.text = $"No. {number:000}";
                 if (_nameText != null) _nameText.text = name;
