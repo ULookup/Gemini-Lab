@@ -65,10 +65,12 @@ function Find-GameObject([object[]]$blocks, [string]$objectName) {
             continue
         }
 
+        $gameObjectId = $Matches["id"]
+
         foreach ($line in $lines) {
             if ($line -match '^\s*m_Name:\s*(?<name>.*)$' -and $Matches["name"].Trim() -eq $objectName) {
                 return [pscustomobject]@{
-                    Id = $Matches["id"]
+                    Id = $gameObjectId
                     Lines = $lines
                 }
             }

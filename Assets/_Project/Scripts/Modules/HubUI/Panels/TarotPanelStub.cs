@@ -104,8 +104,8 @@ namespace GeminiLab.Modules.HubUI.Panels
                 _revealController.OnRevealComplete += () =>
                 {
                     SaveToCollection(_session!);
-                    _session = _tarot!.CreateSession(null);
-                    EnterStage(Stage.Select);
+                    _session = null;
+                    EnterStage(Stage.Idle);
                 };
                 _revealController.OnOpenGuide += () =>
                 {
@@ -197,6 +197,11 @@ namespace GeminiLab.Modules.HubUI.Panels
             if (_tarot == null)
             {
                 Debug.LogError("[TarotPanel] _tarot 为 null，无法跳转！检查 ITarotService 是否已注册到 ServiceLocator。");
+                return;
+            }
+            if (!_tarot.CanCreateSession)
+            {
+                Debug.LogWarning($"[TarotPanel] 苹果不足，需要 {_tarot.SessionCost} 个苹果才能开始抽牌");
                 return;
             }
             _session = _tarot.CreateSession(null);

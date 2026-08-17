@@ -3,6 +3,7 @@
   "rootNamespace": "GeminiLab.Modules.Tarot",
   "references": [
     "GeminiLab.Core",
+    "GeminiLab.Modules.Apple",
     "GeminiLab.Modules.Pet",
     "GeminiLab.Modules.Gateway",
     "GeminiLab.Modules.Pet.Personality"

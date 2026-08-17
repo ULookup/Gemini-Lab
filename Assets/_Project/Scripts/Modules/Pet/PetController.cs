@@ -85,6 +85,7 @@ namespace GeminiLab.Modules.Pet
         private CapsuleCollider2D? _capsuleCollider2D;
         private GeminiLab.Modules.Furniture.Furniture[]? _dynamicOcclusionFurniture;
         private int _defaultSortingOrder;
+        private bool _worldMapSortingOverride;
         private float _initialGroundY;
         private Vector2 _lastAnimationPosition;
         private Vector2 _lastMoveDirection = Vector2.down;
@@ -358,7 +359,7 @@ namespace GeminiLab.Modules.Pet
 
         private void UpdateDynamicSortingOrder()
         {
-            if (_spriteRenderer == null || _hasStoredInteractionSorting)
+            if (_spriteRenderer == null || _hasStoredInteractionSorting || _worldMapSortingOverride)
             {
                 return;
             }
@@ -381,6 +382,19 @@ namespace GeminiLab.Modules.Pet
             }
 
             _spriteRenderer.sortingOrder = resolvedSortingOrder;
+        }
+
+        public float WorldMapSortingAnchorY => ResolveSortingAnchorY();
+
+        public void ApplyWorldMapSortingOrder(int sortingOrder, string sortingLayerName)
+        {
+            if (_spriteRenderer == null || !IsWorldMapScene()) return;
+
+            _worldMapSortingOverride = true;
+            _spriteRenderer.sortingLayerName = string.IsNullOrWhiteSpace(sortingLayerName)
+                ? "Default"
+                : sortingLayerName;
+            _spriteRenderer.sortingOrder = sortingOrder;
         }
 
         private float ResolveSortingAnchorY()

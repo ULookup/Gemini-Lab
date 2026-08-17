@@ -2,6 +2,7 @@
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.Persistence;
+using GeminiLab.Modules.Apple;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Collection
@@ -26,6 +27,12 @@ namespace GeminiLab.Modules.Collection
         {
             ServiceLocator.TryResolve(out _eventBus);
 
+            if (!ServiceLocator.TryResolve(out IAppleService? apple) || apple is null)
+            {
+                Debug.LogError("[GachaBootstrap] IAppleService 未注册，请先挂 AppleRuntimeBootstrap");
+                return;
+            }
+
             if (!ServiceLocator.TryResolve(out ICollectionService? collection) || collection is null)
             {
                 Debug.LogError("[GachaBootstrap] ICollectionService 未注册，请先挂 CollectionRuntimeBootstrap");
@@ -35,7 +42,7 @@ namespace GeminiLab.Modules.Collection
             _coinService = new CoinService(_eventBus);
             ServiceLocator.Register<ICoinService>(_coinService);
 
-            _gachaService = new GachaService(_coinService, collection, _eventBus);
+            _gachaService = new GachaService(apple, _coinService, collection, _eventBus);
             ServiceLocator.Register<IGachaService>(_gachaService);
 
             // 广播初始余额，确保已有的 CoinBalanceDisplay 能拿到当前余额

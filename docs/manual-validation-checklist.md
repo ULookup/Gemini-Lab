@@ -2,6 +2,19 @@
 
 Updated: 2026-08-07
 
+## B18. 苹果资源系统（2026-08-14）
+
+| 检查项 | 结果 | 备注 |
+| :--- | :--- | :--- |
+| 新档进入游戏后苹果余额为 20，Apartment 四个资源栏复用原有 `BalanceLabel` 显示 `20` | 脚本与场景通过，Play 待目视 | `AppleRuntimeBootstrap` 已保存到 `Boot/BootstrapRoot`，不再新增 `AppleBalanceLabel` |
+| 等待或用开发者时钟快进 6 小时后点击「大树 1」～「大树 5」，树缓存苹果转入余额 | 未验证 | 每棵树每 6 小时 1 个、单树最多缓存 3 个；需在 WorldMap PlayMode 逐棵点击 |
+| 同一棵树重复点击不会重复领取；退出并重启后未领取缓存仍保留 | 未验证 | 检查 `apple` 存档中的 TreeId、LastGeneratedUtcTicks、PendingCount |
+| 花朵首次成熟奖励 1 个苹果，重复成熟不重复奖励 | 脚本通过 | `EmotionGardenService.BloomAt` 只在状态首次转为 Bloomed 时调用 `IAppleService.Add(1)` |
+| 扭蛋单抽/五连分别消耗 1/5 个苹果；余额不足按钮不可用且服务不扣余额 | 脚本通过，Play 待目视 | 四个页面资源栏和 GachaPanel 都读取苹果余额，文本只显示数字；金币服务不再驱动该资源栏 |
+| 塔罗开始抽牌消耗 1 个苹果；余额不足不进入选牌；解读完成后不会自动再扣一枚苹果 | 脚本通过，Play 待目视 | `TarotService.CreateSession` 扣费，面板回到 Idle 等待下一次明确点击 |
+| AppleService Capture/Restore 往返后余额、树缓存和时间戳一致 | 通过 | `AppleResourceServiceTests` 覆盖 |
+| Scene 与 Play 视图未新增运行时树/苹果/UI 视觉对象 | 脚本与场景通过 | 运行时只更新 Scene 中已有 `BalanceLabel` 文本和树交互状态 |
+
 ## 使用方式
 - 人工验证后直接在“结果”列填写：`通过` / `不通过` / `未验证`
 - 如有问题，把现象写进“备注”列
@@ -422,28 +435,38 @@ Updated: 2026-08-07
 | 未解锁图鉴卡片不显示花朵、土壤或解锁文字 | 脚本与场景通过，Play 待目视 | Scene 中前三张为已收集预览，其余卡片为 `LockedImage` active，`FlowerImage`/`SoilImage`/`UnlockedContent` inactive；运行时锁定分支同时关闭 FlowerImage 根节点 |
 | `Panel_EmotionInput`、`Panel_WeeklyGarden`、`Panel_EmotionCollection` 不会同时叠在一起 | 未验证 | 路由已是互斥切换，仍需 Unity PlayMode 确认 |
 
-## B14. WorldMap 花朵自由摆放 P0-1（2026-08-04）
+## B14. WorldMap 花朵自由摆放侧边栏（2026-08-10，2026-08-11 修正右侧布局）
 适用范围：
 - 目标场景：`Assets/_Project/Scenes/WorldMap/WorldMap_Main.unity`
 - 网格基准：`Assets/_Project/Art/WorldMap/garden/中景/花丛.png` 的完整 Sprite 尺寸（当前 `4.01 x 2.24` Unity 单位），该资源只作标尺，不作为摆放显示
+- 侧栏资源：`Assets/_Project/Art/WorldMap/arrange`
+- 花卉资源：`Assets/_Project/Art/WorldMap/花朵图鉴/花朵`、`花枝`、`花丛`
 
 | 检查项 | 结果 | 备注 |
 | :--- | :--- | :--- |
-| WorldMap 中存在“布置”按钮 | 未验证 | 由 `WorldMapFlowerPlacementAuthoring` 作者化 |
-| 点击“布置”后底部花朵库存栏展开 | 未验证 |  |
-| 库存栏可以选择花朵 | 未验证 | 当前保留中性占位选项，正式资源到位后由 Inspector 接入 |
-| 可以选择“单花”或“花丛” | 未验证 |  |
-| 选择摆放类型后库存栏自动收起 | 未验证 |  |
-| 鼠标移动时显示半透明花朵预览 | 未验证 |  |
-| 预览位置按二维网格在 X/Y 两轴吸附 | 未验证 | 单元尺寸和占格规则由 Inspector 配置 |
-| 点击有效草地后生成正式摆放物 | 未验证 | 当前有效区域由独立的 `FlowerPlacementBounds` BoxCollider2D 提供，不复用宠物移动边界 |
-| 点击无效区域不会落位或残留预览 | 未验证 |  |
-| 放置模式中显示覆盖摆放区域的完整二维网格线 | 未验证 | 网格线与 Inspector 中的 X/Y 单元尺寸一致 |
-| `FlowerPlacementBounds` 存在且覆盖草地，`PetMovementBounds` 未被修改 | 未验证 | 默认 `36 x 8.96`，禁用 Collider 仍作为摆放范围数据读取 |
-| 点击有效位置后保留放置模式，可连续放置多个占位物 | 未验证 |  |
-| 按 `Esc` 退出放置模式，状态栏、预览和网格线均隐藏 | 未验证 |  |
-| 库存按钮和摆放物不显示图鉴面板 Sprite | 未验证 | 当前统一使用程序生成的中性占位显示 |
-| 已摆放花朵的层级和场景位置可在 Inspector 调整 | 未验证 | 需检查 `WorldMapPlacedFlowers` 和 SpriteRenderer |
+| Scene 中存在右下角“布置”入口和右侧 `FlowerPlacementPanel` | 脚本与场景通过，Play 待目视 | Scene 已保存右侧锚定的 `Btn_FlowerPlacement`、`FlowerPlacementPanel` 和 `UIBoard.png` 原始尺寸引用；需进入 Unity 目视确认位置 |
+| 点击“布置”后右侧滚动式花卉侧栏展开，旧底部库存栏、`FlowerButtons`/`SingleButton`/`ClusterButton`/`CancelButton` 和顶层 `FlowerPlacementStatusBar` 均不显示 | 场景通过，Play 待目视 | 旧原型节点已从保存场景清理；需 Unity PlayMode 验证 `FlowerSidebarViewport` 滚动与展开状态 |
+| 展开花种详情时，选中标题和其上方条目不移动，详情固定出现在标题下方且不被后续条目遮挡 | 脚本与场景通过，Play 待目视 | `FlowerList` 是唯一纵向布局根，且已启用子项高度控制；条目高度为收起 73 / 展开 320，`ExpandedOptions` 锚定标题下方 |
+| 从一个已展开花种切换到另一花种时，被点击标题栏保持视窗位置；仅新标题下方条目按详情高度整体位移 | 脚本与场景通过，Play 待目视 | `WorldMapFlowerPlacementController` 会在重排前后补偿 ScrollRect 的 content 偏移 |
+| 侧栏包含 18 个情绪/培育者条目，并使用 arrange 正式 UI 资源 | 脚本与场景通过，Play 待目视 | `FlowerOption_00...17`、`item.png`、上下箭头、单花/花丛卡和合成按钮已保存 |
+| 花种图标来自 `花朵`，单花来自 `花枝`，花丛来自 `花丛` | 脚本与场景通过，Play 待目视 | 不使用 `arrange.png` 裁剪花卉；Scene 已保存 18 组对应 Sprite 引用 |
+| 单花和花丛显示共享库存，当前选项显示勾选标记 | 脚本通过，Play 待验证 | `EmotionGardenService` 按情绪类型与培育者持久化单花/花丛库存；开花事件与存档恢复事件会刷新现有侧栏节点 |
+| 每周培育完成并开花的花可以在摆放侧栏中使用 | 脚本通过，Play 待验证 | `BloomAt` 增加同一 `PlacementFlowerInventory.SingleCount`；旧版存档在升级到版本 3 时按已开花记录迁移一次 |
+| 同种单花数量不少于 3 时，点击合成只生成 1 个花丛并即时刷新数量 | 脚本通过，Play 待验证 | 合成直接调用共享服务，原子扣除 3 个单花并增加 1 个花丛；不再只改当前会话本地变量 |
+| 摆放单花/花丛后对应共享库存减 1，退出并重新进入后数量保持 | 脚本通过，Play 待验证 | 成功摆放原子扣库存并串行 autosave；应用重启后应恢复原槽位和世界坐标，且不二次扣库存 |
+| 同种单花不足 3 朵时显示 `组 5.png` 规则提示气泡 | 未验证 | 需在 PlayMode 用不足库存触发 |
+| 选择单花或花丛后显示半透明 Scene 预览 | 未验证 | 预览变体已作者化在 `FlowerPlacementPreview`，运行时只切换显隐和颜色透明度 |
+| 预览位置按花丛 Sprite 完整尺寸在 X/Y 两轴网格吸附 | 脚本与场景通过，Play 待目视 | `PlacementGrid.mat`、10 条竖线、5 条横线已保存；单元尺寸为 `4.01 x 2.24` |
+| 点击有效草地后使用预置槽显示正式花卉 | 代码修复，需有库存的 Play 存档复测 | 启动日志已确认 `32/32` 槽位、`1152` 个绑定；`WorldMapPlacementSlot` 直接验证可进入占用状态；不使用运行时 Instantiate |
+| 点击无效区域不会落位或残留预览 | 未验证 | 有效区域由独立 `FlowerPlacementBounds` 提供，不复用宠物移动边界 |
+| 放置模式显示覆盖区域的完整二维网格线 | 脚本与场景通过，Play 待目视 | `FlowerPlacementGrid` 下已保存 10 条竖线和 5 条横线 |
+| 点击有效位置后保持摆放模式，可以连续放置 | 代码修复，需有库存的 Play 存档复测 | 提交期间忽略同步摆放恢复事件重入，需确认每次点击消耗对应库存、占用下一个预置槽并写入版本 4 `PlacedFlowers` |
+| 摆放层与 `BaselineItem` 对齐，相邻层网格半格错位；同层同格不可重叠，跨层可形成遮挡；花朵与桌宠按同一基线决定前后 | 代码与场景通过，Play 待目视 | `Pet_Angel`、`Pet_Devil` 根对象已挂 `BaselineItem` 且保持 `solidCollider=true`；花朵与桌宠使用 `Default` Sorting Layer，先按 `BaselineItem.SortingOrder`，同排序值内按基线 Y（Y 越低越靠前），完全同线时桌宠略优先；需在 PlayMode 选择单花和花丛确认不同基线层及同层不同 Y 的相对遮挡 |
+| 花丛按场景“花丛 3”尺寸占用一个网格 | 未验证 | 需确认花丛预览/正式节点均以约 `3.99 x 2.22` Sprite 尺寸落位 |
+| 按 `Esc` 退出摆放模式，侧栏内 `PlacementStatus`、预览和网格线隐藏 | 未验证 | 旧顶层 `FlowerPlacementStatusBar` 已移除；运行时入口为 `WorldMapFlowerPlacementController` |
+| 点击场景空白区域不会误触发 UI；关闭按钮可退出侧栏 | 未验证 | 需 Unity PlayMode 验证 UI 射线与场景点击边界 |
+| Scene 与 Play 的侧栏、网格、花卉资源和槽位结构一致 | 脚本与场景通过，Play 待目视 | 运行时不创建最终视觉对象；需打开 Scene 与 Game 视图做最终目视对照 |
+| 第一条花种位于侧栏标题下方，滚动列表不越出装饰窗口 | 场景通过，Play 待目视 | `FlowerSidebarViewport` 已保存左右 34、顶部 132、底部 56 边距，序列化结果为 `anchoredPosition=(0,-38)`、`sizeDelta=(-68,-188)` |
 
 ## B15. WorldMap 昼夜切换（2026-08-05）
 适用范围：

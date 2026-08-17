@@ -11,7 +11,7 @@ namespace GeminiLab.Editor.SceneBootstrap
     public static class AutoSetup
     {
         private const string SetupDoneKey = "GeminiLab.AutoSetupDone";
-        private const int ExpectedVersion = 46;
+        private const int ExpectedVersion = 65;
 
         static AutoSetup()
         {
@@ -258,6 +258,192 @@ namespace GeminiLab.Editor.SceneBootstrap
                     {
                         // 将瓶子选中效果改为只输出 Sprite Alpha 边缘，避免整瓶染色。
                         WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 47)
+                    {
+                        // 花朵自由摆放改为使用 arrange 美术资源的左侧滚动侧边栏。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 48)
+                    {
+                        // 修复 BaselineItem 分层网格、相邻层半格错位和花丛单格尺寸。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 49)
+                    {
+                        // 重新落盘最新的层级基线、错位网格和花丛 3 单格尺寸。
+                        WorldMapEmotionGardenUIPatch.Patch();
+                    }
+
+                    if (currentVersion < 50)
+                    {
+                        // 仅将草地区域内的 BaselineItem 作为可吸附层，并保持网格视觉关闭。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                    }
+
+                    if (currentVersion < 51)
+                    {
+                        // 再次落盘摆放层过滤结果，确保已经打开的场景也刷新作者化数据。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                    }
+
+                    if (currentVersion < 52)
+                    {
+                        // Patch 会修改当前场景中的序列化层列表；这里显式保存，避免只改内存而下次启动丢失。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 53)
+                    {
+                        // 清理槽位上的旧版重复组件，并重新落盘花丛 3 的实际占用尺寸。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 54)
+                    {
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 55)
+                    {
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 56)
+                    {
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 57)
+                    {
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 58)
+                    {
+                        // 清理旧版丢失脚本的 PlacementSlot，并重新挂载当前 WorldMapPlacementSlot。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 59)
+                    {
+                        // 拆分 PlacementSlot 独立脚本后重新落盘 32 个槽位，清除旧嵌入式 MonoScript 引用。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 60)
+                    {
+                        // 统一花卉与桌宠的 Default Sorting Layer，并清理旧摆放视觉的排序配置。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 61)
+                    {
+                        // 撤销花朵全局前置排序，改为花朵与桌宠共享 BaselineItem 层级。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 62)
+                    {
+                        // 为 WorldMap 桌宠根对象补齐 BaselineItem，并保存基线排序参数。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 63)
+                    {
+                        // 保持桌宠原有胶囊碰撞体为实体碰撞，不让 BaselineItem 改成 Trigger。
+                        var canvas = GameObject.Find("Canvas");
+                        if (canvas != null)
+                        {
+                            WorldMapFlowerPlacementAuthoring.Patch(canvas, SortingLayer.NameToID("UI"));
+                            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
+                            EditorSceneManager.SaveScene(EditorSceneManager.GetActiveScene());
+                        }
+                    }
+
+                    if (currentVersion < 64)
+                    {
+                        BootAppleBootstrapAuthoring.Author();
+                        WorldMapAppleTreeAuthoring.Patch();
+                        ApartmentAppleBalanceAuthoring.Patch();
+                    }
+
+                    if (currentVersion < 65)
+                    {
+                        ApartmentAppleBalanceAuthoring.Patch();
                     }
 
                     EditorPrefs.SetInt(SetupDoneKey, ExpectedVersion);

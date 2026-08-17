@@ -4,6 +4,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using GeminiLab.Core;
+using GeminiLab.Core.Time;
+using GeminiLab.Modules.Apple;
 using UnityEngine;
 using Random = UnityEngine.Random;
 using GeminiLab.Core.Events;
@@ -18,27 +20,45 @@ namespace GeminiLab.Modules.Tarot
     public sealed class TarotService : ITarotService
     {
         private readonly TarotDeckSO _deck;
+        private readonly IAppleService _apple;
+        private readonly IGameClock _clock;
         private readonly EventBus? _eventBus;
         private readonly ITarotReadingBackend _readingBackend;
 
         public TarotService(
             TarotDeckSO deck,
+            IAppleService apple,
+            IGameClock clock,
             EventBus? eventBus,
             ITarotReadingBackend readingBackend)
         {
             _deck = deck ?? throw new ArgumentNullException(nameof(deck));
+            _apple = apple ?? throw new ArgumentNullException(nameof(apple));
+            _clock = clock ?? throw new ArgumentNullException(nameof(clock));
             _eventBus = eventBus;
             _readingBackend = readingBackend ?? throw new ArgumentNullException(nameof(readingBackend));
         }
 
         public TarotDeckSO Deck => _deck;
+        public int SessionCost => 1;
+        public bool CanCreateSession => _apple.Balance >= SessionCost;
 
         public TarotSession CreateSession(string? question)
         {
+            if (!_apple.TrySpend(SessionCost))
+            {
+                Debug.LogWarning("[Tarot] 苹果不足，无法开始抽牌");
+                return new TarotSession
+                {
+                    Question = question ?? string.Empty,
+                    SessionDateIso = _clock.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                };
+            }
+
             var session = new TarotSession
             {
                 Question = question ?? string.Empty,
-                SessionDateIso = System.DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+                SessionDateIso = _clock.Now.ToString("yyyy-MM-dd HH:mm:ss"),
                 CandidateCards = PickRandomCards(11)
             };
             return session;

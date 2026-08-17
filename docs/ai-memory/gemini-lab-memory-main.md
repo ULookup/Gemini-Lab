@@ -2,6 +2,15 @@
 
 Updated: 2026-08-10
 
+## 2026-08-14 苹果资源系统
+
+- 新增 `GeminiLab.Modules.Apple`：`AppleService` 以 `IAppleService` 为门面，首次新档余额为 20 个苹果，存档 key 为 `apple`。
+- `AppleService` 只通过 `IGameClock.UtcNow` 计算大树离线生成：每棵树每 6 小时生成 1 个，单树缓存上限 3 个；树 ID、上次生成时间、待领取数量和累计领取量都会进入存档，重启不会重复生成。
+- `WorldMap_Main.unity` 的「大树 1」～「大树 5」已由 `WorldMapAppleTreeAuthoring` 作者化 `AppleTreeInteractable`，点击树即领取缓存苹果；不创建运行时树/苹果视觉对象。
+- 情绪花首次开花通过 `EmotionGardenService.BloomAt` 奖励 1 个苹果；扭蛋单抽/五连分别消耗 1/5 个苹果，塔罗开始一次抽牌会话消耗 1 个苹果。
+- `BootAppleBootstrapAuthoring` 已将苹果服务注册宿主保存到 `Boot/BootstrapRoot`；Apartment 四个页面复用原有 `TopResource/BalanceLabel`，由 `StubPanelBase`/`AppleBalanceDisplay` 统一更新苹果数量，不再创建独立的 `AppleBalanceLabel`。苹果是 UI 资源栏的唯一货币，文本只显示数字。
+- EditMode 新增 `AppleResourceServiceTests`，覆盖初始余额、树生成/缓存往返、领取、消费和成熟奖励去重；Unity 编译与任务/视觉闸门已通过，PlayMode 晃树与完整抽扭蛋/塔罗仍需人工复验。
+
 ## 定位
 这份文档是 Gemini-Lab 的长期项目记忆总览。
 
@@ -382,8 +391,23 @@ Updated: 2026-08-10
 - 新增运行时入口 `Assets/_Project/Scripts/Modules/WorldMap/WorldMapFlowerPlacementController.cs`。
 - 新增编辑器作者化入口 `Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapFlowerPlacementAuthoring.cs`，由 `WorldMapEmotionGardenUIPatch` 调用，`AutoSetup` 版本提升到 24。
 - WorldMap 花朵摆放以 `Assets/_Project/Art/WorldMap/garden/中景/花丛.png` 的 Sprite 完整尺寸作为二维网格标尺；该资源只用于得到 `4.01 x 2.24` Unity 单位的网格尺寸，不作为摆放花朵显示。
-- 当前正式摆放花朵美术尚未交付；摆放控制器只读取 `花丛.png` 作为网格标尺，库存和已摆放物统一使用程序生成的中性占位显示，避免误用图鉴面板资源。
+- 该阶段的中性占位已由 Scene 作者化的正式单花/花丛预置变体取代；摆放控制器只读取 `花丛.png` 作为网格标尺，运行时只切换已保存的 Sprite 节点。
 - 当前功能范围为：布置入口、花朵库存、单花/花丛选择、二维半透明预览、双轴网格吸附、可视化网格线、连续点击落位和 Esc 退出。摆放区域使用独立 `FlowerPlacementBounds`，不再复用仅有 `36 x 0.3` 横向尺寸的 `PetMovementBounds`；最终草地范围、排序和视觉仍需 Unity PlayMode 人工验证。
+
+### 2026-08-10 / 2026-08-11 WorldMap 花朵摆放侧边栏作者化
+- `WorldMapFlowerPlacementAuthoring` 已将旧底部库存栏改为 `WorldMap_Main.unity` 中右侧滚动式 `FlowerPlacementPanel`，面板使用 `Assets/_Project/Art/WorldMap/arrange/UIBoard.png` 原始 `498 x 899` 尺寸，条目使用 `item.png`、单花卡 `singleCard.png`、花丛卡 `tripleCard.png`、合成按钮 `synthesis.png`、勾选 `tick.png`、上下箭头和提示气泡等正式资源。`Btn_FlowerPlacement` 已落在右下角。
+- 花卉资源不从 `arrange.png` 裁剪：18 个“培育者 + 情绪”组合的花种标题取 `花朵图鉴/花朵`，单花取 `花朵图鉴/花枝/*（完整）.PNG`，花丛取 `花朵图鉴/花丛/*（花丛）.PNG`，均由 Editor 保存为 Scene Sprite 引用。
+- `WorldMap_Main.unity` 已作者化 18 个花卉条目、36 个预览变体、32 个有限落位槽及其 1152 个单花/花丛预置显示对象；运行时只切换预置对象、更新槽位位置/占用状态和文本，不创建 GameObject、UI、Sprite 或网格线。
+- 网格材质 `Assets/_Project/Art/WorldMap/arrange/PlacementGrid.mat` 与 10 条竖线、5 条横线已落盘；网格单元仍严格读取 `garden/中景/花丛.png` 的 Sprite 完整尺寸 `4.01 x 2.24` Unity 单位，花丛资源本身不作为摆放显示。
+- `2026-08-11` 已将条目展开改为固定详情页手风琴：`FlowerList` 是 `ScrollRect` 唯一内容与唯一纵向布局根，`FlowerSidebarContent` 仅保留层级容器。每个 `FlowerOption_00...17` 场景中都预置标题与 `ExpandedOptions`；收起高度为 `73`，展开高度为 `320`，详情页以顶部 Pivot 固定在标题下方 `-76`。`FlowerList.VerticalLayoutGroup.childControlHeight` 已保存为开启，确保展开条目的 320 高度真实参与排版，后续条目会整体下移而不覆盖详情。运行时只切换详情节点和该条目的已序列化高度，并在切换条目时补偿 ScrollRect，使被点击标题栏保持当前视窗位置；上方条目不移动。
+- 当前交互为：打开右侧栏 → 展开花种 → 选择单花/花丛 → 网格与半透明预览显示 → 点击有效区域连续落位 → `Esc` 退出；同种 3 朵单花可主动合成 1 个花丛，不足时显示 `组 5.png` 提示气泡。
+- `2026-08-12` 起，摆放库存已收口到 `EmotionGardenService` 的 `emotion-garden` 持久化数据：每朵花开花时给对应“情绪类型 + 培育者”增加 1 个单花库存；摆放单花/花丛与“3 单花合成 1 花丛”都直接读写同一库存，并通过 `EmotionFlowerPlacementInventoryChangedEvent` 实时刷新侧栏。存档版本升级为 3，旧存档只在迁移时按已开花记录（缺失时以累计进度补齐）初始化一次单花库存，不会在每次打开侧栏时重复补发。
+- `2026-08-13` 起，存档版本为 4：成功摆放以槽位、花型、情绪/培育者和世界坐标写入 `PlacedFlowers`，原子扣除对应库存并立即串行 autosave；启动读档会恢复原槽位和坐标，不会再次扣库存。单花和花丛摆放均不附带土壤；旧的顶层 `Canvas/FlowerPlacementStatusBar` 已从场景移除，当前提示只使用侧栏内 `PlacementStatus`。
+- `2026-08-13` 同步清理 `FlowerPlacementPanel` 下旧原型的 `FlowerButtons`、`SingleButton`、`ClusterButton`、`CancelButton`，并重新把 32 个 `WorldMapPlacementSlot` 的正式视觉绑定保存到 Scene；运行时恢复只切换这些已作者化节点。当前 Editor 默认使用 `Saves-Dev`，其中没有 `PlacedFlowers` 的旧记录时无法凭空恢复历史摆放，之后的新摆放会写入版本 4 存档。
+- `2026-08-13` 摆放层改为读取 Scene 中的 `BaselineItem`：花卉基线与其排序层绑定，同层才做占用冲突检查，跨层允许重叠；内部吸附仍按相邻层半个单元宽度错位，但 `FlowerPlacementGrid` 不再在运行时显示，避免抽象网格误导玩家。作者化会过滤摆放区域外的基线，花丛 footprint 改为单格，视觉/占用尺寸以场景 `花丛 3` 的 `3.99 x 2.22` 碰撞体基准，点击草地时会真正提交摆放，并清理槽位遗留的重复旧组件。
+- `2026-08-14` 修正落位链路：`WorldMapPlacementSlot` 与 `WorldMapPlacedFlower` 使用独立稳定脚本 GUID，运行时校验为 `32/32` 槽位、`1152` 个正式视觉绑定；槽位绑定会扫描已作者化的 `PlacedVisual_*` 子节点，并以显式占用状态参与同层冲突判断。提交期间忽略同步 `EmotionFlowerPlacementsChangedEvent` 的重入恢复，避免库存扣减成功后恢复回调清空刚落位槽位；直接槽位验证已确认绑定 `36`、占用状态为真。鼠标端到端仍需在有可用库存的 Play 存档中人工点击确认。
+- `2026-08-14` 同日修正花朵与桌宠的遮挡基准：撤销错误的全局花朵前置偏移，正式花朵/预览和桌宠共享 `BaselineItem.SortingOrder` 主层级，并在同一主层级内按基线 Y 二次排序（Y 越低越靠前，完全同线时桌宠仅提高 1 个排序单位）。`WorldMap_Main.unity` 的 1152 个预置视觉统一保存为 `Default` Sorting Layer，槽位显示树内所有 SpriteRenderer 也会同步该深度键。AutoSetup 63 已给 `Pet_Angel`、`Pet_Devil` 场景根对象保存 `BaselineItem`，基线取碰撞体底部、`solidCollider=true` 且不参与可种植层收集。
+- `2026-08-12` 同步修正 `FlowerSidebarViewport`：拉伸锚点下改用 `offsetMin=(34,56)` 与 `offsetMax=(-34,-132)` 保存面板内边距，第一条花种固定在标题下方，列表滚动内容由 `RectMask2D` 裁剪在装饰窗口内部。独立作者化入口为 `Tools/Gemini-Lab/WorldMap/Author Flower Placement`。
 
 - `2026-07-30` 起，`WorldMap_Main.unity` 中 `Panel_WeeklyGarden/Grid/CellTemplate` 需要保持场景里可编辑但默认不可见；`WeeklyGardenPanelStub` 会在运行时兜底隐藏模板，实际面板只应显示 7 个 Day cell。`tools/check-task-gate.ps1 write` 已通过，Scene 视图仍需补验确认没有第 8 个瓶子。
 - `2026-07-30` 同轮，`Panel_WeeklyGarden/Grid` 已从自动布局改为纯容器，`Day0`~`Day6` 可以在 Scene / Inspector 里单独移动；作者化脚本不再清理现有格子位置，也不再给模板和新格子补 `HorizontalLayoutGroup` / `LayoutElement`。

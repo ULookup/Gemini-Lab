@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.Persistence;
+using GeminiLab.Modules.Apple;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -11,8 +12,8 @@ namespace GeminiLab.Modules.Collection
 {
     public sealed class GachaService : IGachaService, IPersistentService
     {
-        private const int SingleCost = 100;
-        private const int MultiCost = 500;
+        private const int SingleCost = 1;
+        private const int MultiCost = 5;
         private const int MultiCount = 5;
         private const int DuplicateRefund = 30;
 
@@ -44,13 +45,15 @@ namespace GeminiLab.Modules.Collection
             { "evil_badge", "evil_badge" }
         };
 
+        private readonly IAppleService _apple;
         private readonly ICoinService _coin;
         private readonly ICollectionService _collection;
         private readonly EventBus? _eventBus;
         private readonly HashSet<string> _unlocked = new();
 
-        public GachaService(ICoinService coin, ICollectionService collection, EventBus? eventBus)
+        public GachaService(IAppleService apple, ICoinService coin, ICollectionService collection, EventBus? eventBus)
         {
+            _apple = apple ?? throw new ArgumentNullException(nameof(apple));
             _coin = coin ?? throw new ArgumentNullException(nameof(coin));
             _collection = collection ?? throw new ArgumentNullException(nameof(collection));
             _eventBus = eventBus;
@@ -67,7 +70,7 @@ namespace GeminiLab.Modules.Collection
         public bool CanPull(int count)
         {
             int cost = CurrentCost(count);
-            return _coin.Balance >= cost;
+            return _apple.Balance >= cost;
         }
 
         public GachaResult PullSingle() => Pull(1);
@@ -77,7 +80,7 @@ namespace GeminiLab.Modules.Collection
         private GachaResult Pull(int count)
         {
             int cost = CurrentCost(count);
-            if (!_coin.TrySpend(cost))
+            if (!_apple.TrySpend(cost))
             {
                 return new GachaResult(Array.Empty<GachaItem>(), 0);
             }

@@ -5,7 +5,8 @@
     "GeminiLab.Core",
     "GeminiLab.Modules.Garden",
     "GeminiLab.Modules.Pet",
-    "GeminiLab.Modules.EmotionGarden"
+    "GeminiLab.Modules.EmotionGarden",
+    "GeminiLab.Modules.Persistence"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

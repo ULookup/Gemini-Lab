@@ -41,6 +41,33 @@ namespace GeminiLab.Modules.EmotionGarden
         /// <summary>获取所有情绪+培育者组合的累计进度。</summary>
         IReadOnlyList<ClusterProgress> GetAllClusters();
 
+        /// <summary>获取指定情绪花的自由摆放库存。</summary>
+        PlacementFlowerInventory GetPlacementInventory(string emotionType, string owner);
+
+        /// <summary>消耗指定数量的单花库存；库存不足时返回 false。</summary>
+        bool TryConsumePlacementSingle(string emotionType, string owner, int amount = 1);
+
+        /// <summary>消耗指定数量的花丛库存；库存不足时返回 false。</summary>
+        bool TryConsumePlacementCluster(string emotionType, string owner, int amount = 1);
+
+        /// <summary>将 3 朵同种单花合成为 1 个花丛；库存不足时返回 false。</summary>
+        bool TrySynthesizePlacementCluster(string emotionType, string owner);
+
+        /// <summary>获取当前已经摆放到 WorldMap 的花卉快照。</summary>
+        IReadOnlyList<PlacedEmotionFlower> GetPlacedFlowers();
+
+        /// <summary>
+        /// 原子完成一次摆放：校验稳定槽位、扣减单花/花丛库存并记录世界坐标。
+        /// 失败时库存和摆放记录都保持不变。
+        /// </summary>
+        bool TryPlaceFlower(
+            string emotionType,
+            string owner,
+            bool isCluster,
+            int slotIndex,
+            float worldX,
+            float worldY);
+
         /// <summary>检查所有 Growing 状态的花，跨天则自动开花（幂等）。</summary>
         void RefreshBlooming();
 

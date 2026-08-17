@@ -4,6 +4,8 @@ using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.Persistence;
 using GeminiLab.Core.UI;
+using GeminiLab.Core.Time;
+using GeminiLab.Modules.Apple;
 using GeminiLab.Modules.Gateway;
 using GeminiLab.Modules.Pet;
 using GeminiLab.Modules.Pet.Personality;
@@ -39,8 +41,20 @@ namespace GeminiLab.Modules.Tarot
 
             ServiceLocator.TryResolve(out _eventBus);
 
+            if (!ServiceLocator.TryResolve(out IAppleService? apple) || apple is null)
+            {
+                Debug.LogError("[TarotBootstrap] IAppleService 未注册，请先挂 AppleRuntimeBootstrap");
+                return;
+            }
+
+            if (!ServiceLocator.TryResolve(out IGameClock? clock) || clock is null)
+            {
+                Debug.LogError("[TarotBootstrap] IGameClock 未注册，塔罗服务无法初始化");
+                return;
+            }
+
             ITarotReadingBackend backend = ResolveBackend();
-            var service = new TarotService(_deck, _eventBus, backend);
+            var service = new TarotService(_deck, apple, clock, _eventBus, backend);
             ServiceLocator.Register<ITarotService>(service);
 
             // Register session record store for persistence

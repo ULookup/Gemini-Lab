@@ -11,6 +11,12 @@ namespace GeminiLab.Modules.Tarot
     /// </summary>
     public interface ITarotService
     {
+        /// <summary>开始一次抽牌会话所需的苹果数量。</summary>
+        int SessionCost { get; }
+
+        /// <summary>当前苹果余额是否足以开始抽牌。</summary>
+        bool CanCreateSession { get; }
+
         /// <summary>塔罗牌堆，供图鉴等 UI 遍历展示。</summary>
         TarotDeckSO Deck { get; }
 

@@ -3,7 +3,7 @@ using System;
 using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
-using GeminiLab.Modules.Collection;
+using GeminiLab.Modules.Apple;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -17,9 +17,9 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] protected TMP_Text? _balanceText;
 
         private IUIRouter? _router;
-        private ICoinService? _coin;
+        private IAppleService? _apple;
         private EventBus? _eventBus;
-        private IDisposable? _coinChangedSub;
+        private IDisposable? _appleChangedSub;
         public abstract PanelId Id { get; }
 
         protected virtual void Awake()
@@ -40,7 +40,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         protected virtual void OnDestroy()
         {
-            _coinChangedSub?.Dispose();
+            _appleChangedSub?.Dispose();
             if (_router is not null)
             {
                 _router.Unregister(Id);
@@ -58,14 +58,14 @@ namespace GeminiLab.Modules.HubUI.Panels
                 _content.SetActive(true);
             }
 
-            EnsureCoinService();
+            EnsureAppleService();
             RefreshBalance();
         }
 
         public virtual void OnClose()
         {
-            _coinChangedSub?.Dispose();
-            _coinChangedSub = null;
+            _appleChangedSub?.Dispose();
+            _appleChangedSub = null;
 
             if (_content is not null)
             {
@@ -78,22 +78,22 @@ namespace GeminiLab.Modules.HubUI.Panels
             _router?.Close(Id);
         }
 
-        private void EnsureCoinService()
+        private void EnsureAppleService()
         {
             if (_eventBus == null) ServiceLocator.TryResolve(out _eventBus);
-            if (_coin == null) ServiceLocator.TryResolve(out _coin);
+            if (_apple == null) ServiceLocator.TryResolve(out _apple);
 
-            if (_eventBus != null && _coinChangedSub == null)
+            if (_eventBus != null && _appleChangedSub == null)
             {
-                _coinChangedSub = _eventBus.Subscribe<CoinChangedEvent>(_ => RefreshBalance());
+                _appleChangedSub = _eventBus.Subscribe<AppleChangedEvent>(_ => RefreshBalance());
             }
         }
 
         private void RefreshBalance()
         {
-            if (_coin == null) ServiceLocator.TryResolve(out _coin);
-            if (_coin == null || _balanceText == null) return;
-            _balanceText.text = $"{_coin.Balance}";
+            if (_apple == null) ServiceLocator.TryResolve(out _apple);
+            if (_apple == null || _balanceText == null) return;
+            _balanceText.text = $"{_apple.Balance}";
         }
 
         private static IUIRouter ResolveOrCreateRouter()
