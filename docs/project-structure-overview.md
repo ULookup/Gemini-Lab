@@ -2,6 +2,12 @@
 
 Updated: 2026-07-30
 
+## 苹果资源系统（2026-08-14）
+
+- `Assets/_Project/Scripts/Modules/Apple/AppleService.cs` 负责 20 个初始苹果、按 `IGameClock` 的大树缓存生成、领取与 JSON 持久化；WorldMap 现有「大树 1」～「大树 5」由 `WorldMapAppleTreeAuthoring` 绑定 `AppleTreeInteractable`。
+- 苹果是游戏 UI 资源栏的唯一货币，由四个页面已有的 `TopResource/BalanceLabel` 显示；`StubPanelBase` 与 `GachaPanelController` 统一读取 `IAppleService`，运行时只更新原文本数字，不创建新的 `AppleBalanceLabel`。成熟花朵在 `EmotionGardenService` 奖励 1 个苹果；`GachaService` 与 `TarotService` 分别以 1/5 和 1 个苹果消费。
+- 测试位于 `Assets/_Project/Tests/EditMode/AppleResourceServiceTests.cs`；编辑器作者化入口为 `BootAppleBootstrapAuthoring`、`WorldMapAppleTreeAuthoring` 和 `ApartmentAppleBalanceAuthoring`。
+
 ## 这份文档怎么看
 这不是“理想中的最终目录图”，而是“当前仓库已经有什么，以及这些目录将来分别负责什么”的说明。
 
@@ -118,6 +124,10 @@ AI 协作工具链目录。
 - 同轮，图鉴卡片的锁定态也直接作者化在 Scene 中：未解锁卡片的 `LockedImage` 开启，`FlowerImage`、`SoilImage`、`UnlockedContent` 关闭；当前 Scene 默认保留前三张已收集卡的真实花枝与土壤预览，运行时只根据收集数据切换这些已有节点。
 - `2026-08-09` 起，`SceneAuthoredImageVariantView.cs` 是每周花图、成长花头、图鉴卡片和详情页的稳定序列化变体组件；每周无花状态的瓶内花、成长 icon、土壤和花朵预览均隐藏，三个 UIbar 信息区显示真实数据或 `---`。
 - 图鉴详情页改为每个 `Variant_00...` 独立包含 `FlowerArt` 与 `SoilImage`，土壤 Y 坐标按花型单独作者化；`WorldMapFlowerSoilLayoutWindow` 的详情复用入口也按同名 Variant 配对复制。
+- `2026-08-10` 起，WorldMap 花朵摆放入口已改为右侧 `FlowerPlacementPanel` 滚动侧边栏（`2026-08-11` 已按参考图修正锚点、条目内部图标/名称位置与原始资源尺寸，并重构为固定详情页手风琴）；`FlowerList/FlowerOption_00...17` 使用 `arrange` 正式 UI 资源，标题花头取 `花朵图鉴/花朵`，单花取 `花枝`，花丛取 `花丛`。`FlowerList` 已启用子项高度控制，展开时当前标题与上方条目位置固定，详情页显示在标题下方，所有下方条目统一下移固定高度且不遮挡详情。`WorldMapFlowerPlacementAuthoring` 将 18 组条目、36 个预览、32 个放置槽和 10×5 的完整二维网格直接保存到 `WorldMap_Main.unity`；旧原型按钮节点已清理，32 个槽位的正式视觉引用已重新保存。
+- 摆放层进一步以 `BaselineItem` 的基线/排序层为准：内部吸附在相邻层半格错位但不显示网格、同层单格占用、跨层可重叠；作者化只收录摆放区域内基线，花丛按场景 `花丛 3` 的实际碰撞体尺寸作为一格，并在点击合法草地区域时提交。
+- `WorldMapFlowerPlacementController` 只负责侧栏显隐、条目展开、共享库存显示/消耗、3 单花合成 1 花丛、不可见吸附计算、有效区域校验、预置槽位移动和 `Esc` 退出；不在运行时创建 UI、Sprite、网格线或最终摆放物。`2026-08-12` 起库存由 `EmotionGardenService` 按“情绪类型 + 培育者”持久化，花朵开花、摆放与合成使用同一份数据；旧存档升级到版本 3 时一次性迁移。版本 4 保存 `PlacedFlowers` 并在成功摆放后立即 autosave，重启恢复槽位/坐标且不二次扣库存；自由摆放不添加土壤。旧顶层 `FlowerPlacementStatusBar` 已移除，提示文字归属侧栏内 `PlacementStatus`。`2026-08-14` 起，`WorldMapPlacementSlot` 使用独立稳定 GUID 与显式占用状态，提交期间忽略同步恢复事件重入，避免成功点击后槽位被清空；Play 启动校验应看到 `32/32` 槽位、`1152` 个绑定。花卉视觉排序使用 `Default` Sorting Layer，与桌宠共享 `BaselineItem.SortingOrder` 主层级，同层再按基线 Y 决定前后，完全同线时桌宠略优先；AutoSetup 63 已将 `Pet_Angel`、`Pet_Devil` 根对象作者化为 `BaselineItem` 并保持实体碰撞。
+- `FlowerSidebarViewport` 在 Scene 中保存左右 34、顶部 132、底部 56 的拉伸边距，列表位于标题下方并被窗口裁剪；独立作者化菜单为 `Tools/Gemini-Lab/WorldMap/Author Flower Placement`。
 - `2026-07-30` 起，`WorldMap_Main.unity` 中 `CabinReturnPortal` / `WorldMapGardenZone` / `ClickableSceneObject` / `BaselineItem` / `PetPlayerInputController` / `PetClickReactionController` / `WorldMapCameraController` 都先用 `ClickOcclusionUtility` 裁决“当前最上层 2D 点击目标”再响应，避免房子被桌宠或 UI 遮挡时仍误跳公寓；`PetController` 也已加上 WorldMap 场景级双宠碰撞忽略，`Pet_Angel` 与 `Pet_Devil` 在室外场景不会互相挡路。
 - `2026-08-05` 起，`WorldMap_Main.unity` 中的 `室内`、`邮箱`、`大树 1`～`大树 5` 由 `WorldMapInteractiveObjectAuthoring` 统一补齐 `WorldMapInteractiveObjectFeedback`；悬停缩放直接以 Scene 中对象的 localScale 为基准，点击仍由 `CabinReturnPortal` 或 `ClickableSceneObject` 承载。
 - `2026-07-30` 起，顶层 UI 路由已改为互斥切换：`UIRouter.Open` 会在打开新面板前关闭当前已开的顶层面板，因此 `Panel_EmotionInput` 与 `Panel_EmotionCollection` 这类入口不会再同时显示；`StockPlate` 仍只是详情页里的库存展示牌，不是独立按钮。

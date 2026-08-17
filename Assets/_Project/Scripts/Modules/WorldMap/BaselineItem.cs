@@ -34,6 +34,12 @@ namespace GeminiLab.Modules.WorldMap
         private Vector3 _dragOffset;
         private bool _isDragging;
 
+        public float BaselineY => _baselineY;
+        public float EffectiveBaselineY => Mathf.Abs(_baselineY) > 0.0001f ? _baselineY : transform.position.y;
+        public float MinX => _minX;
+        public float MaxX => _maxX;
+        public int SortingOrder => _sortingOrder;
+
         private void Awake()
         {
             _collider = GetComponent<Collider2D>();

@@ -40,6 +40,35 @@ namespace GeminiLab.Modules.EmotionGarden
         public int UnlockedStage;
     }
 
+    /// <summary>
+    /// 可用于世界地图自由摆放的花卉库存。
+    /// 同一情绪类型在天使与恶魔侧分别独立计数。
+    /// </summary>
+    [Serializable]
+    public struct PlacementFlowerInventory
+    {
+        public string EmotionType;
+        public string Owner;
+        public int SingleCount;
+        public int ClusterCount;
+    }
+
+    /// <summary>
+    /// 一朵已经摆放到 WorldMap 的花卉记录。
+    /// SlotIndex 对应 Scene 中稳定作者化的 PlacementSlot；世界坐标只保存运行态布局，
+    /// 不写回 Scene 或 ScriptableObject。
+    /// </summary>
+    [Serializable]
+    public struct PlacedEmotionFlower
+    {
+        public int SlotIndex;
+        public string EmotionType;
+        public string Owner;
+        public bool IsCluster;
+        public float WorldX;
+        public float WorldY;
+    }
+
     /// <summary>情绪花提交成功。</summary>
     public readonly struct EmotionFlowerSubmittedEvent
     {
@@ -52,6 +81,22 @@ namespace GeminiLab.Modules.EmotionGarden
     {
         public EmotionFlowerBloomedEvent(string flowerId) { FlowerId = flowerId; }
         public string FlowerId { get; }
+    }
+
+    /// <summary>某一种花的自由摆放库存已变化。</summary>
+    public readonly struct EmotionFlowerPlacementInventoryChangedEvent
+    {
+        public EmotionFlowerPlacementInventoryChangedEvent(PlacementFlowerInventory inventory)
+        {
+            Inventory = inventory;
+        }
+
+        public PlacementFlowerInventory Inventory { get; }
+    }
+
+    /// <summary>WorldMap 已摆放花卉集合发生变化或刚从存档恢复。</summary>
+    public readonly struct EmotionFlowerPlacementsChangedEvent
+    {
     }
 
     /// <summary>[调试] 花园数据已整体清空。</summary>

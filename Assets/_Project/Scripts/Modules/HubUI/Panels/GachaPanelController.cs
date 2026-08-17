@@ -6,6 +6,7 @@ using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Collection;
+using GeminiLab.Modules.Apple;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -44,9 +45,9 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Vector2 _rewardIconSize = new(256, 256);
 
         private IGachaService? _gacha;
-        private ICoinService? _coin;
+        private IAppleService? _apple;
         private EventBus? _eventBus;
-        private IDisposable? _coinChangedSub;
+        private IDisposable? _appleChangedSub;
         private IDisposable? _collectionChangedSub;
 
         private string _currentTag = "all_tag";
@@ -54,8 +55,8 @@ namespace GeminiLab.Modules.HubUI.Panels
         private readonly List<GameObject> _spawned = new();
         private readonly List<GameObject> _rewardSpawned = new();
 
-        private const int SingleCost = 100;
-        private const int MultiCost = 500;
+        private const int SingleCost = 1;
+        private const int MultiCost = 5;
 
         protected override void Awake()
         {
@@ -77,8 +78,8 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         protected override void OnDestroy()
         {
-            _coinChangedSub?.Dispose();
             _collectionChangedSub?.Dispose();
+            _appleChangedSub?.Dispose();
             base.OnDestroy();
         }
 
@@ -89,7 +90,7 @@ namespace GeminiLab.Modules.HubUI.Panels
 
             if (_eventBus != null)
             {
-                _coinChangedSub ??= _eventBus.Subscribe<CoinChangedEvent>(_ => RefreshBalance());
+                _appleChangedSub ??= _eventBus.Subscribe<AppleChangedEvent>(_ => RefreshBalance());
                 _collectionChangedSub ??= _eventBus.Subscribe<CollectionChangedEvent>(_ => RefreshGrid());
             }
 
@@ -100,8 +101,8 @@ namespace GeminiLab.Modules.HubUI.Panels
         public override void OnClose()
         {
             base.OnClose();
-            _coinChangedSub?.Dispose();
-            _coinChangedSub = null;
+            _appleChangedSub?.Dispose();
+            _appleChangedSub = null;
             _collectionChangedSub?.Dispose();
             _collectionChangedSub = null;
         }
@@ -109,7 +110,7 @@ namespace GeminiLab.Modules.HubUI.Panels
         private void EnsureServices()
         {
             _gacha ??= ServiceLocator.TryResolve(out IGachaService? g) ? g : null;
-            _coin ??= ServiceLocator.TryResolve(out ICoinService? c) ? c : null;
+            _apple ??= ServiceLocator.TryResolve(out IAppleService? a) ? a : null;
             _eventBus ??= ServiceLocator.TryResolve(out EventBus? eb) ? eb : null;
         }
 
@@ -121,13 +122,13 @@ namespace GeminiLab.Modules.HubUI.Panels
 
         private void RefreshBalance()
         {
-            if (_balanceText != null && _coin != null)
-                _balanceText.text = $"{_coin.Balance}";
+            if (_balanceText != null && _apple != null)
+                _balanceText.text = $"{_apple.Balance}";
 
             if (_singleDrawButton != null)
-                _singleDrawButton.interactable = _coin != null && _coin.Balance >= SingleCost;
+                _singleDrawButton.interactable = _apple != null && _apple.Balance >= SingleCost;
             if (_multiDrawButton != null)
-                _multiDrawButton.interactable = _coin != null && _coin.Balance >= MultiCost;
+                _multiDrawButton.interactable = _apple != null && _apple.Balance >= MultiCost;
         }
 
         private void RefreshGrid()

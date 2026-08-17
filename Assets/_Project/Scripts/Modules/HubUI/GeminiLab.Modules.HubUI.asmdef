@@ -14,6 +14,7 @@
     "GeminiLab.Modules.Collection",
     "GeminiLab.Modules.Garden",
     "GeminiLab.Modules.EmotionGarden",
+    "GeminiLab.Modules.Apple",
     "GeminiLab.Modules.Persistence",
     "Unity.TextMeshPro"
   ],

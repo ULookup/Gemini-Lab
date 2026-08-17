@@ -3,6 +3,7 @@ using GeminiLab.Core;
 using GeminiLab.Core.Events;
 using GeminiLab.Core.Persistence;
 using GeminiLab.Core.Time;
+using GeminiLab.Modules.Apple;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -16,7 +17,9 @@ namespace GeminiLab.Modules.EmotionGarden
     /// </summary>
     public sealed class EmotionGardenService : MonoBehaviour, IEmotionGardenService, IPersistentService
     {
-        private const int SaveVersion = 2;
+        private const int SaveVersion = 4;
+        private const int PlacementInventorySaveVersion = 3;
+        private const int PlacedFlowersSaveVersion = 4;
 
         private IGameClock? _clock;
         private EventBus? _eventBus;
@@ -24,6 +27,8 @@ namespace GeminiLab.Modules.EmotionGarden
         private string _lastSubmitDateIso = string.Empty;
         private readonly List<EmotionFlowerData> _flowers = new();
         private readonly Dictionary<string, ClusterProgress> _clusters = new(); // key: "emotionType|owner"
+        private readonly Dictionary<string, PlacementFlowerInventory> _placementInventories = new();
+        private readonly List<PlacedEmotionFlower> _placedFlowers = new();
 
         string IPersistentService.Key => "emotion-garden";
 
@@ -171,7 +176,15 @@ namespace GeminiLab.Modules.EmotionGarden
             }
 
             _clusters[ClusterKey(f.EmotionType, f.Owner)] = cluster;
+            var inventory = GetOrCreatePlacementInventory(f.EmotionType, f.Owner);
+            inventory.SingleCount += 1;
+            _placementInventories[PlacementInventoryKey(f.EmotionType, f.Owner)] = inventory;
+            if (ServiceLocator.TryResolve(out IAppleService? apples) && apples is not null)
+            {
+                apples.Add(1);
+            }
             _eventBus?.Publish(new EmotionFlowerBloomedEvent(f.FlowerId));
+            PublishPlacementInventoryChanged(inventory);
 
             Debug.Log($"[EmotionGarden] 开花: {f.FlowerId}, 累计: {cluster.TotalCount}, 阶段: {cluster.UnlockedStage}");
             return true;
@@ -181,6 +194,114 @@ namespace GeminiLab.Modules.EmotionGarden
         {
             var list = new List<ClusterProgress>(_clusters.Values);
             return list;
+        }
+
+        public PlacementFlowerInventory GetPlacementInventory(string emotionType, string owner)
+        {
+            string normalizedEmotion = EmotionFlowerCatalog.NormalizeEmotionType(emotionType);
+            string normalizedOwner = EmotionFlowerCatalog.NormalizeOwner(owner);
+            string key = PlacementInventoryKey(normalizedEmotion, normalizedOwner);
+            return _placementInventories.TryGetValue(key, out var inventory)
+                ? inventory
+                : new PlacementFlowerInventory
+                {
+                    EmotionType = normalizedEmotion,
+                    Owner = normalizedOwner
+                };
+        }
+
+        public bool TryConsumePlacementSingle(string emotionType, string owner, int amount = 1)
+        {
+            if (amount <= 0) return false;
+
+            var inventory = GetPlacementInventory(emotionType, owner);
+            if (inventory.SingleCount < amount) return false;
+
+            inventory.SingleCount -= amount;
+            _placementInventories[PlacementInventoryKey(inventory.EmotionType, inventory.Owner)] = inventory;
+            PublishPlacementInventoryChanged(inventory);
+            return true;
+        }
+
+        public bool TryConsumePlacementCluster(string emotionType, string owner, int amount = 1)
+        {
+            if (amount <= 0) return false;
+
+            var inventory = GetPlacementInventory(emotionType, owner);
+            if (inventory.ClusterCount < amount) return false;
+
+            inventory.ClusterCount -= amount;
+            _placementInventories[PlacementInventoryKey(inventory.EmotionType, inventory.Owner)] = inventory;
+            PublishPlacementInventoryChanged(inventory);
+            return true;
+        }
+
+        public bool TrySynthesizePlacementCluster(string emotionType, string owner)
+        {
+            var inventory = GetPlacementInventory(emotionType, owner);
+            if (inventory.SingleCount < 3) return false;
+
+            inventory.SingleCount -= 3;
+            inventory.ClusterCount += 1;
+            _placementInventories[PlacementInventoryKey(inventory.EmotionType, inventory.Owner)] = inventory;
+            PublishPlacementInventoryChanged(inventory);
+            return true;
+        }
+
+        public IReadOnlyList<PlacedEmotionFlower> GetPlacedFlowers()
+        {
+            return new List<PlacedEmotionFlower>(_placedFlowers);
+        }
+
+        public bool TryPlaceFlower(
+            string emotionType,
+            string owner,
+            bool isCluster,
+            int slotIndex,
+            float worldX,
+            float worldY)
+        {
+            if (slotIndex < 0 || float.IsNaN(worldX) || float.IsInfinity(worldX) ||
+                float.IsNaN(worldY) || float.IsInfinity(worldY))
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _placedFlowers.Count; i++)
+            {
+                if (_placedFlowers[i].SlotIndex == slotIndex)
+                {
+                    return false;
+                }
+            }
+
+            var inventory = GetPlacementInventory(emotionType, owner);
+            if (isCluster)
+            {
+                if (inventory.ClusterCount < 1) return false;
+                inventory.ClusterCount -= 1;
+            }
+            else
+            {
+                if (inventory.SingleCount < 1) return false;
+                inventory.SingleCount -= 1;
+            }
+
+            var placed = new PlacedEmotionFlower
+            {
+                SlotIndex = slotIndex,
+                EmotionType = inventory.EmotionType,
+                Owner = inventory.Owner,
+                IsCluster = isCluster,
+                WorldX = worldX,
+                WorldY = worldY
+            };
+
+            _placementInventories[PlacementInventoryKey(inventory.EmotionType, inventory.Owner)] = inventory;
+            _placedFlowers.Add(placed);
+            PublishPlacementInventoryChanged(inventory);
+            _eventBus?.Publish(new EmotionFlowerPlacementsChangedEvent());
+            return true;
         }
 
         public void RefreshBlooming()
@@ -206,7 +327,11 @@ namespace GeminiLab.Modules.EmotionGarden
         {
             _flowers.Clear();
             _clusters.Clear();
+            _placementInventories.Clear();
+            _placedFlowers.Clear();
             _lastSubmitDateIso = string.Empty;
+            _eventBus?.Publish(new EmotionFlowerPlacementInventoryChangedEvent(default));
+            _eventBus?.Publish(new EmotionFlowerPlacementsChangedEvent());
             _eventBus?.Publish(new EmotionGardenClearedEvent());
             Debug.Log("[EmotionGarden] 花园数据已清空（调试）");
         }
@@ -220,7 +345,9 @@ namespace GeminiLab.Modules.EmotionGarden
                 Version = SaveVersion,
                 LastSubmitDateIso = _lastSubmitDateIso,
                 Flowers = new List<EmotionFlowerData>(_flowers),
-                Clusters = new List<ClusterProgress>(_clusters.Values)
+                Clusters = new List<ClusterProgress>(_clusters.Values),
+                PlacementInventories = new List<PlacementFlowerInventory>(_placementInventories.Values),
+                PlacedFlowers = new List<PlacedEmotionFlower>(_placedFlowers)
             };
             return JsonUtility.ToJson(save);
         }
@@ -274,6 +401,39 @@ namespace GeminiLab.Modules.EmotionGarden
                     }
                 }
 
+                _placementInventories.Clear();
+                if (save.Version >= PlacementInventorySaveVersion && save.PlacementInventories != null)
+                {
+                    foreach (var savedInventory in save.PlacementInventories)
+                    {
+                        var normalized = NormalizePlacementInventory(savedInventory);
+                        _placementInventories[PlacementInventoryKey(normalized.EmotionType, normalized.Owner)] = normalized;
+                    }
+                }
+                else
+                {
+                    MigratePlacementInventoriesFromBloomedFlowers();
+                }
+
+                _placedFlowers.Clear();
+                if (save.Version >= PlacedFlowersSaveVersion && save.PlacedFlowers != null)
+                {
+                    var occupiedSlots = new HashSet<int>();
+                    foreach (var savedPlacement in save.PlacedFlowers)
+                    {
+                        if (!TryNormalizePlacedFlower(savedPlacement, occupiedSlots, out var normalized))
+                        {
+                            continue;
+                        }
+
+                        _placedFlowers.Add(normalized);
+                        occupiedSlots.Add(normalized.SlotIndex);
+                    }
+                }
+
+                _eventBus?.Publish(new EmotionFlowerPlacementInventoryChangedEvent(default));
+                _eventBus?.Publish(new EmotionFlowerPlacementsChangedEvent());
+
                 return true;
             }
             catch (Exception e)
@@ -316,7 +476,74 @@ namespace GeminiLab.Modules.EmotionGarden
             return new ClusterProgress { EmotionType = emotionType, Owner = owner };
         }
 
+        private PlacementFlowerInventory GetOrCreatePlacementInventory(string emotionType, string owner)
+        {
+            string normalizedEmotion = EmotionFlowerCatalog.NormalizeEmotionType(emotionType);
+            string normalizedOwner = EmotionFlowerCatalog.NormalizeOwner(owner);
+            string key = PlacementInventoryKey(normalizedEmotion, normalizedOwner);
+            if (_placementInventories.TryGetValue(key, out var existing)) return existing;
+            return new PlacementFlowerInventory
+            {
+                EmotionType = normalizedEmotion,
+                Owner = normalizedOwner
+            };
+        }
+
+        private void MigratePlacementInventoriesFromBloomedFlowers()
+        {
+            foreach (var flower in _flowers)
+            {
+                if (flower.State != GrowthState.Bloomed || !flower.IsCollected) continue;
+
+                var inventory = GetOrCreatePlacementInventory(flower.EmotionType, flower.Owner);
+                inventory.SingleCount += 1;
+                _placementInventories[PlacementInventoryKey(inventory.EmotionType, inventory.Owner)] = inventory;
+            }
+
+            // 旧存档可能没有保留完整的花记录；以累计进度补齐这类组合。
+            foreach (var cluster in _clusters.Values)
+            {
+                var inventory = GetOrCreatePlacementInventory(cluster.EmotionType, cluster.Owner);
+                inventory.SingleCount = Math.Max(inventory.SingleCount, cluster.TotalCount);
+                _placementInventories[PlacementInventoryKey(inventory.EmotionType, inventory.Owner)] = inventory;
+            }
+        }
+
+        private static PlacementFlowerInventory NormalizePlacementInventory(PlacementFlowerInventory inventory)
+        {
+            inventory.EmotionType = EmotionFlowerCatalog.NormalizeEmotionType(inventory.EmotionType);
+            inventory.Owner = EmotionFlowerCatalog.NormalizeOwner(inventory.Owner);
+            inventory.SingleCount = Math.Max(0, inventory.SingleCount);
+            inventory.ClusterCount = Math.Max(0, inventory.ClusterCount);
+            return inventory;
+        }
+
+        private static bool TryNormalizePlacedFlower(
+            PlacedEmotionFlower placed,
+            HashSet<int> occupiedSlots,
+            out PlacedEmotionFlower normalized)
+        {
+            normalized = default;
+            if (placed.SlotIndex < 0 || occupiedSlots.Contains(placed.SlotIndex) ||
+                float.IsNaN(placed.WorldX) || float.IsInfinity(placed.WorldX) ||
+                float.IsNaN(placed.WorldY) || float.IsInfinity(placed.WorldY))
+            {
+                return false;
+            }
+
+            placed.EmotionType = EmotionFlowerCatalog.NormalizeEmotionType(placed.EmotionType);
+            placed.Owner = EmotionFlowerCatalog.NormalizeOwner(placed.Owner);
+            normalized = placed;
+            return true;
+        }
+
+        private void PublishPlacementInventoryChanged(PlacementFlowerInventory inventory)
+        {
+            _eventBus?.Publish(new EmotionFlowerPlacementInventoryChangedEvent(inventory));
+        }
+
         private static string ClusterKey(string emotionType, string owner) => $"{emotionType}|{owner}";
+        private static string PlacementInventoryKey(string emotionType, string owner) => $"{emotionType}|{owner}";
 
         // ── Save container ─────────────────────────────────────
 
@@ -327,6 +554,8 @@ namespace GeminiLab.Modules.EmotionGarden
             public string LastSubmitDateIso = string.Empty;
             public List<EmotionFlowerData> Flowers = new();
             public List<ClusterProgress> Clusters = new();
+            public List<PlacementFlowerInventory> PlacementInventories = new();
+            public List<PlacedEmotionFlower> PlacedFlowers = new();
         }
     }
 }

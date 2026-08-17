@@ -2,7 +2,8 @@
   "name": "GeminiLab.Modules.EmotionGarden",
   "rootNamespace": "GeminiLab.Modules.EmotionGarden",
   "references": [
-    "GeminiLab.Core"
+    "GeminiLab.Core",
+    "GeminiLab.Modules.Apple"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

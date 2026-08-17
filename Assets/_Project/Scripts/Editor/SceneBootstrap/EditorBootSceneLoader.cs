@@ -22,6 +22,7 @@ namespace GeminiLab.Editor.SceneBootstrap
         private static readonly string[] AwakeOrder =
         {
             "GameBootstrap",
+            "AppleRuntimeBootstrap",
             "TarotRuntimeBootstrap",
             "CollectionRuntimeBootstrap",
             "SettingsRuntimeBootstrap",

@@ -2,6 +2,14 @@
 
 Updated: 2026-08-07
 
+## 苹果资源系统（2026-08-14）
+
+- 运行时模块：`Assets/_Project/Scripts/Modules/Apple/`；`AppleService` 实现 `IAppleService` 与 `IPersistentService`，存档 key 为 `apple`。
+- 规则：新档 20 个苹果；每棵大树每 6 小时生成 1 个、最多缓存 3 个；时间戳和待领取数量随存档保存。时间来源必须是 `IGameClock`。
+- WorldMap 交互：`AppleTreeInteractable` 挂在现有「大树 1」～「大树 5」，`WorldMapAppleTreeAuthoring` 只写入树 ID 和组件，不创建运行时视觉。点击树领取缓存苹果。
+- 消费入口：`GachaService` 使用苹果支付单抽/五连（1/5）；`TarotService.CreateSession` 使用 1 个苹果开启会话，余额不足时不进入有效选牌。
+- UI：`ApartmentAppleBalanceAuthoring` 复用四个现有 `TopResource/BalanceLabel`，移除旧版重复 `AppleBalanceLabel`；`StubPanelBase`、`GachaPanelController` 和 `Collection/AppleBalanceDisplay` 统一更新苹果数字余额。
+
 ## 入口文件
 - `AGENTS.md`
   - 当前项目总入口。任何智能体进入项目后都应先读它。
@@ -301,7 +309,15 @@ Updated: 2026-08-07
 - 运行时脚本：`Assets/_Project/Scripts/Modules/WorldMap/WorldMapFlowerPlacementController.cs`。
 - 场景作者化脚本：`Assets/_Project/Scripts/Editor/SceneBootstrap/WorldMapFlowerPlacementAuthoring.cs`。
 - 网格配置：由 `WorldMapFlowerPlacementController` 读取 `garden/中景/花丛.png` 的 Sprite 完整尺寸得到二维 `Vector2` 单元（当前为 `4.01 x 2.24` Unity 单位），再结合网格原点和摆放区域生成完整 X/Y 网格线；不绑定或读取图鉴花朵资源作为显示。
-- 作者化结果预期位于 `WorldMap_Main.unity` 的 `Canvas/Btn_FlowerPlacement`、`Canvas/FlowerPlacementPanel`、`WorldMapPlacedFlowers` 与 `FlowerPlacementBounds`；后者默认是 `36 x 8.96` 的禁用 BoxCollider2D，仅存放草地摆放区域数据，可在 Inspector 调整。
+- `2026-08-10` 已完成侧边栏版本的实际落盘，并于 `2026-08-11` 修正为参考图对应的右侧布局：`Canvas/Btn_FlowerPlacement` 位于右下角，`Canvas/FlowerPlacementPanel` 锚定右侧并保留 `UIBoard.png` 原始 `498 x 899` 尺寸；`FlowerSidebarViewport`、`FlowerSidebarContent`、`FlowerList/FlowerOption_00...17`、`SynthesisHintBubble`、`WorldMapPlacedFlowers/FlowerPlacementGrid`、`FlowerPlacementPreview`、`PlacementSlot_00...31` 与 `FlowerPlacementBounds` 均存在于 `WorldMap_Main.unity`。旧底部库存节点不参与当前滚动列表，遗留顶层 `FlowerPlacementStatusBar` 已清理。
+- `2026-08-11` 侧栏展开已改为确定性的手风琴布局：`FlowerList` 直接作为 `ScrollRect.content` 并管理 18 个 `FlowerOption`；其 `VerticalLayoutGroup.childControlHeight` 已启用，因此每个条目预置的 `LayoutElement` 会以 `73 / 320` 的收起/展开高度真实控制下方条目位移。详情页位于选中标题下方，不会再被后续列表元素遮挡；控制器会保持被点击标题在视窗中的位置，避免从一个条目切换到另一个条目时出现不规则跳动。
+- `2026-08-12` 侧栏视窗已保存为左右 34、顶部 132、底部 56 的真实拉伸边距，列表起点固定在标题下方并受 `RectMask2D` 裁剪。可通过 `Tools/Gemini-Lab/WorldMap/Author Flower Placement` 单独重新作者化该系统，不触发其他 WorldMap 补丁。
+- `2026-08-13` 摆放系统读取 `BaselineItem` 的实际基线与排序层：同层单格不可重叠，跨层可重叠；内部吸附在相邻层之间半格错位，但 `FlowerPlacementGrid` 运行时保持隐藏。作者化只收录摆放区域内的基线；花丛改为一花丛一格，尺寸取场景 `花丛 3` 的碰撞体基准（约 `3.99 x 2.22`），运行时不生成视觉节点，并清理槽位重复旧组件。
+- `2026-08-12` 摆放与每周培育共享 `EmotionGardenService` 内的持久化 `PlacementFlowerInventory`：开花增加单花，单花/花丛摆放消耗对应库存，3 个单花主动合成 1 个花丛；存档版本 3 会从旧档的已开花数据一次性迁移库存。版本 4 另存 `PlacedFlowers`，成功摆放立即 autosave，重启后恢复槽位/坐标且不重复扣库存；自由摆放单花和花丛均不添加土壤。若当前存档没有 `PlacedFlowers`，不会把仅有的开花记录臆测成历史坐标。
+- 侧栏 UI 绑定 `Assets/_Project/Art/WorldMap/arrange`；花种/单花/花丛绑定 `Assets/_Project/Art/WorldMap/花朵图鉴/花朵`、`花枝`、`花丛`，不是 `arrange.png` 裁剪图。网格材质为 `arrange/PlacementGrid.mat`，网格线仅作为作者化/调试资源保存，运行时不显示。
+- `FlowerPlacementBounds` 默认是 `36 x 8.96` 的禁用 BoxCollider2D，仅存放草地摆放区域数据，可在 Inspector 调整。运行时控制器只切换预置显示、移动空闲 `PlacementSlot` 并写入摆放元数据；不负责创建最终视觉对象。
+- `2026-08-14` `WorldMapPlacementSlot` / `WorldMapPlacedFlower` 已拆为独立脚本并使用稳定 GUID；运行时会校验 32 个槽位和每槽 36 个 `PlacedVisual_*` 绑定。点击提交期间暂缓同步摆放恢复事件，避免事件重入清空刚显示的槽位；槽位以显式占用状态参与同层冲突判定。若要验收鼠标端到端，必须使用仍有单花或花丛库存的 Play 存档。
+- `2026-08-14` 花朵遮挡修正：`WorldMapFlowerPlacementController` 使用 `Default` Sorting Layer；预览、已摆放花朵和恢复路径与桌宠共享 `BaselineItem.SortingOrder` 主层级，并按基线 Y 二次排序，完全同线时桌宠提高 1 个排序单位。`WorldMapPlacementSlot` 会递归同步花丛显示树内的所有 SpriteRenderer。AutoSetup 版本 63 已给 WorldMap 的两个桌宠根对象保存 `BaselineItem`，基线取碰撞体底部、`solidCollider=true` 并排除出可种植层。
 
 ### 2026-08-05 WorldMap 昼夜切换
 - `Assets/_Project/Scripts/Modules/WorldMap/WorldMapDayNightController.cs`：WorldMap 按 `IGameClock.Now` 切换夜幕。

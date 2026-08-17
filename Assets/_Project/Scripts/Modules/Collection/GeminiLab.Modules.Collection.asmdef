@@ -4,6 +4,7 @@
   "references": [
     "GeminiLab.Core",
     "GeminiLab.Modules.Tarot",
+    "GeminiLab.Modules.Apple",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [],
