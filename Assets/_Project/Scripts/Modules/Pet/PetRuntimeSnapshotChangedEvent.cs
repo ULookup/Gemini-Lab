@@ -21,7 +21,8 @@ namespace GeminiLab.Modules.Pet
             bool isTraveling,
             string lastInteractionFurnitureId,
             string lastInteractionSummary,
-            PetId petId = PetId.Angel)
+            PetId petId = PetId.Angel,
+            string currentBehaviorId = "")
         {
             CurrentState = currentState;
             Mood = mood;
@@ -36,6 +37,7 @@ namespace GeminiLab.Modules.Pet
             LastInteractionFurnitureId = lastInteractionFurnitureId;
             LastInteractionSummary = lastInteractionSummary;
             PetId = petId;
+            CurrentBehaviorId = currentBehaviorId;
         }
 
         public string CurrentState { get; }
@@ -64,5 +66,8 @@ namespace GeminiLab.Modules.Pet
 
         /// <summary>发布方所属宠物；默认 Angel 以兼容旧构造。</summary>
         public PetId PetId { get; }
+
+        /// <summary>当前正在执行的行为 Id（行为权重系统）；无行为时为 Empty。</summary>
+        public string CurrentBehaviorId { get; }
     }
 }

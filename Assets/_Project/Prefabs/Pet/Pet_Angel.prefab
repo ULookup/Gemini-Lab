@@ -431,7 +431,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a313c8d962bc67d4594340dda94bec83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _config: {fileID: 0}
+  _config: {fileID: 11400000, guid: 71ae029310f9d8449965a9e094ca2ed9, type: 2}
   _personality: {fileID: 11400000, guid: 1ecede15733b42244a1305f7645463bd, type: 2}
   _movementController: {fileID: 9100000, guid: ba46f117e79c2504888c585f53d1ecf8, type: 2}
   _sideFramesFaceLeft: 1
@@ -450,6 +450,7 @@ MonoBehaviour:
       _useDetachedVisual: 1
     - _animatorStateName: Interact_Write
       _useDetachedVisual: 1
+  _behaviorConfig: {fileID: 11400000, guid: 1db41e560f4a41cc981bf1daa52bed43, type: 2}
 --- !u!70 &5479558928138216786
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

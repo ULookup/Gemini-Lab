@@ -5,6 +5,7 @@ using GeminiLab.Core.Events;
 using GeminiLab.Core.UI;
 using GeminiLab.Modules.Pet;
 using GeminiLab.Modules.Pet.Personality;
+using GeminiLab.Modules.Pet.Social;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -51,13 +52,16 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Image? _evilPetImage;
 
         private IPetRoster? _roster;
+        private IPetSocialService? _social;
         private IDisposable? _snapshotSub;
         private IDisposable? _matrixSub;
+        private IDisposable? _friendshipSub;
 
         protected override void OnDestroy()
         {
             _snapshotSub?.Dispose();
             _matrixSub?.Dispose();
+            _friendshipSub?.Dispose();
             base.OnDestroy();
         }
 
@@ -76,11 +80,14 @@ namespace GeminiLab.Modules.HubUI.Panels
             _snapshotSub = null;
             _matrixSub?.Dispose();
             _matrixSub = null;
+            _friendshipSub?.Dispose();
+            _friendshipSub = null;
         }
 
         private void ResolveServicesIfNeeded()
         {
             if (_roster == null) ServiceLocator.TryResolve(out _roster);
+            if (_social == null) ServiceLocator.TryResolve(out _social);
         }
 
         private void SubscribeSnapshotIfNeeded()
@@ -99,6 +106,21 @@ namespace GeminiLab.Modules.HubUI.Panels
                 evolution.MatrixChanged += OnMatrixChanged;
                 _matrixSub = new ActionDisposable(() => evolution.MatrixChanged -= OnMatrixChanged);
             }
+
+            // 订阅亲密度变化（数值规则文档 §14），与性格订阅同模式。
+            if (_friendshipSub == null && _social != null)
+            {
+                _social.FriendshipChanged += OnFriendshipChanged;
+                _friendshipSub = new ActionDisposable(() =>
+                {
+                    if (_social != null) _social.FriendshipChanged -= OnFriendshipChanged;
+                });
+            }
+        }
+
+        private void OnFriendshipChanged(float _)
+        {
+            RefreshRelation();
         }
 
         private void OnMatrixChanged(PetId _, PersonalityVector __)
@@ -159,21 +181,23 @@ namespace GeminiLab.Modules.HubUI.Panels
             }
         }
 
+        /// <summary>
+        /// 显示双宠亲密度（数值规则文档 §14）：读 <see cref="IPetSocialService.Friendship"/>。
+        /// 旧数据源 PetRuntimeData.Relation 没有写入路径（永远初始值），已废弃显示。
+        /// </summary>
         private void RefreshRelation()
         {
-            float? relation = null;
-            if (_roster != null)
-            {
-                var data = _roster.TryGet(PetId.Angel) ?? _roster.TryGet(PetId.Devil);
-                if (data != null) relation = data.Relation;
-            }
+            float? friendship = _social?.Friendship;
+            string label = friendship.HasValue
+                ? $"{Mathf.RoundToInt(friendship.Value)}·{PetSocialService.GetStageLabel(friendship.Value)}"
+                : "--";
 
             if (_angelRelationText != null)
-                _angelRelationText.text = relation.HasValue ? Mathf.RoundToInt(relation.Value).ToString() : "--";
+                _angelRelationText.text = label;
             if (_evilRelationText != null)
-                _evilRelationText.text = relation.HasValue ? Mathf.RoundToInt(relation.Value).ToString() : "--";
+                _evilRelationText.text = label;
             if (_relationFill != null)
-                _relationFill.fillAmount = (relation ?? 0f) / 100f;
+                _relationFill.fillAmount = (friendship ?? 0f) / 100f;
         }
 
         private static void SetUnavailableText(TMP_Text? moodText, TMP_Text? energyText)

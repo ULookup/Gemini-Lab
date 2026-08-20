@@ -11,11 +11,11 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6660e5e8acf89ec42ad4b4f9235e3a96, type: 3}
   m_Name: PersonalityMatrix_Devil
-  m_EditorClassIdentifier: 
-  Kindness: -0.2
-  Evilness: 0.6
-  Calmness: -0.1
-  Bravery: 0.4
-  Shyness: 0.1
-  Integrity: -0.3
-  Curiosity: 0.5
+  m_EditorClassIdentifier:
+  Kindness: 0.12
+  Evilness: 0.44
+  Calmness: 0.36
+  Bravery: 0.56
+  Shyness: 0.28
+  Integrity: -0.32
+  Curiosity: 0.64

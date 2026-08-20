@@ -286,7 +286,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a313c8d962bc67d4594340dda94bec83, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _config: {fileID: 0}
+  _config: {fileID: 11400000, guid: 71ae029310f9d8449965a9e094ca2ed9, type: 2}
   _personality: {fileID: 11400000, guid: 844d776109915fc4092eeee43b3d825a, type: 2}
   _movementController: {fileID: 9100000, guid: 49dff8841cae4cc7ae3247d5c623213b, type: 2}
   _sideFramesFaceLeft: 1
@@ -297,6 +297,7 @@ MonoBehaviour:
   _interactionVisualStrategy:
     _useDetachedVisualByDefault: 0
     _rules: []
+  _behaviorConfig: {fileID: 11400000, guid: 06638d89187f4d659bf57dad62029624, type: 2}
 --- !u!70 &8393034162494385283
 CapsuleCollider2D:
   m_ObjectHideFlags: 0

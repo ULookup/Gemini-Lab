@@ -39,6 +39,9 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private string[] _responseCorpus = PetClickResponseLibrary.CreateDefaultResponses();
         [SerializeField] private string[] _expressionLabels = PetClickResponseLibrary.CreateDefaultExpressions();
         [SerializeField] private ClickReactionAnimationOption[] _clickReactionAnimations = Array.Empty<ClickReactionAnimationOption>();
+        [Header("交流反馈（数值规则文档 §15-16）；留空则该情况走随机语料")]
+        [SerializeField] private string _needSpaceFeedback = "（想自己待一会儿…）";
+        [SerializeField] private string _initiatorExhaustedFeedback = "（它累得不想动了…）";
 
         private const int BubbleSortingOffset = 250;
         private const float BubbleMinWidth = 3.6f;
@@ -153,6 +156,14 @@ namespace GeminiLab.Modules.Pet
 
             if (!_enableClickReaction)
             {
+                return true;
+            }
+
+            // 交流结算（数值规则文档 §15-18）：被点击的宠物是“对方”，另一只是“发起者”。
+            // NEED_SPACE / 发起者精力不足时用固定气泡反馈，其余情况走原有随机语料。
+            if (TryResolveSocialFeedback(out string socialFeedback))
+            {
+                ShowBubble(socialFeedback);
                 return true;
             }
 
@@ -336,6 +347,56 @@ namespace GeminiLab.Modules.Pet
                 _bubbleLocalOffset.y * inverseY,
                 _bubbleLocalOffset.z);
             _bubbleRoot.transform.localScale = new Vector3(inverseX, inverseY, 1f);
+        }
+
+        /// <summary>
+        /// 点击交流结算（数值规则文档 §15-18）。
+        /// 返回 true 表示应使用 <paramref name="feedback"/> 作为气泡文本（NEED_SPACE / 发起者精力不足）；
+        /// 返回 false 表示走原有随机语料（NORMAL / WARM 已静默结算，或场景里只有一只宠）。
+        /// </summary>
+        private bool TryResolveSocialFeedback(out string feedback)
+        {
+            feedback = string.Empty;
+            if (_petController == null)
+            {
+                return false;
+            }
+
+            if (!ServiceLocator.TryResolve(out Social.IPetSocialService? social) || social == null ||
+                !ServiceLocator.TryResolve(out IPetRoster? roster) || roster == null)
+            {
+                return false;
+            }
+
+            PetId target = _petController.PetId;
+            PetId initiator = target == PetId.Angel ? PetId.Devil : PetId.Angel;
+            if (roster.TryGet(initiator) == null)
+            {
+                // 另一只宠不在场（如世界地图单宠场景），不发生交流。
+                return false;
+            }
+
+            // §16：发起者精力不足，交流不发生，给玩家反馈。
+            if (!social.CanInitiate(initiator))
+            {
+                if (!string.IsNullOrWhiteSpace(_initiatorExhaustedFeedback))
+                {
+                    feedback = _initiatorExhaustedFeedback;
+                    return true;
+                }
+                return false;
+            }
+
+            var outcome = social.TrySocialize(initiator, target);
+            if (outcome.Initiated &&
+                outcome.ResponseType == Social.SocialResponseType.NeedSpace &&
+                !string.IsNullOrWhiteSpace(_needSpaceFeedback))
+            {
+                feedback = _needSpaceFeedback;
+                return true;
+            }
+
+            return false;
         }
 
         private string ResolveCurrentExpression()

@@ -4,6 +4,8 @@ using GeminiLab.Core.Events;
 using GeminiLab.Core.FSM;
 using GeminiLab.Modules.Furniture;
 using GeminiLab.Modules.Navigation;
+using GeminiLab.Modules.Pet.Behavior;
+using GeminiLab.Modules.Pet.Personality;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -69,6 +71,9 @@ namespace GeminiLab.Modules.Pet
         [SerializeField] private bool _ignoreOtherPetCollisions = true;
         [SerializeField] private PetInteractionVisualStrategy _interactionVisualStrategy = new();
 
+        [Header("行为权重系统（数值规则文档 §25）；为空则回退旧随机漫游")]
+        [SerializeField] private BehaviorConfigSO? _behaviorConfig;
+
         public PetId PetId => _petId;
 
         /// <summary>初始性格矩阵（Inspector 绑定；可为空）。启动时由 PersonalityEvolutionBootstrap 补种读取。</summary>
@@ -123,6 +128,35 @@ namespace GeminiLab.Modules.Pet
         private const float WanderInteractionRetryCooldownSeconds = 1f;
         private const float WanderInteractionPostSuccessCooldown = 5f;
         private float _wanderInteractionRetryCooldown;
+
+        // 行为权重系统驱动状态（数值规则文档 §22 BehaviorRuntimeState 的宿主侧）。
+        // 配置了 _behaviorConfig 后，非玩家控制路径不再随机漫游，改为
+        // "选行为 → 走到绑定交互点 → 执行 → 结算 → 记录 Recent/冷却" 的循环。
+        private enum BehaviorPhase
+        {
+            IdleWait,
+            MovingToBehavior
+        }
+
+        private BehaviorPhase _behaviorPhase = BehaviorPhase.IdleWait;
+        private float _behaviorIdleTimer = 1f;
+        private bool _behaviorIdleIsActiveBehavior;
+        private BehaviorConfigSO.BehaviorEntry? _activeBehaviorEntry;
+        private AutoInteractionCandidate? _pendingBehaviorCandidate;
+        private Vector2 _behaviorMoveStartPosition;
+        private bool _behaviorHasMoveStart;
+        private int _behaviorFailureCount;
+        private string _activeBehaviorTargetName = string.Empty;
+        private FurnitureCategory _activeBehaviorCategory = FurnitureCategory.Unknown;
+        private FurnitureInteractionType _activeBehaviorInteractionType = FurnitureInteractionType.Unknown;
+
+        /// <summary>TickWanderMovement 的单帧移动结果。</summary>
+        private enum WanderMoveOutcome
+        {
+            None,
+            Arrived,
+            Abandoned
+        }
         private PetRuntimeSnapshotChangedEvent? _lastPublishedSnapshot;
         private readonly List<SpriteRenderer> _hiddenInteractionRenderers = new();
         private readonly List<bool> _hiddenInteractionRendererStates = new();
@@ -241,6 +275,12 @@ namespace GeminiLab.Modules.Pet
             _tickService = new StatTickService();
             _stateMachine = PetStateMachineBuilder.Build(_context);
             _stateMachine.StateChanged += PublishStateChanged;
+
+            // 行为权重系统接管非玩家控制路径的目标选择：RandomWander 不再随机选点。
+            if (GetComponent<RandomWander>() is { } wanderComponent)
+            {
+                wanderComponent.ExternalControlEnabled = _behaviorConfig != null;
+            }
         }
 
         private void Update()
@@ -738,6 +778,9 @@ namespace GeminiLab.Modules.Pet
                 RestoreInteractionPose();
             }
 
+            // 玩家接管同样打断行为驱动循环（未完成的移动/行为按"未完成"处理，不结算不记录）。
+            CancelBehaviorDrivenLoop(context);
+
             if (TickPlayerInteraction(context, deltaTime))
             {
                 return;
@@ -776,6 +819,14 @@ namespace GeminiLab.Modules.Pet
             CancelPlayerInteraction(context);
             _hasPlayerAnimationDirection = false;
 
+            // 配置了行为表：非玩家控制路径由行为权重系统驱动（数值规则文档 §25），
+            // 不再使用随机漫游 + 碰撞触发交互的旧循环。
+            if (_behaviorConfig != null)
+            {
+                TickBehaviorDriven(context, deltaTime);
+                return;
+            }
+
             if (_wanderInteractionActive)
             {
                 TickWanderInteraction(context, deltaTime);
@@ -787,97 +838,9 @@ namespace GeminiLab.Modules.Pet
             RandomWander? wander = GetComponent<RandomWander>();
             bool isWandering = false;
 
-            if (wander != null && wander.IsMoving)
+            if (wander != null)
             {
-                isWandering = true;
-                Vector2 current = GetCurrentWorldPosition();
-                Vector2 toTarget = wander.TargetPosition - current;
-                if (wander.HorizontalOnly)
-                {
-                    toTarget.y = 0f;
-                }
-
-                if (toTarget.sqrMagnitude <= wander.ArrivalThreshold * wander.ArrivalThreshold)
-                {
-                    SetWanderVelocity(Vector2.zero);
-                    context.RuntimeData.Position = ResolveWanderArrivedPosition(wander);
-                    wander.NotifyArrived();
-                    isWandering = false;
-                    _wanderStuckTimer = 0f;
-                    _hasWanderPrevActualPosition = false;
-                    _hasWanderLastTargetDistance = false;
-                }
-                else
-                {
-                    float step = wander.MoveSpeed * deltaTime;
-
-                    // 检测是否卡住（本帧实际位置 vs 上帧实际位置）
-                    bool stuckThisFrame = false;
-                    if (_hasWanderPrevActualPosition)
-                    {
-                        float actualMove = Vector2.Distance(current, _wanderPrevActualPosition);
-                        stuckThisFrame = step > WanderStuckMoveThreshold && actualMove < WanderStuckMoveThreshold;
-                    }
-
-                    // 受阻 = 撞上家具：要么物理上卡住不动，要么沿表面滑动但无法接近漫游目标。
-                    // 物理卡住帧用于立即触发家具交互；距离未缩短（含滑行）仅用于累计 2s 放弃计时。
-                    bool blockedThisFrame = stuckThisFrame;
-                    if (!blockedThisFrame && _hasWanderLastTargetDistance)
-                    {
-                        float targetDistance = toTarget.magnitude;
-                        blockedThisFrame = step > WanderStuckMoveThreshold &&
-                                           targetDistance > _wanderLastTargetDistance - WanderProgressThreshold;
-                    }
-                    _wanderLastTargetDistance = toTarget.magnitude;
-                    _hasWanderLastTargetDistance = true;
-
-                    if (blockedThisFrame)
-                    {
-                        _wanderStuckTimer += deltaTime;
-                        // 物理真正卡住（本帧实际无位移）时立即尝试家具交互，不依赖累计计时。
-                        // 计时方案在「受阻/未受阻」交替抖动下不可靠：实测卡住帧与滑动帧交替，
-                        // 计时器反复被清零，从未稳定到触发阈值。改为用 stuckThisFrame（真实卡住）
-                        // 而非 blockedThisFrame（含沿表面滑行），避免正常绕行时误触发。
-                        if (stuckThisFrame && _wanderInteractionRetryCooldown <= 0f)
-                        {
-                            if (TryStartWanderInteraction(context))
-                            {
-                                // 交互已启动：本帧立即进入 Interacting 状态，后续由 TickWanderInteraction 处理。
-                                isWandering = false;
-                            }
-                            else
-                            {
-                                // 半径内没有可交互家具：短暂冷却避免每帧重试，之后靠 2s 放弃逻辑换目标。
-                                _wanderInteractionRetryCooldown = WanderInteractionRetryCooldownSeconds;
-                            }
-                        }
-
-                        if (!_wanderInteractionActive && _wanderStuckTimer >= WanderStuckTimeout)
-                        {
-                            // 卡住 2s 且未触发家具交互（没有可用家具 / 交互冷却中）：
-                            // 放弃当前目标，避免一直原地走。
-                            SetWanderVelocity(Vector2.zero);
-                            wander.AbandonTarget();
-                            isWandering = false;
-                            _wanderStuckTimer = 0f;
-                            _hasWanderPrevActualPosition = false;
-                            _hasWanderLastTargetDistance = false;
-                        }
-                        // 受阻但未放弃：保持 velocity，继续朝向目标播放移动动画
-                    }
-                    else
-                    {
-                        // 未受阻：衰减而非清零。撞上家具后受阻/未受阻帧交替抖动，
-                        // 清零会让计时器永远到不了阈值；真正自由移动时衰减回 0 不会误触发。
-                        _wanderStuckTimer = Mathf.Max(0f, _wanderStuckTimer - deltaTime * WanderUnblockedDecayFactor);
-                        SetWanderVelocity(toTarget.normalized * wander.MoveSpeed);
-                    }
-
-                    _wanderPrevActualPosition = current;
-                    _hasWanderPrevActualPosition = true;
-                    context.RuntimeData.TargetPosition = wander.TargetPosition;
-                    context.RuntimeData.TargetReached = false;
-                }
+                TickWanderMovement(context, wander, deltaTime, allowBumpInteraction: true, out isWandering);
             }
             else
             {
@@ -913,6 +876,441 @@ namespace GeminiLab.Modules.Pet
                 context.RuntimeData.TargetPosition = context.RuntimeData.Position;
                 context.RuntimeData.TargetReached = true;
             }
+        }
+
+        /// <summary>
+        /// 漫游/行为移动的统一位移推进：朝 <see cref="RandomWander.TargetPosition"/> 移动，
+        /// 处理到达、物理卡住与超时放弃。旧漫游路径（allowBumpInteraction=true）在物理卡住时
+        /// 会立即尝试最近家具交互；行为驱动路径（false）不允许这种"误触"，行为只能由选择器选出。
+        /// </summary>
+        private WanderMoveOutcome TickWanderMovement(
+            PetContext context,
+            RandomWander wander,
+            float deltaTime,
+            bool allowBumpInteraction,
+            out bool isWandering)
+        {
+            isWandering = false;
+            if (!wander.IsMoving)
+            {
+                SetWanderVelocity(Vector2.zero);
+                _wanderStuckTimer = 0f;
+                _hasWanderPrevActualPosition = false;
+                _hasWanderLastTargetDistance = false;
+                return WanderMoveOutcome.None;
+            }
+
+            isWandering = true;
+            Vector2 current = GetCurrentWorldPosition();
+            Vector2 toTarget = wander.TargetPosition - current;
+            if (wander.HorizontalOnly)
+            {
+                toTarget.y = 0f;
+            }
+
+            if (toTarget.sqrMagnitude <= wander.ArrivalThreshold * wander.ArrivalThreshold)
+            {
+                SetWanderVelocity(Vector2.zero);
+                context.RuntimeData.Position = ResolveWanderArrivedPosition(wander);
+                wander.NotifyArrived();
+                isWandering = false;
+                _wanderStuckTimer = 0f;
+                _hasWanderPrevActualPosition = false;
+                _hasWanderLastTargetDistance = false;
+                return WanderMoveOutcome.Arrived;
+            }
+
+            float step = wander.MoveSpeed * deltaTime;
+
+            // 检测是否卡住（本帧实际位置 vs 上帧实际位置）
+            bool stuckThisFrame = false;
+            if (_hasWanderPrevActualPosition)
+            {
+                float actualMove = Vector2.Distance(current, _wanderPrevActualPosition);
+                stuckThisFrame = step > WanderStuckMoveThreshold && actualMove < WanderStuckMoveThreshold;
+            }
+
+            // 受阻 = 撞上家具：要么物理上卡住不动，要么沿表面滑动但无法接近漫游目标。
+            // 物理卡住帧用于立即触发家具交互；距离未缩短（含滑行）仅用于累计 2s 放弃计时。
+            bool blockedThisFrame = stuckThisFrame;
+            if (!blockedThisFrame && _hasWanderLastTargetDistance)
+            {
+                float targetDistance = toTarget.magnitude;
+                blockedThisFrame = step > WanderStuckMoveThreshold &&
+                                   targetDistance > _wanderLastTargetDistance - WanderProgressThreshold;
+            }
+            _wanderLastTargetDistance = toTarget.magnitude;
+            _hasWanderLastTargetDistance = true;
+
+            if (blockedThisFrame)
+            {
+                _wanderStuckTimer += deltaTime;
+                // 物理真正卡住（本帧实际无位移）时立即尝试家具交互，不依赖累计计时。
+                // 仅旧漫游路径允许这种"撞上什么玩什么"的交互；行为驱动路径下行为由选择器决定。
+                if (allowBumpInteraction && stuckThisFrame && _wanderInteractionRetryCooldown <= 0f)
+                {
+                    if (TryStartWanderInteraction(context))
+                    {
+                        // 交互已启动：本帧立即进入 Interacting 状态，后续由 TickWanderInteraction 处理。
+                        isWandering = false;
+                    }
+                    else
+                    {
+                        // 半径内没有可交互家具：短暂冷却避免每帧重试，之后靠 2s 放弃逻辑换目标。
+                        _wanderInteractionRetryCooldown = WanderInteractionRetryCooldownSeconds;
+                    }
+                }
+
+                if (!_wanderInteractionActive && _wanderStuckTimer >= WanderStuckTimeout)
+                {
+                    // 卡住 2s 且未触发家具交互（没有可用家具 / 交互冷却中）：
+                    // 放弃当前目标，避免一直原地走。
+                    SetWanderVelocity(Vector2.zero);
+                    wander.AbandonTarget();
+                    isWandering = false;
+                    _wanderStuckTimer = 0f;
+                    _hasWanderPrevActualPosition = false;
+                    _hasWanderLastTargetDistance = false;
+                    return WanderMoveOutcome.Abandoned;
+                }
+                // 受阻但未放弃：保持 velocity，继续朝向目标播放移动动画
+            }
+            else
+            {
+                // 未受阻：衰减而非清零。撞上家具后受阻/未受阻帧交替抖动，
+                // 清零会让计时器永远到不了阈值；真正自由移动时衰减回 0 不会误触发。
+                _wanderStuckTimer = Mathf.Max(0f, _wanderStuckTimer - deltaTime * WanderUnblockedDecayFactor);
+                SetWanderVelocity(toTarget.normalized * wander.MoveSpeed);
+            }
+
+            _wanderPrevActualPosition = current;
+            _hasWanderPrevActualPosition = true;
+            context.RuntimeData.TargetPosition = wander.TargetPosition;
+            context.RuntimeData.TargetReached = false;
+            return WanderMoveOutcome.None;
+        }
+
+        // ------------------------------------------------------------------
+        // 行为权重驱动循环（数值规则文档 §25）：
+        // 待机/抽取 → 必要时 Moving（§8 移动是中间状态不是行为）→ 执行绑定交互
+        // → 结算 Energy/Mood（§12）→ 记录 RecentActions/Cooldown（§9/§10）。
+        // ------------------------------------------------------------------
+
+        private void TickBehaviorDriven(PetContext context, float deltaTime)
+        {
+            RandomWander? wander = GetComponent<RandomWander>();
+            if (wander != null && !wander.ExternalControlEnabled)
+            {
+                wander.ExternalControlEnabled = true;
+            }
+
+            if (_wanderInteractionActive)
+            {
+                TickBehaviorPerforming(context, deltaTime);
+                return;
+            }
+
+            bool isWandering = false;
+            switch (_behaviorPhase)
+            {
+                case BehaviorPhase.IdleWait:
+                    SetWanderVelocity(Vector2.zero);
+                    context.RuntimeData.TargetPosition = context.RuntimeData.Position;
+                    context.RuntimeData.TargetReached = true;
+                    _behaviorIdleTimer -= deltaTime;
+                    if (_behaviorIdleTimer <= 0f)
+                    {
+                        if (_behaviorIdleIsActiveBehavior)
+                        {
+                            // 原地行为（待机）时长结束 = 行为完成。
+                            CompleteActiveBehavior(context, completedNaturally: true);
+                        }
+                        else
+                        {
+                            StartNextBehavior(context, wander);
+                        }
+                    }
+                    break;
+
+                case BehaviorPhase.MovingToBehavior:
+                    if (wander == null)
+                    {
+                        AbortActiveBehavior(context, 1f);
+                        break;
+                    }
+
+                    WanderMoveOutcome outcome = TickWanderMovement(context, wander, deltaTime, allowBumpInteraction: false, out isWandering);
+                    if (outcome == WanderMoveOutcome.Arrived)
+                    {
+                        OnBehaviorMoveArrived(context);
+                    }
+                    else if (outcome == WanderMoveOutcome.Abandoned)
+                    {
+                        AbortActiveBehavior(context, 1f);
+                    }
+                    break;
+            }
+
+            SetPlayerControlledState(
+                context,
+                _wanderInteractionActive
+                    ? ResolvePerformingStateName()
+                    : isWandering ? MovingState.StateName : IdleState.StateName);
+            context.Advance(deltaTime);
+            _tickService?.Tick(context, deltaTime);
+            ResetPlayerControlledRuntime(context);
+
+            if (!isWandering && _behaviorPhase != BehaviorPhase.MovingToBehavior)
+            {
+                context.RuntimeData.TargetPosition = context.RuntimeData.Position;
+                context.RuntimeData.TargetReached = true;
+            }
+        }
+
+        /// <summary>行为执行中：沿用漫游交互的可视/pose/动画机制；自然结束时结算并记录。</summary>
+        private void TickBehaviorPerforming(PetContext context, float deltaTime)
+        {
+            SetWanderVelocity(Vector2.zero);
+            SetPlayerControlledState(context, ResolvePerformingStateName());
+            context.Advance(deltaTime);
+            _tickService?.Tick(context, deltaTime);
+            ResetPlayerControlledRuntime(context);
+            context.RuntimeData.TargetReached = true;
+
+            _wanderInteractionRemaining -= deltaTime;
+            if (_wanderInteractionRemaining > 0f)
+            {
+                return;
+            }
+
+            EndWanderInteraction();
+            CompleteActiveBehavior(context, completedNaturally: true);
+            // 同帧切回 Idle，避免 UpdateMovementAnimation 仍以 Interacting 状态
+            // 播放一次 Move_Front 兜底动画。
+            SetPlayerControlledState(context, IdleState.StateName);
+        }
+
+        /// <summary>睡觉行为执行期间状态名报 Sleeping（§11 睡觉停止精力自然衰减），其余报 Interacting。</summary>
+        private string ResolvePerformingStateName()
+        {
+            return _activeBehaviorEntry != null && _activeBehaviorEntry.BehaviorId == PetBehaviorIds.Sleep
+                ? SleepingState.StateName
+                : InteractingState.StateName;
+        }
+
+        /// <summary>
+        /// 抽取下一个行为（§25：候选 → 精力硬规则 → 冷却 → 四倍率 → 加权随机）。
+        /// 精力 ≤ 强制阈值时由选择器直接返回睡觉（§4）。
+        /// </summary>
+        private void StartNextBehavior(PetContext context, RandomWander? wander)
+        {
+            if (_behaviorConfig == null)
+            {
+                _behaviorIdleTimer = 1f;
+                return;
+            }
+
+            PersonalityVector personality = default;
+            if (ServiceLocator.TryResolve(out IPersonalityEvolutionService? personalityService) && personalityService is not null)
+            {
+                personality = personalityService.GetMatrix(context.RuntimeData.PetId);
+            }
+
+            BehaviorSelectorInput input = new(
+                context.RuntimeData.Energy,
+                context.RuntimeData.Mood,
+                personality,
+                context.RuntimeData.RuntimeTimeSeconds,
+                context.Config.ForcedSleepEnergyThreshold,
+                context.Config.SleepExcludedAboveEnergy,
+                context.Config.ActiveBehaviorMinEnergy);
+
+            BehaviorPickResult? pick = BehaviorSelector.Pick(
+                _behaviorConfig,
+                input,
+                context.RuntimeData.BehaviorState,
+                static () => UnityEngine.Random.value);
+
+            if (pick is null)
+            {
+                _behaviorIdleTimer = 1f;
+                return;
+            }
+
+            BehaviorConfigSO.BehaviorEntry entry = pick.Value.Entry;
+
+            if (!entry.RequiresMovement)
+            {
+                // 原地行为（待机）：原地停留一段时长，到时按完成结算。
+                _activeBehaviorEntry = entry;
+                _pendingBehaviorCandidate = null;
+                _behaviorPhase = BehaviorPhase.IdleWait;
+                _behaviorIdleIsActiveBehavior = true;
+                _behaviorIdleTimer = Mathf.Max(0.1f, _behaviorConfig.RollIdleDurationSeconds());
+                context.RuntimeData.CurrentBehaviorId = entry.BehaviorId;
+                context.RuntimeData.BehaviorState.CurrentBehaviorId = entry.BehaviorId;
+                return;
+            }
+
+            _behaviorIdleIsActiveBehavior = false;
+
+            if (wander == null ||
+                !TryGetComponent(out PetPlayerFurnitureInteractionController interactionController) ||
+                !interactionController.TryGetInteractionCandidateByType(entry.BindingInteractionType, out AutoInteractionCandidate candidate))
+            {
+                Debug.LogWarning(
+                    $"[PetBehavior] {_petId} 行为 '{entry.BehaviorId}' 找不到 InteractionType={entry.BindingInteractionType} " +
+                    "的交互绑定，按已尝试记录冷却后重新选择。");
+                // 防死循环：绑定缺失的行为按已尝试记录，避免每帧重复选中同一个不可执行行为。
+                context.RuntimeData.BehaviorState.RecordCompletion(
+                    entry.BehaviorId, context.RuntimeData.RuntimeTimeSeconds, entry.CooldownSeconds);
+                _behaviorFailureCount++;
+                _behaviorIdleTimer = Mathf.Min(1f * _behaviorFailureCount, 15f);
+                return;
+            }
+
+            _activeBehaviorEntry = entry;
+            _pendingBehaviorCandidate = candidate;
+            _behaviorPhase = BehaviorPhase.MovingToBehavior;
+            _behaviorMoveStartPosition = GetCurrentWorldPosition();
+            _behaviorHasMoveStart = true;
+            context.RuntimeData.CurrentBehaviorId = entry.BehaviorId;
+            context.RuntimeData.BehaviorState.CurrentBehaviorId = entry.BehaviorId;
+            wander.SetExternalTarget(candidate.InteractionPoint);
+        }
+
+        /// <summary>到达行为目标点：结算移动能耗（§8），启动该行为绑定的交互。</summary>
+        private void OnBehaviorMoveArrived(PetContext context)
+        {
+            // §8：单次普通移动 Energy -1，仅当移动距离超过策划配置阈值时结算一次（短距离白走）。
+            if (_behaviorHasMoveStart && context.Config.MoveEnergyCost > 0f)
+            {
+                float distance = Vector2.Distance(_behaviorMoveStartPosition, context.RuntimeData.Position);
+                if (distance >= context.Config.MoveEnergyCostMinDistance)
+                {
+                    StatTickService.ApplyEnvironmentalBuff(context.RuntimeData, 0f, -context.Config.MoveEnergyCost);
+                }
+            }
+            _behaviorHasMoveStart = false;
+
+            BehaviorConfigSO.BehaviorEntry? entry = _activeBehaviorEntry;
+            AutoInteractionCandidate? candidate = _pendingBehaviorCandidate;
+            if (entry == null || candidate == null || !StartBehaviorInteraction(context, entry, candidate.Value))
+            {
+                AbortActiveBehavior(context, 1f);
+            }
+        }
+
+        /// <summary>启动选中行为的绑定交互：复用漫游交互的动画/可视/pose 机制。</summary>
+        private bool StartBehaviorInteraction(
+            PetContext context,
+            BehaviorConfigSO.BehaviorEntry entry,
+            AutoInteractionCandidate candidate)
+        {
+            PetPlayerInteractionRequest request = candidate.Request;
+            _activeBehaviorTargetName = request.TargetName;
+            _activeBehaviorCategory = request.Category;
+            _activeBehaviorInteractionType = request.InteractionType;
+
+            FurnitureInteractionTarget target = new(
+                request.TargetName,
+                request.TargetName,
+                request.Category,
+                request.InteractionType,
+                request.InteractionDurationSeconds,
+                candidate.InteractionPoint,
+                0f);
+
+            StartWanderInteractionFromRequest(
+                context,
+                target,
+                request,
+                hasRequestData: true,
+                durationOverrideSeconds: entry.OverrideDurationSeconds,
+                alwaysPublishCompletionEvent: true);
+            return true;
+        }
+
+        /// <summary>
+        /// 行为收尾：清理驱动状态；自然完成时按 §12 结算 Energy/Mood、按 §9/§10 记录
+        /// 最近行为与冷却（冷却从行为结束时起算），随后进入短暂过渡停顿再抽下一个行为。
+        /// </summary>
+        private void CompleteActiveBehavior(PetContext context, bool completedNaturally)
+        {
+            BehaviorConfigSO.BehaviorEntry? entry = _activeBehaviorEntry;
+            _activeBehaviorEntry = null;
+            _pendingBehaviorCandidate = null;
+            _behaviorIdleIsActiveBehavior = false;
+            _behaviorHasMoveStart = false;
+            _behaviorPhase = BehaviorPhase.IdleWait;
+            context.RuntimeData.CurrentBehaviorId = string.Empty;
+            context.RuntimeData.BehaviorState.CurrentBehaviorId = string.Empty;
+
+            if (completedNaturally && entry != null)
+            {
+                // §12：行为完成一次性结算（普通行为 -1~-4 精力、+0~+2 心情；睡觉 +25 精力）。
+                StatTickService.ApplyEnvironmentalBuff(context.RuntimeData, entry.MoodDelta, entry.EnergyDelta);
+                context.RuntimeData.BehaviorState.RecordCompletion(
+                    entry.BehaviorId, context.RuntimeData.RuntimeTimeSeconds, entry.CooldownSeconds);
+
+                if (entry.RequiresMovement)
+                {
+                    context.RuntimeData.LastInteractionFurnitureId = _activeBehaviorTargetName;
+                    context.RuntimeData.LastInteractionSummary =
+                        $"{entry.Label} / {_activeBehaviorCategory} (Mood {FormatSigned(entry.MoodDelta)}, Energy {FormatSigned(entry.EnergyDelta)})";
+                }
+
+                _behaviorFailureCount = 0;
+                _behaviorIdleTimer = _behaviorConfig != null ? _behaviorConfig.TransitionPauseSeconds : 1f;
+            }
+            else
+            {
+                _behaviorIdleTimer = 0.5f;
+            }
+
+            _activeBehaviorTargetName = string.Empty;
+            _activeBehaviorCategory = FurnitureCategory.Unknown;
+            _activeBehaviorInteractionType = FurnitureInteractionType.Unknown;
+        }
+
+        /// <summary>
+        /// 行为未能执行（绑定缺失/移动被放弃/玩家接管）：不结算，但按"已尝试"记录冷却，
+        /// 避免反复选中同一个不可达行为；连续失败时退避拉长重试间隔。
+        /// </summary>
+        private void AbortActiveBehavior(PetContext context, float idleSeconds)
+        {
+            BehaviorConfigSO.BehaviorEntry? entry = _activeBehaviorEntry;
+            CompleteActiveBehavior(context, completedNaturally: false);
+            if (entry != null)
+            {
+                context.RuntimeData.BehaviorState.RecordCompletion(
+                    entry.BehaviorId, context.RuntimeData.RuntimeTimeSeconds, entry.CooldownSeconds);
+            }
+
+            _behaviorFailureCount++;
+            _behaviorIdleTimer = Mathf.Min(idleSeconds * _behaviorFailureCount, 15f);
+        }
+
+        /// <summary>玩家接管时打断行为驱动循环：移动中放弃目标，未完成的行为不结算不记录。</summary>
+        private void CancelBehaviorDrivenLoop(PetContext context)
+        {
+            if (_behaviorConfig == null)
+            {
+                return;
+            }
+
+            if (_activeBehaviorEntry == null && _behaviorPhase == BehaviorPhase.IdleWait)
+            {
+                return;
+            }
+
+            if (_behaviorPhase == BehaviorPhase.MovingToBehavior &&
+                GetComponent<RandomWander>() is { } wander)
+            {
+                wander.AbandonTarget();
+            }
+
+            CompleteActiveBehavior(context, completedNaturally: false);
         }
 
         private void TickWanderInteraction(PetContext context, float deltaTime)
@@ -981,8 +1379,30 @@ namespace GeminiLab.Modules.Pet
                 return false;
             }
 
+            StartWanderInteractionFromRequest(context, target, request, hasRequestData);
+            return true;
+        }
+
+        /// <summary>
+        /// 启动一次自动交互：动画状态解析、可视/排序/pose 覆盖、时长与 buff/事件广播。
+        /// 旧漫游碰撞触发与行为权重驱动共用。durationOverrideSeconds &gt; 0 时覆盖绑定时长
+        /// （例如睡觉行为需要比绑定动画更久的持续时间）。alwaysPublishCompletionEvent 用于
+        /// 行为驱动路径——性格演化（文档 §2 家具交互规则）要求行为交互总是广播完成事件；
+        /// 旧漫游路径保持原样，只在消耗到家具 buff 时广播。
+        /// </summary>
+        private void StartWanderInteractionFromRequest(
+            PetContext context,
+            FurnitureInteractionTarget target,
+            PetPlayerInteractionRequest request,
+            bool hasRequestData,
+            float durationOverrideSeconds = 0f,
+            bool alwaysPublishCompletionEvent = false)
+        {
             _wanderInteractionActive = true;
-            _wanderInteractionRemaining = Mathf.Max(0.1f, target.InteractionDurationSeconds);
+            float durationSeconds = durationOverrideSeconds > 0f
+                ? durationOverrideSeconds
+                : target.InteractionDurationSeconds;
+            _wanderInteractionRemaining = Mathf.Max(0.1f, durationSeconds);
             if (hasRequestData)
             {
                 // 绑定命中：显式动画状态名优先（如 Interact_PlayGame）；缺省时用变体映射兜底（如 "devil sleep" → Interact_DevilSleep）。
@@ -1022,22 +1442,26 @@ namespace GeminiLab.Modules.Pet
                 $"[PetInteraction] Auto wander interaction started target='{target.FurnitureId}' " +
                 $"state='{_wanderInteractionAnimatorStateName}' duration={_wanderInteractionRemaining:F2}");
 
-            // 与 InteractingState.Enter 一致：应用环境加成并广播事件（仅当通过 _placedFurniture 命中时）。
-            if (context.FurnitureService is not null &&
-                context.FurnitureService.TryConsumeInteractionBuff(target.FurnitureId, out EnvironmentalBuff buff))
+            // 与 InteractingState.Enter 一致：应用环境加成（仅当通过 _placedFurniture 命中时）。
+            EnvironmentalBuff buff = default;
+            bool buffConsumed = context.FurnitureService is not null &&
+                                context.FurnitureService.TryConsumeInteractionBuff(target.FurnitureId, out buff);
+            if (buffConsumed)
             {
                 StatTickService.ApplyEnvironmentalBuff(context.RuntimeData, buff.MoodDelta, buff.EnergyDelta);
                 context.RuntimeData.LastInteractionFurnitureId = target.FurnitureId;
                 context.RuntimeData.LastInteractionSummary =
                     $"{target.InteractionType.ToDisplayLabel()} / {target.Category} (Mood {FormatSigned(buff.MoodDelta)}, Energy {FormatSigned(buff.EnergyDelta)})";
+            }
+
+            if (buffConsumed || alwaysPublishCompletionEvent)
+            {
                 context.EventBus?.Publish(new PetInteractionCompletedEvent(
                     context.RuntimeData.PetId,
                     target.FurnitureId,
                     target.Category,
                     target.InteractionType));
             }
-
-            return true;
         }
 
         private bool TryFindNearbyFurniture(PetContext context, out FurnitureInteractionTarget target)
@@ -2233,7 +2657,8 @@ namespace GeminiLab.Modules.Pet
                 runtime.IsTraveling,
                 runtime.LastInteractionFurnitureId,
                 runtime.LastInteractionSummary,
-                petId: runtime.PetId);
+                petId: runtime.PetId,
+                currentBehaviorId: runtime.CurrentBehaviorId);
 
             if (_lastPublishedSnapshot.HasValue && AreSnapshotsEquivalent(_lastPublishedSnapshot.Value, snapshot))
             {
@@ -2257,7 +2682,8 @@ namespace GeminiLab.Modules.Pet
                    previous.TargetFurnitureInteractionType == current.TargetFurnitureInteractionType &&
                    previous.IsTraveling == current.IsTraveling &&
                    previous.LastInteractionFurnitureId == current.LastInteractionFurnitureId &&
-                   previous.LastInteractionSummary == current.LastInteractionSummary;
+                   previous.LastInteractionSummary == current.LastInteractionSummary &&
+                   previous.CurrentBehaviorId == current.CurrentBehaviorId;
         }
 
         private void EnsureAnimatorBinding()

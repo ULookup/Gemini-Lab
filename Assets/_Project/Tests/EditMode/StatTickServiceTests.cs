@@ -5,51 +5,102 @@ using UnityEngine;
 
 namespace GeminiLab.Tests.EditMode
 {
+    /// <summary>
+    /// 数值规则文档口径：
+    /// - §11 清醒每现实 3 分钟 Energy -1；睡觉期间不自然衰减
+    /// - §13 心情每 5 分钟向 50 回归 1 点（不越过目标）
+    /// - 饱食保留既有缓慢衰减
+    /// </summary>
     public sealed class StatTickServiceTests
     {
-        [Test]
-        public void Tick_Awake_DecreasesEnergyAndRecoversMood()
+        private static PetContext CreateAwakeContext(PetRuntimeData data, PetStateValueSO config)
         {
-            PetStateValueSO config = ScriptableObject.CreateInstance<PetStateValueSO>();
-            config.AwakeEnergyDecayPerSecond = 10f;
-            config.MoodRecoveryPerSecond = 5f;
-            config.SleepEnterEnergyThreshold = 20f;
-
-            PetRuntimeData data = new()
-            {
-                Energy = 100f,
-                Mood = 20f
-            };
-
-            PetContext context = new(data, config);
+            var context = new PetContext(data, config);
             context.EnterState(IdleState.StateName);
-
-            StatTickService service = new();
-            service.Tick(context, 1f);
-
-            Assert.AreEqual(90f, data.Energy, 0.01f);
-            Assert.AreEqual(25f, data.Mood, 0.01f);
+            return context;
         }
 
         [Test]
-        public void Tick_Sleeping_IncreasesEnergy()
+        public void Tick_Awake_DrainsEnergyAtDocRate()
         {
             PetStateValueSO config = ScriptableObject.CreateInstance<PetStateValueSO>();
-            config.SleepingEnergyRecoveryPerSecond = 12f;
+            config.AwakeEnergyDrainMinutesPerPoint = 3f; // §11：每 3 分钟 -1 → 180 秒 -1
 
-            PetRuntimeData data = new()
-            {
-                Energy = 40f,
-                Mood = 50f
-            };
+            PetRuntimeData data = new() { Energy = 100f, Mood = 50f };
+            PetContext context = CreateAwakeContext(data, config);
 
-            PetContext context = new(data, config);
+            new StatTickService().Tick(context, 180f);
+
+            Assert.AreEqual(99f, data.Energy, 0.01f);
+        }
+
+        [Test]
+        public void Tick_Sleeping_DoesNotDrainEnergy()
+        {
+            PetStateValueSO config = ScriptableObject.CreateInstance<PetStateValueSO>();
+
+            PetRuntimeData data = new() { Energy = 40f, Mood = 50f };
+            var context = new PetContext(data, config);
             context.EnterState(SleepingState.StateName);
 
-            StatTickService service = new();
-            service.Tick(context, 1f);
+            new StatTickService().Tick(context, 600f);
 
-            Assert.AreEqual(52f, data.Energy, 0.01f);
+            Assert.AreEqual(40f, data.Energy, 0.01f);
+        }
+
+        [Test]
+        public void Tick_MoodNeutralReturn_StepsOnePointPerInterval()
+        {
+            PetStateValueSO config = ScriptableObject.CreateInstance<PetStateValueSO>();
+            config.MoodNeutralReturnIntervalSeconds = 300f;
+
+            PetRuntimeData below = new() { Energy = 100f, Mood = 20f };
+            new StatTickService().Tick(CreateAwakeContext(below, config), 300f);
+            Assert.AreEqual(21f, below.Mood, 0.01f);
+
+            PetRuntimeData above = new() { Energy = 100f, Mood = 80f };
+            new StatTickService().Tick(CreateAwakeContext(above, config), 300f);
+            Assert.AreEqual(79f, above.Mood, 0.01f);
+        }
+
+        [Test]
+        public void Tick_MoodNeutralReturn_DoesNotCrossTarget()
+        {
+            PetStateValueSO config = ScriptableObject.CreateInstance<PetStateValueSO>();
+            config.MoodNeutralReturnIntervalSeconds = 300f;
+            config.MoodNeutralTarget = 50f;
+
+            PetRuntimeData below = new() { Energy = 100f, Mood = 49.5f };
+            new StatTickService().Tick(CreateAwakeContext(below, config), 300f);
+            Assert.AreEqual(50f, below.Mood, 0.01f);
+
+            PetRuntimeData above = new() { Energy = 100f, Mood = 50.5f };
+            new StatTickService().Tick(CreateAwakeContext(above, config), 300f);
+            Assert.AreEqual(50f, above.Mood, 0.01f);
+        }
+
+        [Test]
+        public void Tick_MoodNeutralReturn_AccumulatesMultipleIntervals()
+        {
+            PetStateValueSO config = ScriptableObject.CreateInstance<PetStateValueSO>();
+            config.MoodNeutralReturnIntervalSeconds = 300f;
+
+            PetRuntimeData data = new() { Energy = 100f, Mood = 20f };
+            new StatTickService().Tick(CreateAwakeContext(data, config), 900f);
+
+            Assert.AreEqual(23f, data.Mood, 0.01f);
+        }
+
+        [Test]
+        public void Tick_Satiety_KeepsSlowDecay()
+        {
+            PetStateValueSO config = ScriptableObject.CreateInstance<PetStateValueSO>();
+            config.SatietyDecayPerSecond = 0.005f;
+
+            PetRuntimeData data = new() { Energy = 100f, Mood = 50f, Satiety = 50f };
+            new StatTickService().Tick(CreateAwakeContext(data, config), 100f);
+
+            Assert.AreEqual(49.5f, data.Satiety, 0.01f);
         }
 
         [Test]
