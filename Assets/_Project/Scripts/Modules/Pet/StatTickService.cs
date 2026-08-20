@@ -5,58 +5,53 @@ namespace GeminiLab.Modules.Pet
 {
     /// <summary>
     /// Centralized stat ticking to avoid scattered direct value writes.
-    /// 行为：
-    /// - 睡眠中：Energy 按 <see cref="PetStateValueSO.SleepingEnergyRecoveryPerSecond"/> 回复；
-    ///   Mood 稳定少量回复；Satiety 仍持续衰减（睡觉不会管饱）
-    /// - 清醒时：Energy 持续衰减；Satiety 持续衰减；Mood 在精力/饱食充裕时回复；
-    ///   在任一触底时反向扣除并把回复速度降到 <see cref="PetStateValueSO.MoodRecoveryPenaltyFactor"/> 倍
+    /// 数值规则文档口径：
+    /// - §11 精力自然变化：清醒每现实 <see cref="PetStateValueSO.AwakeEnergyDrainPerRealMinute"/>
+    ///   分钟 Energy -1；睡觉期间停止自然衰减（睡眠恢复由睡觉行为完成时一次性结算）。
+    /// - §13 心情回归中性：每现实 <see cref="PetStateValueSO.MoodNeutralReturnIntervalSeconds"/>
+    ///   秒向 <see cref="PetStateValueSO.MoodNeutralTarget"/> 回归 1 点。
+    /// - 饱食：文档未定义，保留既有的缓慢自然衰减（喂食玩法预留 ApplySatietyDelta）。
+    /// 行为带来的 Energy/Mood 增减不在此处：由行为完成结算（§12）与交互 buff 走
+    /// <see cref="ApplyEnvironmentalBuff"/>。
     /// </summary>
     public sealed class StatTickService
     {
-        private const float LowSatietyThreshold = 30f;
-        private const float LowEnergyThreshold = 20f;
-
         public void Tick(PetContext context, float deltaTime)
         {
             PetRuntimeData data = context.RuntimeData;
             PetStateValueSO config = context.Config;
 
-            // Satiety 始终衰减（睡觉也会饿）
+            // 饱食缓慢自然衰减（文档未提及，保留既有系统）。
             data.Satiety -= config.SatietyDecayPerSecond * deltaTime;
 
-            if (context.IsSleeping)
+            // §11：清醒时精力自然消耗；睡觉期间不自然衰减。
+            if (!context.IsSleeping)
             {
-                data.Energy += config.SleepingEnergyRecoveryPerSecond * deltaTime;
-                data.Mood += config.MoodRecoveryPerSecond * 0.5f * deltaTime;
+                data.Energy -= config.AwakeEnergyDrainPerRealMinute / 60f * deltaTime;
             }
-            else
+
+            // §13：心情定时向中性值回归（每间隔 ±1，不越过目标值）。
+            if (config.MoodNeutralReturnIntervalSeconds > 0f)
             {
-                data.Energy -= config.AwakeEnergyDecayPerSecond * deltaTime;
-
-                bool lowSatiety = data.Satiety <= LowSatietyThreshold;
-                bool lowEnergy = data.Energy <= LowEnergyThreshold;
-
-                float moodRecovery = config.MoodRecoveryPerSecond;
-                if (lowSatiety || lowEnergy)
+                data.NeutralReturnTimerSeconds += deltaTime;
+                while (data.NeutralReturnTimerSeconds >= config.MoodNeutralReturnIntervalSeconds)
                 {
-                    moodRecovery *= config.MoodRecoveryPenaltyFactor;
-                }
-
-                data.Mood += moodRecovery * deltaTime;
-
-                if (lowSatiety)
-                {
-                    data.Mood -= config.LowSatietyMoodPenaltyPerSecond * deltaTime;
-                }
-                if (lowEnergy)
-                {
-                    data.Mood -= config.LowEnergyMoodPenaltyPerSecond * deltaTime;
+                    data.NeutralReturnTimerSeconds -= config.MoodNeutralReturnIntervalSeconds;
+                    if (data.Mood < config.MoodNeutralTarget)
+                    {
+                        data.Mood = Mathf.Min(data.Mood + 1f, config.MoodNeutralTarget);
+                    }
+                    else if (data.Mood > config.MoodNeutralTarget)
+                    {
+                        data.Mood = Mathf.Max(data.Mood - 1f, config.MoodNeutralTarget);
+                    }
                 }
             }
 
             ClampStateValues(data);
         }
 
+        /// <summary>一次性结算交互/行为带来的 Mood/Energy 增减（§12 行为结算也走这里）。</summary>
         public static void ApplyEnvironmentalBuff(PetRuntimeData data, float moodDelta, float energyDelta)
         {
             data.Mood += moodDelta;

@@ -45,6 +45,19 @@ namespace GeminiLab.Modules.Pet
                 Debug.Log("[PetRuntimeBootstrap] PetRuntimeSaveService registered.");
             }
 
+            // 交流系统（数值规则文档 §14-19）：对子亲密度 + 点击交流结算。
+            if (!ServiceLocator.TryResolve(out Social.IPetSocialService? socialService) || socialService is null)
+            {
+                ServiceLocator.TryResolve(out Core.Events.EventBus? eventBus);
+                var social = new Social.PetSocialService(roster!, eventBus);
+                ServiceLocator.Register<Social.IPetSocialService>(social);
+                if (registry is not null && registry.TryGet(social.Key) is null)
+                {
+                    registry.Register(social);
+                }
+                Debug.Log("[PetRuntimeBootstrap] PetSocialService registered.");
+            }
+
             EnsurePlaceholderPet();
         }
 

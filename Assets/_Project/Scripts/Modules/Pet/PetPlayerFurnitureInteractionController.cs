@@ -306,6 +306,41 @@ namespace GeminiLab.Modules.Pet
             return true;
         }
 
+        /// <summary>
+        /// 行为权重驱动专用：按 <see cref="FurnitureInteractionType"/> 精确查找绑定
+        /// （不做距离检查——行为系统会先走到交互点再启动交互）。
+        /// 与 <see cref="TryGetAutoInteractionCandidate"/> 返回同样的完整请求与固定交互点。
+        /// </summary>
+        public bool TryGetInteractionCandidateByType(FurnitureInteractionType interactionType, out AutoInteractionCandidate candidate)
+        {
+            candidate = default;
+            if (!_enableInteraction || !isActiveAndEnabled)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < _bindings.Length; i++)
+            {
+                InteractionBinding binding = _bindings[i];
+                if (binding.InteractionType != interactionType)
+                {
+                    continue;
+                }
+
+                if (!TryResolveInteractionPoint(binding, out Vector2 interactionPoint, out string targetName, out GameObject? targetObject))
+                {
+                    continue;
+                }
+
+                candidate = new AutoInteractionCandidate(
+                    BuildInteractionRequest(binding, targetName, targetObject),
+                    interactionPoint);
+                return true;
+            }
+
+            return false;
+        }
+
         private bool TryEnsurePetController(out PetController? petController)
         {
             if (_petController == null)

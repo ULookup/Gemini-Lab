@@ -38,6 +38,20 @@ namespace GeminiLab.Modules.Pet
         public float MoveSpeed => _moveSpeed;
         public float ArrivalThreshold => _arrivalThreshold;
         public bool HorizontalOnly => _horizontalOnly;
+
+        /// <summary>
+        /// 外部（行为权重系统）接管目标选择时置 true：Update 不再随机选点，
+        /// 移动目标只通过 <see cref="SetExternalTarget"/> 设置。
+        /// </summary>
+        public bool ExternalControlEnabled { get; set; }
+
+        /// <summary>行为驱动模式：设置明确的移动目标并立即进入移动状态。</summary>
+        public void SetExternalTarget(Vector2 target)
+        {
+            _targetPosition = target;
+            _isMoving = true;
+            _waitTimer = 0f;
+        }
         public float HorizontalBaselineY
         {
             get
@@ -93,6 +107,12 @@ namespace GeminiLab.Modules.Pet
                 data.IsPlayerInteractionActive)
             {
                 if (_isMoving) NotifyArrived();
+                return;
+            }
+
+            // 行为权重系统接管：目标由 PetController 的行为驱动循环设置，这里不随机选点。
+            if (ExternalControlEnabled)
+            {
                 return;
             }
 

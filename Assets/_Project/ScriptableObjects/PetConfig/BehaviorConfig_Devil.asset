@@ -1,0 +1,94 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed572c5aa5a44937ae33760d2600d779, type: 3}
+  m_Name: BehaviorConfig_Devil
+  m_EditorClassIdentifier:
+  Behaviors:
+  - BehaviorId: idle
+    Label: "待机"
+    BaseWeight: 20
+    Category: 0
+    PersonalityTags: []
+    PreferredEnergy: 50
+    EnergyDelta: 0
+    MoodDelta: 0
+    CooldownSeconds: 0
+    Tags: 0
+    BindingInteractionType: 0
+    OverrideDurationSeconds: 0
+  - BehaviorId: sleep
+    Label: "睡觉"
+    BaseWeight: 15
+    Category: 1
+    PersonalityTags:
+    - Trait: 2
+      Direction: 1
+    PreferredEnergy: 20
+    EnergyDelta: 25
+    MoodDelta: 1
+    CooldownSeconds: 300
+    Tags: 0
+    BindingInteractionType: 5
+    OverrideDurationSeconds: 30
+  - BehaviorId: play_games
+    Label: "玩掌机"
+    BaseWeight: 30
+    Category: 3
+    PersonalityTags:
+    - Trait: 1
+      Direction: 1
+    - Trait: 6
+      Direction: 1
+    PreferredEnergy: 80
+    EnergyDelta: -4
+    MoodDelta: 2
+    CooldownSeconds: 150
+    Tags: 1
+    BindingInteractionType: 19
+    OverrideDurationSeconds: 0
+  - BehaviorId: paint
+    Label: "画画"
+    BaseWeight: 30
+    Category: 2
+    PersonalityTags:
+    - Trait: 6
+      Direction: 1
+    - Trait: 1
+      Direction: 1
+    PreferredEnergy: 65
+    EnergyDelta: -2
+    MoodDelta: 2
+    CooldownSeconds: 120
+    Tags: 0
+    BindingInteractionType: 11
+    OverrideDurationSeconds: 0
+  - BehaviorId: door_gaze
+    Label: "门前驻足"
+    BaseWeight: 5
+    Category: 4
+    PersonalityTags:
+    - Trait: 6
+      Direction: 1
+    - Trait: 3
+      Direction: 1
+    - Trait: 4
+      Direction: -1
+    PreferredEnergy: 75
+    EnergyDelta: -4
+    MoodDelta: 0
+    CooldownSeconds: 240
+    Tags: 1
+    BindingInteractionType: 3
+    OverrideDurationSeconds: 0
+  IdleMinSeconds: 3
+  IdleMaxSeconds: 8
+  TransitionPauseSeconds: 2

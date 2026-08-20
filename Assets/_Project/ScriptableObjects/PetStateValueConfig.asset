@@ -11,10 +11,21 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b1fa3a54ddfbc7c49beb25460f5dd1d5, type: 3}
   m_Name: PetStateValueConfig
-  m_EditorClassIdentifier: 
-  InitialMood: 60
+  m_EditorClassIdentifier:
+  InitialMood: 50
   InitialEnergy: 100
   InitialSatiety: 75
+  AwakeEnergyDrainMinutesPerPoint: 3
+  MoodNeutralReturnIntervalSeconds: 300
+  MoodNeutralTarget: 50
+  SatietyDecayPerSecond: 0.005
+  ForcedSleepEnergyThreshold: 5
+  SleepExcludedAboveEnergy: 70
+  ActiveBehaviorMinEnergy: 10
+  MoveEnergyCost: 1
+  MoveEnergyCostMinDistance: 1.5
+  ForceWakeMoodPenalty: 30
+  WorkStateTimeoutSeconds: 30
   SleepEnterEnergyThreshold: 25
   SleepExitEnergyThreshold: 70
   DaytimeBedSeekEnergyThreshold: 15
@@ -22,12 +33,3 @@ MonoBehaviour:
   LeisureSeekMoodThreshold: 85
   NightHourStart: 22
   NightHourEnd: 6
-  AwakeEnergyDecayPerSecond: 0.005
-  SleepingEnergyRecoveryPerSecond: 0.1
-  MoodRecoveryPerSecond: 0.005
-  SatietyDecayPerSecond: 0.005
-  LowSatietyMoodPenaltyPerSecond: 0.3
-  LowEnergyMoodPenaltyPerSecond: 0.3
-  MoodRecoveryPenaltyFactor: 0.2
-  ForceWakeMoodPenalty: 30
-  WorkStateTimeoutSeconds: 30

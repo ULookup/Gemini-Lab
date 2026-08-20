@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using GeminiLab.Modules.Furniture;
+using GeminiLab.Modules.Pet.Behavior;
 using UnityEngine;
 
 namespace GeminiLab.Modules.Pet
@@ -16,7 +17,7 @@ namespace GeminiLab.Modules.Pet
         public PetId PetId = PetId.Angel;
 
         [Range(0f, 100f)]
-        public float Mood = 60f;
+        public float Mood = 50f;
 
         [Range(0f, 100f)]
         public float Energy = 100f;
@@ -31,7 +32,16 @@ namespace GeminiLab.Modules.Pet
 
         public float RuntimeTimeSeconds;
 
+        /// <summary>心情回归中性的累计计时（§13），秒。</summary>
+        public float NeutralReturnTimerSeconds;
+
         public string CurrentState = "None";
+
+        /// <summary>当前正在执行的行为 Id（行为权重系统，§25）；无行为时为 Empty。</summary>
+        public string CurrentBehaviorId = string.Empty;
+
+        /// <summary>行为运行态：当前行为、最近 3 个行为、冷却表（§22 BehaviorRuntimeState）。仅运行期，不持久化。</summary>
+        public BehaviorRuntimeState BehaviorState = new();
 
         public bool WorkRequested;
 
