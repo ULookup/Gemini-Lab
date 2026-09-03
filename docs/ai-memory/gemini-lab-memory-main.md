@@ -2,6 +2,15 @@
 
 Updated: 2026-08-10
 
+## 2026-09-03 室内遗留物系统实现（未运行场景作者化）
+
+- 新增 `GeminiLab.Modules.RoomRelic` 运行时模块：`RoomRelicService` 实现每日首次进入判定、纸条 50%、临时遗留物 45~79 每日 50%、永久赠礼 ≥80 每日 15% 且不重复，存档 key 为 `room_relic`。
+- `RoomRelicRuntimeBootstrap` 在 Apartment 场景 `RoomRelic` 根节点注册服务；`RoomRelicEntryTrigger` 复用 `PetMovementBounds` / `PetMovementBounds_Devil` 作为房间进入触发。
+- 运行时视觉组件只切换场景预置槽位/变体，不创建最终视觉；新增 `RoomNotePopup`、`RoomRelicDetailPopup`、`RoomGiftObtainedPopup` 三个 UI 面板。
+- 新增编辑器作者化入口 `ApartmentRoomRelicAuthoring`，菜单为 `Tools/Gemini-Lab/Apartment/Author Room Relic`；`AutoSetup` 版本提升到 66。已通过 MCP 执行作者化，Apartment 场景里已生成 `RoomRelic` 节点、占位槽位与三个弹窗。
+- 新增 EditMode 测试 `RoomRelicServiceTests`；代码已通过本地临时项目编译校验，任务闸门和视觉契约检查通过。
+- `Assets/_Project/Art/Sprites/Relic/` 中 8 张已提供遗物 Sprite 已绑定到 Apartment 场景 `RelicSpawn` 变体；缺失的 `速写` 和 `小星星吊坠` 仍使用占位。
+
 ## 2026-08-14 苹果资源系统
 
 - 新增 `GeminiLab.Modules.Apple`：`AppleService` 以 `IAppleService` 为门面，首次新档余额为 20 个苹果，存档 key 为 `apple`。
