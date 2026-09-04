@@ -11,7 +11,7 @@ namespace GeminiLab.Editor.SceneBootstrap
     public static class AutoSetup
     {
         private const string SetupDoneKey = "GeminiLab.AutoSetupDone";
-        private const int ExpectedVersion = 65;
+        private const int ExpectedVersion = 66;
 
         static AutoSetup()
         {
@@ -444,6 +444,11 @@ namespace GeminiLab.Editor.SceneBootstrap
                     if (currentVersion < 65)
                     {
                         ApartmentAppleBalanceAuthoring.Patch();
+                    }
+
+                    if (currentVersion < 66)
+                    {
+                        ApartmentRoomRelicAuthoring.Author();
                     }
 
                     EditorPrefs.SetInt(SetupDoneKey, ExpectedVersion);

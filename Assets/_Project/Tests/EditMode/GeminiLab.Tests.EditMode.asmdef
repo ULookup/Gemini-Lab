@@ -14,7 +14,8 @@
     "GeminiLab.Modules.Tarot",
     "GeminiLab.Modules.Apple",
     "GeminiLab.Modules.HubUI",
-    "GeminiLab.Modules.EmotionGarden"
+    "GeminiLab.Modules.EmotionGarden",
+    "GeminiLab.Modules.RoomRelic"
   ],
   "optionalUnityReferences": [
     "TestAssemblies"

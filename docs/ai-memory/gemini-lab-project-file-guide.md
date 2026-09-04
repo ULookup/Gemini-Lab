@@ -1,6 +1,16 @@
 # Gemini-Lab Project File Guide
 
-Updated: 2026-08-07
+Updated: 2026-09-04
+
+## 室内遗留物系统（2026-09-03）
+
+- 运行时模块：`Assets/_Project/Scripts/Modules/RoomRelic/`；`RoomRelicService` 实现 `IRoomRelicService` 与 `IPersistentService`，存档 key 为 `room_relic`。
+- 场景作者化：`Assets/_Project/Scripts/Editor/SceneBootstrap/ApartmentRoomRelicAuthoring.cs`，菜单 `Tools/Gemini-Lab/Apartment/Author Room Relic`；`AutoSetup` 版本 66 会调用。已执行并落盘到 `Apartment_Main.unity`。
+- 遗物素材：`Assets/_Project/Art/Sprites/Relic/`，由 `RoomRelicData.roomVisualKey` 记录 GUID；8 张已提供素材绑定到场景变体。
+- 房间进入：复用 `PetMovementBounds`（AngelRoom）和 `PetMovementBounds_Devil`（DevilRoom），由 `RoomRelicEntryTrigger` 调用服务。
+- UI 弹窗：`RoomNotePopup`、`RoomRelicDetailPopup`、`RoomGiftObtainedPopup` 对应 `PanelId` 29~31；详情/赠礼弹窗通过 `RoomRelicView` 变体视图显示 icon（运行时不写 Sprite）。
+- 赠礼素材：南瓜糖果/速写（恶魔→天使）、羽毛书签/小星星吊坠（天使→恶魔）；速写、小星星吊坠仍缺素材占位。
+- 测试：`Assets/_Project/Tests/EditMode/RoomRelicServiceTests.cs`。
 
 ## 苹果资源系统（2026-08-14）
 
