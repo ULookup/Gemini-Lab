@@ -24,8 +24,7 @@ namespace GeminiLab.Modules.RoomRelic
     public enum RoomNoteVisualType
     {
         Note = 0,
-        PaperBall = 1,
-        Origami = 2
+        PaperBall = 1
     }
 
     [Serializable]

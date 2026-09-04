@@ -10,6 +10,7 @@ namespace GeminiLab.Modules.RoomRelic
     {
         [SerializeField] private TMP_Text? _nameText;
         [SerializeField] private TMP_Text? _descriptionText;
+        [SerializeField] private RoomRelicView? _iconView;
 
         public override PanelId Id => PanelId.RoomRelicDetail;
 
@@ -33,6 +34,8 @@ namespace GeminiLab.Modules.RoomRelic
             {
                 _descriptionText.text = relic?.observationText ?? string.Empty;
             }
+
+            _iconView?.Apply(relic?.id);
         }
     }
 }

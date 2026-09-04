@@ -32,7 +32,7 @@ MonoBehaviour:
     receiverCharacter: Angel
     content: "\u3010\u5360\u4F4D\u3011\u6076\u9B54\u7559\u4E0B\u7684\u7EB8\u6761\u5185\u5BB9
       03"
-    visualType: 2
+    visualType: 0
     weight: 1
   - id: note_demon_04
     senderCharacter: Demon
@@ -60,7 +60,7 @@ MonoBehaviour:
     receiverCharacter: Demon
     content: "\u3010\u5360\u4F4D\u3011\u5929\u4F7F\u7559\u4E0B\u7684\u7EB8\u6761\u5185\u5BB9
       03"
-    visualType: 2
+    visualType: 0
     weight: 1
   - id: note_angel_04
     senderCharacter: Angel
@@ -154,48 +154,32 @@ MonoBehaviour:
   - id: gift_demon_01
     giverCharacter: Demon
     receiverCharacter: Angel
-    displayName: "\u5360\u4F4D\u8D60\u793C\xB7\u6076\u9B54 01"
-    observationText: "\u8FD9\u662F\u6076\u9B54\u8D60\u793C\u7684\u5360\u4F4D\u6761\u76EE\u3002"
-    roomVisualKey: 
+    displayName: "\u5357\u74DC\u7CD6\u679C"
+    observationText: "\u6076\u9B54\u9001\u7ED9\u5929\u4F7F\u7684\u5357\u74DC\u7CD6\u679C\u3002"
+    roomVisualKey: 232777944ca791d448cf4840262643c4
     displaySlotId: desk
     weight: 1
   - id: gift_demon_02
     giverCharacter: Demon
     receiverCharacter: Angel
-    displayName: "\u5360\u4F4D\u8D60\u793C\xB7\u6076\u9B54 02"
-    observationText: "\u8FD9\u662F\u6076\u9B54\u8D60\u793C\u7684\u5360\u4F4D\u6761\u76EE\u3002"
+    displayName: "\u901F\u5199"
+    observationText: "\u6076\u9B54\u9001\u7ED9\u5929\u4F7F\u7684\u901F\u5199\u3002"
     roomVisualKey: 
     displaySlotId: shelf
-    weight: 1
-  - id: gift_demon_03
-    giverCharacter: Demon
-    receiverCharacter: Angel
-    displayName: "\u5360\u4F4D\u8D60\u793C\xB7\u6076\u9B54 03"
-    observationText: "\u8FD9\u662F\u6076\u9B54\u8D60\u793C\u7684\u5360\u4F4D\u6761\u76EE\u3002"
-    roomVisualKey: 
-    displaySlotId: nightstand
     weight: 1
   - id: gift_angel_01
     giverCharacter: Angel
     receiverCharacter: Demon
-    displayName: "\u5360\u4F4D\u8D60\u793C\xB7\u5929\u4F7F 01"
-    observationText: "\u8FD9\u662F\u5929\u4F7F\u8D60\u793C\u7684\u5360\u4F4D\u6761\u76EE\u3002"
-    roomVisualKey: 
+    displayName: "\u7FBD\u6BDB\u4E66\u7B7E"
+    observationText: "\u5929\u4F7F\u9001\u7ED9\u6076\u9B54\u7684\u7FBD\u6BDB\u4E66\u7B7E\u3002"
+    roomVisualKey: 6643c15cd7a2ec74fbbe1a119c5d1d01
     displaySlotId: desk
     weight: 1
   - id: gift_angel_02
     giverCharacter: Angel
     receiverCharacter: Demon
-    displayName: "\u5360\u4F4D\u8D60\u793C\xB7\u5929\u4F7F 02"
-    observationText: "\u8FD9\u662F\u5929\u4F7F\u8D60\u793C\u7684\u5360\u4F4D\u6761\u76EE\u3002"
+    displayName: "\u5C0F\u661F\u661F\u540A\u5760"
+    observationText: "\u5929\u4F7F\u9001\u7ED9\u6076\u9B54\u7684\u5C0F\u661F\u661F\u540A\u5760\u3002"
     roomVisualKey: 
     displaySlotId: shelf
-    weight: 1
-  - id: gift_angel_03
-    giverCharacter: Angel
-    receiverCharacter: Demon
-    displayName: "\u5360\u4F4D\u8D60\u793C\xB7\u5929\u4F7F 03"
-    observationText: "\u8FD9\u662F\u5929\u4F7F\u8D60\u793C\u7684\u5360\u4F4D\u6761\u76EE\u3002"
-    roomVisualKey: 
-    displaySlotId: nightstand
     weight: 1

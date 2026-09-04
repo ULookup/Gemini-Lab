@@ -9,6 +9,7 @@ namespace GeminiLab.Modules.RoomRelic
     {
         [SerializeField] private TMP_Text? _giftNameText;
         [SerializeField] private TMP_Text? _hintText;
+        [SerializeField] private RoomRelicView? _iconView;
 
         public override PanelId Id => PanelId.RoomGiftObtained;
 
@@ -26,6 +27,8 @@ namespace GeminiLab.Modules.RoomRelic
             {
                 _hintText.text = "赠礼已被保存到房间中。";
             }
+
+            _iconView?.Apply(gift?.id);
         }
     }
 }
