@@ -13,6 +13,8 @@ Updated: 2026-09-04
 - 2026-09-04 补充：`RoomRelicDetailPopup` 与 `RoomGiftObtainedPopup` 增加 `_iconView`，复用 `RoomRelicView` 变体切换显示 icon（运行时不写 Sprite）；作者化 `CreatePopup` 生成 icon 变体节点。
 - 赠礼数据从占位改为 4 个真实素材：南瓜糖果/速写（恶魔→天使）、羽毛书签/小星星吊坠（天使→恶魔），缺素材的 `roomVisualKey` 留空占位；南瓜糖果、羽毛书签已绑定素材，速写、小星星吊坠仍缺素材。
 - 纸条掉落槽位按 `visualType` 绑定纸条/纸团素材（折纸 Origami 形态已取消），赠礼掉落槽位绑定真实素材。
+- 2026-09-04 SpaceSys 面板增加「人物主控」通用标识：`SpaceSysPanelStub` 新增 `_angelControlIndicator`/`_devilControlIndicator`（SpriteRenderer），运行时按 `PetPlayerInputController.ActiveTransform` 对应的 `PetController.PetId` 切换 active；标识挂在 `Pet_Angel`/`Pet_Devil` 头顶（世界空间 SpriteRenderer，跟随宠物），绑定 `Assets/_Project/Art/Sprites/Pet/人物主控.png`。
+- 2026-09-04 新增调试工具 `Assets/_Project/Scripts/Editor/Tools/RoomRelicDebugWindow.cs`，菜单 `Tools/Gemini-Lab/Room Relic Debug`：Play Mode 下可设置好友度（0/45/80）、触发 Angel/Devil 房间进入判定（反射重置每日判定）、查看当前纸条/遗物/赠礼状态，用于验收遗物掉落。
 
 ## 2026-08-14 苹果资源系统
 

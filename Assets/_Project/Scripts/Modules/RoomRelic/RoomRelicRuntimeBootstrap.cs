@@ -19,7 +19,7 @@ namespace GeminiLab.Modules.RoomRelic
 
         private RoomRelicService? _service;
 
-        private void Awake()
+        private void Start()
         {
             if (_catalog == null)
             {
