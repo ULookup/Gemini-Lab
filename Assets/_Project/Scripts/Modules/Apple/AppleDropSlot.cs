@@ -19,6 +19,13 @@ namespace GeminiLab.Modules.Apple
         [SerializeField] private Vector3 _feedbackLocalOffset = new(0f, 0.9f, -0.1f);
         [SerializeField] private int _interactionPriority = 30;
 
+        [Header("Audio")]
+        [SerializeField] private AudioClip? _landSfx;
+
+        [Range(0f, 1f)]
+        [SerializeField] private float _landSfxVolume = 0.8f;
+
+
         private AppleTreeDropController? _owner;
         private Vector3 _targetWorldPosition;
         private Vector3 _fallStartWorldPosition;
@@ -59,11 +66,27 @@ namespace GeminiLab.Modules.Apple
                     _targetWorldPosition,
                     eased);
 
+                // if (normalized >= 1f)
+                // {
+                //     _falling = false;
+                //     if (_collider != null) _collider.enabled = true;
+                // }
+
+
                 if (normalized >= 1f)
                 {
                     _falling = false;
-                    if (_collider != null) _collider.enabled = true;
+
+                    if (_collider != null)
+                        _collider.enabled = true;
+
+                    // 苹果落地音效
+                    if (_landSfx != null && AudioManager.Instance != null)
+                    {
+                        AudioManager.Instance.PlaySFX(_landSfx, _landSfxVolume);
+                    }
                 }
+
             }
 
             if (!_showingFeedback) return;

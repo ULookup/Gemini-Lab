@@ -21,6 +21,12 @@ namespace GeminiLab.Modules.HubUI.Panels
         [SerializeField] private Image? _cardBackImage;
         [SerializeField] private TMP_Text? _nameText;
 
+        [Header("Audio")]
+        [SerializeField] private AudioClip? _selectSfx;
+
+        [Range(0f, 1f)]
+        [SerializeField] private float _selectSfxVolume = 0.8f;
+
         public TarotCardSO? CardData { get; private set; }
         public event Action<TarotCardSO>? OnClicked;
 
@@ -106,12 +112,29 @@ namespace GeminiLab.Modules.HubUI.Panels
             RectTransform!.anchoredPosition = _originalAnchoredPosition;
         }
 
+        // public void OnPointerClick(PointerEventData eventData)
+        // {
+        //     if (CardData == null || _isSelected) return;
+        //     _isSelected = true;
+        //     OnClicked?.Invoke(CardData);
+        // }
+
         public void OnPointerClick(PointerEventData eventData)
+    {
+        if (CardData == null || _isSelected)
+            return;
+
+        _isSelected = true;
+
+        // 成功选择牌时播放音效
+        if (_selectSfx != null && AudioManager.Instance != null)
         {
-            if (CardData == null || _isSelected) return;
-            _isSelected = true;
-            OnClicked?.Invoke(CardData);
+            AudioManager.Instance.PlaySFX(_selectSfx, _selectSfxVolume);
         }
+
+        OnClicked?.Invoke(CardData);
+    }
+
 
         /// <summary>飞入目标槽位（RectTransform 位置），动画完成后回调。</summary>
         public IEnumerator FlyToSlot(RectTransform targetRt, float duration, Action? onComplete = null)
