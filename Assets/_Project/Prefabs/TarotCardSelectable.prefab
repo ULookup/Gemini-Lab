@@ -203,3 +203,5 @@ MonoBehaviour:
   _cardImage: {fileID: 2192214225158763197}
   _cardBackImage: {fileID: 7058545437925781541}
   _nameText: {fileID: 0}
+  _selectSfx: {fileID: 8300000, guid: c4423ccd3301567438cbc9c1da41373f, type: 3}
+  _selectSfxVolume: 0.8

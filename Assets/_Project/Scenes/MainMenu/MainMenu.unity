@@ -880,6 +880,7 @@ GameObject:
   - component: {fileID: 197296529}
   - component: {fileID: 197296528}
   - component: {fileID: 197296530}
+  - component: {fileID: 197296531}
   m_Layer: 5
   m_Name: Btn_Start
   m_TagString: Untagged
@@ -988,6 +989,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &197296531
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 197296526}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f609998a4a429448b1cf227721ad412, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clip: {fileID: 8300000, guid: 43eca6c3d0b99144a8fd0230f4e0af72, type: 3}
+  volume: 0.7
 --- !u!1 &222664317
 GameObject:
   m_ObjectHideFlags: 0
@@ -1858,6 +1873,7 @@ GameObject:
   - component: {fileID: 661165379}
   - component: {fileID: 661165378}
   - component: {fileID: 661165380}
+  - component: {fileID: 661165381}
   m_Layer: 5
   m_Name: Btn_Saves
   m_TagString: Untagged
@@ -1966,6 +1982,20 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
+--- !u!114 &661165381
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 661165376}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f609998a4a429448b1cf227721ad412, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clip: {fileID: 8300000, guid: 43eca6c3d0b99144a8fd0230f4e0af72, type: 3}
+  volume: 0.7
 --- !u!1 &672822720
 GameObject:
   m_ObjectHideFlags: 0
@@ -2430,6 +2460,7 @@ GameObject:
   - component: {fileID: 761267577}
   - component: {fileID: 761267576}
   - component: {fileID: 761267575}
+  - component: {fileID: 761267578}
   m_Layer: 5
   m_Name: CloseBtn
   m_TagString: Untagged
@@ -2539,6 +2570,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 761267573}
   m_CullTransparentMesh: 1
+--- !u!114 &761267578
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 761267573}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f609998a4a429448b1cf227721ad412, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  clip: {fileID: 8300000, guid: 43eca6c3d0b99144a8fd0230f4e0af72, type: 3}
+  volume: 0.7
 --- !u!1 &782903439
 GameObject:
   m_ObjectHideFlags: 0
