@@ -63,13 +63,13 @@ namespace GeminiLab.Modules.DesktopOverlay
             int previousWidth =
                 PlayerPrefs.GetInt(
                     PreviousWidthKey,
-                    1280
+                    1920
                 );
 
             int previousHeight =
                 PlayerPrefs.GetInt(
                     PreviousHeightKey,
-                    720
+                    1080
                 );
 
             // Desktop_Overlay 还没被卸载时
@@ -109,7 +109,7 @@ namespace GeminiLab.Modules.DesktopOverlay
                 // 把 UniWindowController 控制的原生窗口
                 // 明确缩回主程序尺寸
                 window.windowSize =
-                    new Vector2(1280f, 720f);
+                    new Vector2(1920f, 1080f);
             }
 
         #endif
@@ -118,8 +118,8 @@ namespace GeminiLab.Modules.DesktopOverlay
             FullScreenMode.Windowed;
 
         Screen.SetResolution(
-            1280,
-            720,
+            1920,
+            1080,
             FullScreenMode.Windowed
         );
     }

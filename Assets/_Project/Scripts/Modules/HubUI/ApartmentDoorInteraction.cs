@@ -86,7 +86,7 @@ namespace GeminiLab.Modules.HubUI
             if (Input.GetKeyDown(KeyCode.Escape)) DeclineConversation();
             AdvanceDialogue(Time.unscaledTime);
             if (_hint == null) return;
-            _hint.text = _dialogueActive ? "Esc 结束交流" : _choiceVisible ? "" : _closeBlocked ? "门口有宠物，走开后再关门" : !_isOpen ? "点击小门开门" : _visitInitiator != null ? "F 再次显示交流选项" : "WASD 进入对方房间，可选择交流";
+            _hint.text = _dialogueActive ? "点击区域外结束交流" : _choiceVisible ? "" : _closeBlocked ? "门口有宠物，走开后再关门" : !_isOpen ? "点击小门开门" : _visitInitiator != null ? "F 再次显示交流选项" : "WASD 进入对方房间，可选择交流";
         }
 
         private bool CanOfferConversation()
