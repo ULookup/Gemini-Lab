@@ -265,7 +265,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "今天也请保持好心情哦～我一直都在呢，有什么想聊的？🌸"
+  m_text: "\u4ECA\u5929\u4E5F\u8BF7\u4FDD\u6301\u597D\u5FC3\u60C5\u54E6\uFF5E\u6211\u4E00\u76F4\u90FD\u5728\u5462\uFF0C\u6709\u4EC0\u4E48\u60F3\u804A\u7684\uFF1F\U0001F338"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -292,7 +292,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 20
+  m_fontSize: 19.75
   m_fontSizeBase: 20
   m_fontWeight: 400
   m_enableAutoSizing: 1

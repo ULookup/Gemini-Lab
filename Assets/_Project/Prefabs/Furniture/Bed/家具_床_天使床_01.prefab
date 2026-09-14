@@ -104,6 +104,10 @@ MonoBehaviour:
   _instanceId: d06badb4d8954c1cbd8217c55ffb27a2
   _definition: {fileID: 11400000, guid: 63e96c1732df4e74daa06a8bcce873f4, type: 2}
   _anchor: {fileID: 948868639261107561}
+  _isSceneFurniture: 0
+  _sortingAnchor: {fileID: 0}
+  _sortingOrderOffset: 0
+  _useDynamicSortingRule: 0
 --- !u!114 &948868639261107561
 MonoBehaviour:
   m_ObjectHideFlags: 0
