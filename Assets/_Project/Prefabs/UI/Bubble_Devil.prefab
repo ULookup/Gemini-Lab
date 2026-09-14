@@ -107,10 +107,10 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1799701954867629120}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: -22.2061, y: 0}
-  m_SizeDelta: {x: -44.4122, y: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &7212316972579228894
 CanvasRenderer:
@@ -140,7 +140,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "啧，又来找我了？行吧，今天就勉为其难陪你聊聊。直接说吧，别拐弯抹角的。"
+  m_text: "\u5567\uFF0C\u53C8\u6765\u627E\u6211\u4E86\uFF1F\u884C\u5427\uFF0C\u4ECA\u5929\u5C31\u52C9\u4E3A\u5176\u96BE\u966A\u4F60\u804A\u804A\u3002\u76F4\u63A5\u8BF4\u5427\uFF0C\u522B\u62D0\u5F2F\u62B9\u89D2\u7684\u3002"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -170,7 +170,7 @@ MonoBehaviour:
   m_fontSize: 20
   m_fontSizeBase: 20
   m_fontWeight: 400
-  m_enableAutoSizing: 1
+  m_enableAutoSizing: 0
   m_fontSizeMin: 16
   m_fontSizeMax: 28
   m_fontStyle: 0
@@ -350,8 +350,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 1}
   m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 66.87421, y: -0}
-  m_SizeDelta: {x: 394.9737, y: 0}
+  m_AnchoredPosition: {x: 66.87421, y: -69}
+  m_SizeDelta: {x: 400, y: 0}
   m_Pivot: {x: 0, y: 0}
 --- !u!222 &1382900177920987703
 CanvasRenderer:

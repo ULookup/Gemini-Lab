@@ -23,6 +23,9 @@ namespace GeminiLab.Modules.EmotionGarden
         private const int PlacementInventorySaveVersion = 3;
         private const int PlacedFlowersSaveVersion = 4;
 
+        
+
+
         private IGameClock? _clock;
         private EventBus? _eventBus;
 
@@ -449,22 +452,39 @@ namespace GeminiLab.Modules.EmotionGarden
 
         public void RefreshBlooming()
         {
-            if (_clock == null) return;
-            var today = _clock.TodayIso;
+            if (_clock == null)
+                return;
 
             for (int i = 0; i < _flowers.Count; i++)
             {
                 var f = _flowers[i];
-                if (f.State != GrowthState.Growing) continue;
-                if (f.IsCollected) continue;
 
-                // 跨天自动开花：花的日期早于今天
-                if (string.Compare(f.DateIso, today, StringComparison.Ordinal) < 0)
+                if (f.State != GrowthState.Growing)
+                    continue;
+
+                if (f.IsCollected)
+                    continue;
+
+                if (f.CreatedAtUtcTicks <= 0)
+                    continue;
+
+                long elapsedTicks =
+                    _clock.UtcNow.Ticks -
+                    f.CreatedAtUtcTicks;
+
+                if (elapsedTicks < 0)
+                    elapsedTicks = 0;
+
+                if (elapsedTicks >=
+                    EmotionGardenGrowthTiming
+                        .BloomDuration
+                        .Ticks)
                 {
                     BloomAt(i);
                 }
             }
         }
+
 
         public void ClearAllData()
         {

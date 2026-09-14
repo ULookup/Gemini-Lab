@@ -20,6 +20,18 @@ namespace GeminiLab.Modules.HubUI.Panels
     /// </summary>
     public sealed class WeeklyGardenPanelStub : StubPanelBase
     {
+        [Header("生长阶段")]
+        [SerializeField] private float _sproutDelaySeconds = 10f;
+
+        [SerializeField] private float _growthVisualRefreshSeconds = 1f;
+
+        [Header("生长时钟")]
+        [SerializeField]
+        private GrowthClockUI _growthClockUI;
+
+
+        private float _growthVisualTimer;
+
         public override PanelId Id => PanelId.WeeklyGardenView;
 
         private static readonly string[] DayLabels = { "周一", "周二", "周三", "周四", "周五", "周六", "周日" };
@@ -139,6 +151,10 @@ namespace GeminiLab.Modules.HubUI.Panels
             _selectedDayIndex = dayIndex;
             ApplySelectionVisuals();
             RefreshDetailBar(_service.GetWeekFlowers(_viewedWeekId));
+
+            //新增
+            RefreshGrowthClockForDay(dayIndex);
+
         }
 
         /// <summary>点击面板空白区域后恢复默认日期信息。</summary>
@@ -202,6 +218,18 @@ namespace GeminiLab.Modules.HubUI.Panels
                 bottleView?.ShowPreview();
 
                 bool isGrowing = flower.HasValue && flower.Value.State == GrowthState.Growing;
+
+                // ★ 发芽阶段
+                GameObject? sproutImage =
+                    cell.transform.Find("SproutImage")?.gameObject;
+
+                if (sproutImage != null)
+                {
+                    sproutImage.SetActive(
+                        ShouldShowSprout(flower)
+                    );
+                }
+
                 string? flowerVariantKey = flower.HasValue && flower.Value.State == GrowthState.Bloomed &&
                     _flowerArtCatalog?.Resolve(flower.Value.EmotionType, flower.Value.Owner, GrowthState.Bloomed) != null
                     ? SceneAuthoredImageVariantView.BuildFlowerKey(
@@ -209,6 +237,8 @@ namespace GeminiLab.Modules.HubUI.Panels
                         flower.Value.Owner,
                         GrowthState.Bloomed)
                     : null;
+                
+
 
                 var flowerView = cell.transform.Find("FlowerImage")?.GetComponent<SceneAuthoredImageVariantView>();
                 if (flowerView != null)
@@ -378,5 +408,168 @@ namespace GeminiLab.Modules.HubUI.Panels
                 template.gameObject.SetActive(false);
             }
         }
+
+        private bool ShouldShowSprout(EmotionFlowerData? flower)
+        {
+            if (!flower.HasValue)
+                return false;
+
+            EmotionFlowerData data = flower.Value;
+
+            // 已经成熟了，就不显示嫩芽
+            if (data.State != GrowthState.Growing)
+                return false;
+
+            if (data.CreatedAtUtcTicks <= 0)
+                return false;
+
+            if (!ServiceLocator.TryResolve(
+                    out IGameClock? clock) ||
+                clock == null)
+            {
+                return false;
+            }
+
+            long elapsedTicks =
+                clock.UtcNow.Ticks - data.CreatedAtUtcTicks;
+
+            if (elapsedTicks < 0)
+                return false;
+
+            double elapsedSeconds =
+                TimeSpan.FromTicks(elapsedTicks).TotalSeconds;
+
+            return elapsedSeconds >= EmotionGardenGrowthTiming.SproutSeconds;
+        }
+
+
+        private void Update()
+        {
+            if (_service == null)
+                return;
+
+            _growthVisualTimer += Time.unscaledDeltaTime;
+
+            if (_growthVisualTimer <
+                _growthVisualRefreshSeconds)
+            {
+                return;
+            }
+
+            _growthVisualTimer = 0f;
+
+            RefreshSproutVisuals();
+        }
+
+        private void RefreshSproutVisuals()
+        {
+            if (_service == null)
+                return;
+
+            EmotionFlowerData?[] flowers =
+                _service.GetWeekFlowers(_viewedWeekId);
+
+            for (int i = 0; i < _cells.Length; i++)
+            {
+                GameObject? cell = _cells[i];
+
+                if (cell == null)
+                    continue;
+
+                Transform? sproutTransform =
+                    cell.transform.Find("SproutImage");
+
+                if (sproutTransform == null)
+                {
+                    if (flowers[i].HasValue)
+                    {
+                        Debug.LogWarning(
+                            $"[Sprout] Day{i} 有花，但是找不到 SproutImage"
+                        );
+                    }
+
+                    continue;
+                }
+
+                bool shouldShow =
+                    ShouldShowSprout(flowers[i]);
+
+                if (flowers[i].HasValue)
+                {
+                    Debug.Log(
+                        $"[Sprout] Day{i} " +
+                        $"state={flowers[i]!.Value.State}, " +
+                        $"show={shouldShow}"
+                    );
+                }
+
+                sproutTransform.gameObject.SetActive(shouldShow);
+            }
+        }
+
+        private void RefreshGrowthClockForDay(
+        int index)
+        {
+            if (_growthClockUI == null)
+                return;
+
+            if (_service == null)
+            {
+                _growthClockUI.Hide();
+                return;
+            }
+
+            EmotionFlowerData?[] flowers =
+                _service.GetWeekFlowers(
+                    _viewedWeekId
+                );
+
+            if (index < 0 ||
+                index >= flowers.Length)
+            {
+                _growthClockUI.Hide();
+                return;
+            }
+
+            EmotionFlowerData? flower =
+                flowers[index];
+
+            // 这一天没有花
+            if (!flower.HasValue)
+            {
+                _growthClockUI.Hide();
+                return;
+            }
+
+            EmotionFlowerData data =
+                flower.Value;
+
+            // 已经成熟，不需要显示成长时钟
+            if (data.State != GrowthState.Growing)
+            {
+                _growthClockUI.Hide();
+                return;
+            }
+
+            if (data.CreatedAtUtcTicks <= 0)
+            {
+                _growthClockUI.Hide();
+                return;
+            }
+
+            // 告诉 GrowthClockUI：
+            // 这朵花是什么时候种下的
+            _growthClockUI.Show(
+                data.CreatedAtUtcTicks
+            );
+        }
+
+        
+
+
+
+
+
+
     }
 }
