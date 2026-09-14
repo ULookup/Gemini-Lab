@@ -50,9 +50,27 @@ namespace GeminiLab.Core.SceneFlow
             SceneId from = CurrentScene;
             string sceneName = _catalog.GetSceneName(target);
 
-            AsyncOperation? op = _loader(sceneName, LoadSceneMode.Single);
+            UnityEngine.ThreadPriority previousBackgroundLoadingPriority = Application.backgroundLoadingPriority;
+            Application.backgroundLoadingPriority = UnityEngine.ThreadPriority.High;
+            float startedAt = UnityEngine.Time.realtimeSinceStartup;
+            Debug.Log(
+                $"[SceneFlow][LoadStart] from={from} target={target} scene={sceneName} " +
+                $"backgroundPriority={Application.backgroundLoadingPriority}");
+
+            AsyncOperation? op;
+            try
+            {
+                op = _loader(sceneName, LoadSceneMode.Single);
+            }
+            catch
+            {
+                Application.backgroundLoadingPriority = previousBackgroundLoadingPriority;
+                throw;
+            }
+
             if (op is null)
             {
+                Application.backgroundLoadingPriority = previousBackgroundLoadingPriority;
                 Debug.LogError($"[SceneFlow] 加载失败：{sceneName}（未登记在 Build Settings 或 catalog 错配）");
                 return null;
             }
@@ -62,8 +80,13 @@ namespace GeminiLab.Core.SceneFlow
 
             op.completed += _ =>
             {
+                Application.backgroundLoadingPriority = previousBackgroundLoadingPriority;
                 CurrentScene = target;
                 IsLoading = false;
+                float elapsedSeconds = UnityEngine.Time.realtimeSinceStartup - startedAt;
+                Debug.Log(
+                    $"[SceneFlow][LoadComplete] from={from} target={target} scene={sceneName} " +
+                    $"elapsedSeconds={elapsedSeconds:F3}");
                 _eventBus.Publish(new SceneLoadCompletedEvent(from, target, payload));
                 onCompleted?.Invoke();
             };

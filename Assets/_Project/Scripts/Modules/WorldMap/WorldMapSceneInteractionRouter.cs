@@ -166,10 +166,30 @@ namespace GeminiLab.Modules.WorldMap
                 return false;
             }
 
-            // RaycastTarget is the UI input contract. A transparent Graphic can
-            // intentionally be an authored panel blocker, so alpha/culling must
-            // not allow the same click to fall through to a WorldMap object.
-            return true;
+            // Only interactive controls and open modal panels block WorldMap.
+            // Decorative HUD text/graphics must not swallow a click on the cabin.
+            if (hit.GetComponentInParent<Selectable>(true) != null)
+            {
+                return true;
+            }
+
+            return IsUnderActiveModalPanel(hit);
+        }
+
+        private static bool IsUnderActiveModalPanel(GameObject hit)
+        {
+            Transform? current = hit.transform;
+            while (current != null)
+            {
+                if (current.name.StartsWith("Panel_", StringComparison.Ordinal))
+                {
+                    return current.gameObject.activeInHierarchy;
+                }
+
+                current = current.parent;
+            }
+
+            return false;
         }
 
         private static bool InvokeTarget(IWorldMapSceneClickTarget target)
