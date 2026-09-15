@@ -15,11 +15,11 @@ namespace GeminiLab.Modules.RoomRelic
     /// </summary>
     public sealed class RoomRelicService : IRoomRelicService, IPersistentService, IDisposable
     {
-        private const float NoteProbability = 0.5f;
-        private const float RelicProbability = 0.5f;
-        private const float GiftProbability = 0.15f;
-        private const float RelicUnlockFriendship = 45f;
-        private const float GiftUnlockFriendship = 80f;
+        private const float NoteProbability = 0.7f;
+        private const float RelicProbability = 0.6f;
+        private const float GiftProbability = 0.25f;
+        private const float RelicUnlockFriendship = 40f;
+        private const float GiftUnlockFriendship = 60f;
 
         private readonly IGameClock _clock;
         private readonly IPetSocialService _social;
